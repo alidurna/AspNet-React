@@ -123,8 +123,3 @@ TaskFlow/
 
 Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için `LICENSE` dosyasına bakın.
 
-## İletişim
-
-Proje Sahibi - [email@example.com](mailto:email@example.com)
-
-Proje Linki: [https://github.com/kullaniciadi/TaskFlow](https://github.com/kullaniciadi/TaskFlow)
