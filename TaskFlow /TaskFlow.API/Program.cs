@@ -1,117 +1,323 @@
 /*
- * Program.cs - TaskFlow API Ana Giriş Noktası
- * ==========================================
+ * Program.cs - ASP.NET Core Application Entry Point
+ * ================================================
  * 
- * Bu dosya ASP.NET Core uygulamasının başlangıç noktasıdır.
- * .NET 6+ ile gelen "Minimal API" yaklaşımı kullanılmıştır.
+ * Bu dosya uygulamanın başlangıç noktasıdır ve modern C# top-level statements kullanır.
+ * Burada yapılan işlemler:
  * 
- * Önceki versiyonlarda (Startup.cs + Program.cs) şimdi tek dosyada birleştirilmiş.
- * Bu yapı daha basit ve okunabilir kod sağlar.
+ * 1. SERVICE REGISTRATION (Dependency Injection Container)
+ * 2. MIDDLEWARE PIPELINE CONFIGURATION
+ * 3. DATABASE CONFIGURATION
+ * 4. APPLICATION STARTUP
  */
 
-// ===== 1. APPLICATION BUILDER OLUŞTURMA =====
-// WebApplicationBuilder: ASP.NET Core uygulamasını yapılandırmak için kullanılır
-// args: Komut satırından gelen parametreler (örn: --urls, --environment)
+using Microsoft.EntityFrameworkCore;
+using TaskFlow.API.Data;
+
+// ===== WEB APPLICATION BUILDER =====
+/*
+ * WebApplication.CreateBuilder() modern ASP.NET Core'un başlangıç noktasıdır.
+ * Bu method:
+ * - Host configuration yapar
+ * - Service container'ı hazırlar
+ * - Configuration sources'ları ekler (appsettings.json, environment variables vb.)
+ * - Logging configuration yapar
+ */
 var builder = WebApplication.CreateBuilder(args);
 
-// ===== 2. SERVİS KAYITLARI (DEPENDENCY INJECTION) =====
+// ===== CONFIGURATION =====
 /*
- * builder.Services: Dependency Injection Container'a servis eklemek için kullanılır
- * Bu servislere controller'lar, middleware'ler ve diğer servisler erişebilir
+ * Configuration sistem appsettings.json, environment variables,
+ * command line arguments gibi kaynaklardan configuration okur.
+ * 
+ * Öncelik sırası:
+ * 1. Command line arguments (en yüksek)
+ * 2. Environment variables
+ * 3. appsettings.{Environment}.json
+ * 4. appsettings.json (en düşük)
+ */
+var configuration = builder.Configuration;
+
+// ===== SERVICE REGISTRATION (DEPENDENCY INJECTION) =====
+/*
+ * ASP.NET Core'un built-in Dependency Injection container'ına
+ * servisleri kaydettiğimiz bölüm.
+ * 
+ * Service Lifetimes:
+ * - Singleton: Uygulama boyunca tek instance
+ * - Scoped: HTTP request boyunca tek instance (EF DbContext için ideal)
+ * - Transient: Her injection'da yeni instance
  */
 
-// OpenAPI (Swagger) servisini ekle
-// Bu servis API dokümantasyonu oluşturur ve /swagger endpoint'i sağlar
-// Geliştirme sırasında API'yi test etmek için kullanışlıdır
-builder.Services.AddOpenApi();
+// ===== API CONTROLLERS =====
+/*
+ * AddControllers() method'u:
+ * - MVC Controller pattern'ını aktifleştirir
+ * - API Controller attributes'larını tanır
+ * - Model binding ve validation yapar
+ * - JSON serialization konfigüre eder
+ */
+builder.Services.AddControllers();
 
-// ===== 3. APPLICATION (PIPELINE) OLUŞTURMA =====
-// builder.Build(): Yapılandırılmış servisleri kullanarak WebApplication örneği oluşturur
+// ===== ENTITY FRAMEWORK CORE =====
+/*
+ * AddDbContext<T>() method'u:
+ * - DbContext'i DI container'a kaydeder
+ * - Scoped lifetime kullanır (HTTP request boyunca yaşar)
+ * - Database provider'ı konfigüre eder
+ * - Connection string'i ayarlar
+ */
+builder.Services.AddDbContext<TaskFlowDbContext>(options =>
+{
+    // SQLite database kullanıyoruz (development için ideal)
+    // Production'da SQL Server, PostgreSQL vb. kullanılabilir
+    var connectionString = configuration.GetConnectionString("DefaultConnection") 
+                          ?? "Data Source=TaskFlow.db";
+    
+    /*
+     * UseSqlite() method'u:
+     * - SQLite provider'ını aktifleştirir
+     * - Connection string'i ayarlar
+     * - SQLite-specific konfigürasyonları yapar
+     * 
+     * SQLite AVANTAJLARI:
+     * - Dosya tabanlı (kolay deployment)
+     * - Zero-configuration
+     * - Development için mükemmel
+     * - Cross-platform
+     * 
+     * SQLite KISITLAMALARI:
+     * - Concurrent writes sınırlı
+     * - Büyük ölçekli uygulamalar için uygun değil
+     * - Advanced features eksik (stored procedures vb.)
+     */
+    options.UseSqlite(connectionString);
+    
+    /*
+     * DEVELOPMENT ORTAMI İÇİN EK AYARLAR:
+     * EnableSensitiveDataLogging(): SQL log'larında parameter değerlerini gösterir
+     * EnableDetailedErrors(): Hata mesajlarında daha detaylı bilgi verir
+     * 
+     * ÖNEMLİ: Bu ayarlar sadece development'ta kullanılmalı!
+     * Production'da güvenlik riski oluşturur.
+     */
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableSensitiveDataLogging();   // SQL parameters'ı log'la
+        options.EnableDetailedErrors();         // Detaylı hata mesajları
+    }
+});
+
+// ===== API DOCUMENTATION (SWAGGER/OPENAPI) =====
+/*
+ * Swagger/OpenAPI documentation için gerekli servisler.
+ * Bu servisler API'mizi dokümante eder ve test etmemizi sağlar.
+ * 
+ * AddEndpointsApiExplorer(): Minimal API endpoints'lerini keşfeder
+ * AddSwaggerGen(): Swagger UI ve OpenAPI spec'i üretir
+ */
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// ===== CORS (CROSS-ORIGIN RESOURCE SHARING) =====
+/*
+ * Frontend (React) ile backend (ASP.NET Core) arasında
+ * cross-origin requests'lere izin vermek için CORS ayarları.
+ * 
+ * Bu ayarlar production'da daha kısıtlayıcı olmalı!
+ */
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000", "https://localhost:3000") // React dev server
+              .AllowAnyMethod()          // GET, POST, PUT, DELETE vb.
+              .AllowAnyHeader()          // Content-Type, Authorization vb.
+              .AllowCredentials();       // Cookies ve authentication headers
+    });
+});
+
+// ===== WEB APPLICATION BUILD =====
+/*
+ * builder.Build() method'u:
+ * - Service container'ı finalize eder
+ * - WebApplication instance'ı oluşturur
+ * - Middleware pipeline'ını hazırlar
+ */
 var app = builder.Build();
 
-// ===== 4. HTTP REQUEST PIPELINE YAPILANDIRMASI =====
+// ===== DATABASE MIGRATION CHECK =====
 /*
- * Middleware'ler sırayla çalışır:
- * Request -> Middleware 1 -> Middleware 2 -> ... -> Endpoint -> Response
+ * Uygulama başlarken database'in güncel olup olmadığını kontrol et.
+ * Eğer pending migration'lar varsa otomatik olarak uygula.
  * 
- * ÖNEMLİ: Middleware'lerin sırası kritiktir!
+ * Bu approach development için uygundur.
+ * Production'da manual migration tercih edilir.
+ */
+await EnsureDatabaseUpdated(app);
+
+// ===== MIDDLEWARE PIPELINE CONFIGURATION =====
+/*
+ * Middleware'ler HTTP request pipeline'ını oluşturur.
+ * Her middleware bir sonrakine request'i geçirir.
+ * 
+ * MIDDLEWARE SIRASI ÖNEMLİDİR!
+ * Request: Yukarıdan aşağıya
+ * Response: Aşağıdan yukarıya
  */
 
-// CORS, Authentication, Routing vb. buraya gelecek (ileriki adımlarda)
-
-// Geliştirme ortamında OpenAPI (Swagger) UI'ı aktifleştir
+// ===== DEVELOPMENT MIDDLEWARE =====
+/*
+ * Development ortamında ek middleware'ler aktifleştirilir:
+ * - Swagger UI (API documentation)
+ * - Developer exception page (detaylı hata sayfaları)
+ */
 if (app.Environment.IsDevelopment())
 {
-    // /swagger endpoint'inde Swagger UI kullanılabilir olur
-    // Sadece Development ortamında aktif (güvenlik için)
-    app.MapOpenApi();
+    // Swagger UI - API documentation ve test arayüzü
+    app.UseSwagger();       // OpenAPI JSON endpoint'i
+    app.UseSwaggerUI();     // Swagger UI web interface
 }
 
-// HTTPS yönlendirmesi - HTTP isteklerini HTTPS'e yönlendirir
-// Güvenlik için önemli bir middleware
+// ===== HTTPS REDIRECTION =====
+/*
+ * HTTP isteklerini otomatik olarak HTTPS'e yönlendirir.
+ * Güvenlik için kritik bir middleware.
+ */
 app.UseHttpsRedirection();
 
-// ===== 5. ÖRNEK API ENDPOINT'İ (SİLİNECEK) =====
+// ===== CORS MIDDLEWARE =====
 /*
- * Bu bölüm sadece template örneği olarak geldi
- * TaskFlow API'sini oluştururken bu kodları silip
- * gerçek endpoint'lerimizi ekleyeceğiz
+ * CORS policy'sini uygular.
+ * OPTIONS requests'leri handle eder.
+ * Frontend'den gelen cross-origin requests'lere izin verir.
+ */
+app.UseCors("AllowReactApp");
+
+// ===== AUTHENTICATION & AUTHORIZATION =====
+/*
+ * Şimdilik authentication eklemeyelim.
+ * İlerleyen adımlarda JWT authentication ekleyeceğiz.
+ * 
+ * app.UseAuthentication();    // JWT token validation
+ * app.UseAuthorization();     // Role/policy based authorization
  */
 
-// Örnek veri - Hava durumu açıklamaları
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+// ===== CONTROLLER ROUTING =====
+/*
+ * MapControllers(): Controller'ları route'lar.
+ * Attribute routing kullanır ([Route], [HttpGet] vb.)
+ */
+app.MapControllers();
 
-// GET /weatherforecast endpoint'i tanımı
-// Minimal API yaklaşımı: lambda function ile endpoint tanımlama
-app.MapGet("/weatherforecast", () =>
+// ===== ROOT ENDPOINT =====
+/*
+ * Ana endpoint - API'nin çalıştığını gösterir.
+ * Health check olarak da kullanılabilir.
+ */
+app.MapGet("/", () => new
 {
-    // 5 günlük hava tahmini oluştur
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            // Bugünden itibaren 'index' gün sonrası
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            // -20 ile 55 arası rastgele sıcaklık
-            Random.Shared.Next(-20, 55),
-            // Rastgele hava durumu açıklaması
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray(); // IEnumerable'ı array'e çevir
-    
-    return forecast; // JSON olarak döndürülür (otomatik serileştirme)
-})
-.WithName("GetWeatherForecast"); // OpenAPI'de endpoint ismi
+    Message = "TaskFlow API is running! 🚀",
+    Version = "1.0.0",
+    Environment = app.Environment.EnvironmentName,
+    Timestamp = DateTime.UtcNow
+});
 
-// ===== 6. UYGULAMAYI BAŞLATMA =====
-// HTTP sunucusunu başlat ve istekleri dinlemeye başla
-// Bu satır blocking'dir - uygulama çalışır durumda kalır
+// ===== APPLICATION START =====
+/*
+ * Uygulamayı başlat ve HTTP requests'leri dinlemeye başla.
+ * Bu method blocking'dir - uygulama burada çalışmaya devam eder.
+ */
 app.Run();
 
-// ===== 7. ÖRNEK MODEL SINIFI =====
+// ===== HELPER METHODS =====
 /*
- * Record Type (C# 9+ özelliği):
- * - Immutable (değiştirilemez) veri yapısı
- * - Value-based equality (değer bazlı eşitlik)
- * - ToString, GetHashCode, Equals otomatik implement edilir
- * - API response'larda ideal
+ * Database migration'ları kontrol eden ve uygulayan helper method.
+ * Bu method uygulama başlarken çalışır.
  */
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+async Task EnsureDatabaseUpdated(WebApplication webApp)
 {
-    // Computed property: Celsius'tan Fahrenheit'a çevirme
-    // => expression-bodied property syntax
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    try
+    {
+        // Service scope oluştur (DbContext almak için)
+        using var scope = webApp.Services.CreateScope();
+        
+        // DbContext'i DI container'dan al
+        var context = scope.ServiceProvider.GetRequiredService<TaskFlowDbContext>();
+        
+        /*
+         * Database.EnsureCreated() vs Database.Migrate():
+         * 
+         * EnsureCreated():
+         * - Database yoksa oluşturur
+         * - Migration history kullanmaz
+         * - Development için uygundur
+         * 
+         * Migrate():
+         * - Pending migration'ları uygular
+         * - Migration history tutar
+         * - Production için uygundur
+         */
+        
+        // Pending migration'ları kontrol et
+        var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+        
+        if (pendingMigrations.Any())
+        {
+            Console.WriteLine($"🔄 Applying {pendingMigrations.Count()} pending migration(s)...");
+            
+            // Migration'ları uygula
+            await context.Database.MigrateAsync();
+            
+            Console.WriteLine("✅ Database migrations applied successfully!");
+        }
+        else
+        {
+            Console.WriteLine("✅ Database is up to date.");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Database migration error: {ex.Message}");
+        
+        // Development'ta hatayı göster, production'da log'la
+        if (webApp.Environment.IsDevelopment())
+        {
+            throw; // Uygulamayı durdur
+        }
+        else
+        {
+            // Production'da log'la ama uygulamayı başlat
+            // Logger implementation burada olacak
+        }
+    }
 }
 
 /*
  * SONRAKI ADIMLAR:
  * ================
- * 1. WeatherForecast örneğini sileceğiz
- * 2. Entity Framework DbContext ekleyeceğiz
- * 3. TaskFlow modellerini (User, Task, Category) oluşturacağız
- * 4. Authentication middleware ekleyeceğiz
- * 5. CORS yapılandırması ekleyeceğiz
- * 6. Gerçek API endpoint'lerini ekleyeceğiz
+ * 1. appsettings.json'a connection string ekleyeceğiz
+ * 2. İlk migration'ı oluşturacağız
+ * 3. Database'i güncelleyeceğiz
+ * 4. Controller'ları oluşturacağız
+ * 5. JWT Authentication ekleyeceğiz
+ * 
+ * PRODUCTION HAZIRLIK:
+ * ===================
+ * - Environment-specific configuration
+ * - Proper error handling ve logging
+ * - Health checks
+ * - Rate limiting
+ * - API versioning
+ * - Caching strategies
+ * - Performance monitoring
+ * 
+ * GÜVENLİK ÖNLEMLERİ:
+ * ===================
+ * - HTTPS enforcement
+ * - JWT authentication
+ * - Input validation
+ * - SQL injection prevention (EF Core otomatik sağlar)
+ * - XSS protection
+ * - CSRF protection
  */
