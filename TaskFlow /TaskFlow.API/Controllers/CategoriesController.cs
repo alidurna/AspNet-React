@@ -74,7 +74,7 @@ public class CategoriesController : ControllerBase
     /// <param name="filter">Filtreleme parametreleri (query string'den gelir)</param>
     /// <returns>Kategoriler listesi</returns>
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<List<CategoryDto>>>> GetCategories(
+    public async Task<ActionResult<ApiResponseModel<List<CategoryDto>>>> GetCategories(
         [FromQuery] CategoryFilterDto filter)
     {
         try
@@ -150,16 +150,16 @@ public class CategoriesController : ControllerBase
             }).ToList();
 
             // ===== SUCCESS RESPONSE =====
-            return Ok(ApiResponse<List<CategoryDto>>.CreateSuccess(
-                categoryDtos, 
-                $"{categoryDtos.Count} kategori bulundu"));
+            return Ok(ApiResponseModel<List<CategoryDto>>.SuccessResponse(
+                $"{categoryDtos.Count} kategori bulundu",
+                categoryDtos));
         }
         catch (Exception ex)
         {
             // ===== ERROR HANDLING =====
             // Production'da loglama yapılmalı
             // Development'ta detaylı hata göster
-            return StatusCode(500, ApiResponse<List<CategoryDto>>.Error(
+            return StatusCode(500, ApiResponseModel<List<CategoryDto>>.ErrorResponse(
                 "Kategoriler getirilirken bir hata oluştu", 
                 ex.Message));
         }
@@ -174,7 +174,7 @@ public class CategoriesController : ControllerBase
     /// <param name="id">Kategori ID'si</param>
     /// <returns>Kategori detayları</returns>
     [HttpGet("{id}")]
-    public async Task<ActionResult<ApiResponse<CategoryDto>>> GetCategory(int id)
+    public async Task<ActionResult<ApiResponseModel<CategoryDto>>> GetCategory(int id)
     {
         try
         {
@@ -188,7 +188,7 @@ public class CategoriesController : ControllerBase
             // ===== NOT FOUND CHECK =====
             if (category == null)
             {
-                return NotFound(ApiResponse<CategoryDto>.Error("Kategori bulunamadı"));
+                return NotFound(ApiResponseModel<CategoryDto>.ErrorResponse("Kategori bulunamadı"));
             }
 
             // ===== DTO MAPPING =====
@@ -211,11 +211,11 @@ public class CategoriesController : ControllerBase
                 UpdatedAt = category.UpdatedAt
             };
 
-            return Ok(ApiResponse<CategoryDto>.CreateSuccess(categoryDto, "Kategori bulundu"));
+            return Ok(ApiResponseModel<CategoryDto>.SuccessResponse("Kategori bulundu", categoryDto));
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<CategoryDto>.Error(
+            return StatusCode(500, ApiResponseModel<CategoryDto>.ErrorResponse(
                 "Kategori getirilirken bir hata oluştu", 
                 ex.Message));
         }
@@ -237,7 +237,7 @@ public class CategoriesController : ControllerBase
     /// <param name="createDto">Yeni kategori bilgileri</param>
     /// <returns>Oluşturulan kategori</returns>
     [HttpPost]
-    public async Task<ActionResult<ApiResponse<CategoryDto>>> CreateCategory(
+    public async Task<ActionResult<ApiResponseModel<CategoryDto>>> CreateCategory(
         [FromBody] CreateCategoryDto createDto)
     {
         try
@@ -246,7 +246,11 @@ public class CategoriesController : ControllerBase
             // [Required], [StringLength] vb. attributes otomatik kontrol edilir
             if (!ModelState.IsValid)
             {
-                return BadRequest(ApiResponse<CategoryDto>.ValidationError(ModelState));
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+                return BadRequest(ApiResponseModel<CategoryDto>.ValidationErrorResponse(errors));
             }
 
             const int currentUserId = 1; // TODO: Replace with actual user from JWT
@@ -261,7 +265,7 @@ public class CategoriesController : ControllerBase
 
             if (existingCategory != null)
             {
-                return BadRequest(ApiResponse<CategoryDto>.Error(
+                return BadRequest(ApiResponseModel<CategoryDto>.ErrorResponse(
                     "Bu isimde bir kategori zaten mevcut"));
             }
 
@@ -272,7 +276,7 @@ public class CategoriesController : ControllerBase
             const int maxCategoriesPerUser = 50; // Business rule
             if (userCategoryCount >= maxCategoriesPerUser)
             {
-                return BadRequest(ApiResponse<CategoryDto>.Error(
+                return BadRequest(ApiResponseModel<CategoryDto>.ErrorResponse(
                     $"Maksimum {maxCategoriesPerUser} kategori oluşturabilirsiniz"));
             }
 
@@ -331,11 +335,11 @@ public class CategoriesController : ControllerBase
             return CreatedAtAction(
                 nameof(GetCategory), 
                 new { id = category.Id }, 
-                ApiResponse<CategoryDto>.CreateSuccess(categoryDto, "Kategori başarıyla oluşturuldu"));
+                ApiResponseModel<CategoryDto>.SuccessResponse("Kategori başarıyla oluşturuldu", categoryDto));
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<CategoryDto>.Error(
+            return StatusCode(500, ApiResponseModel<CategoryDto>.ErrorResponse(
                 "Kategori oluşturulurken bir hata oluştu", 
                 ex.Message));
         }
@@ -351,7 +355,7 @@ public class CategoriesController : ControllerBase
     /// <param name="updateDto">Güncellenecek kategori bilgileri</param>
     /// <returns>Güncellenmiş kategori</returns>
     [HttpPut("{id}")]
-    public async Task<ActionResult<ApiResponse<CategoryDto>>> UpdateCategory(
+    public async Task<ActionResult<ApiResponseModel<CategoryDto>>> UpdateCategory(
         int id, 
         [FromBody] UpdateCategoryDto updateDto)
     {
@@ -360,7 +364,7 @@ public class CategoriesController : ControllerBase
             // ===== MODEL VALIDATION =====
             if (!ModelState.IsValid)
             {
-                return BadRequest(ApiResponse<CategoryDto>.ValidationError(ModelState));
+                return BadRequest(ApiResponseModel<CategoryDto>.ValidationErrorResponse(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList()));
             }
 
             const int currentUserId = 1; // TODO: Replace with actual user from JWT
@@ -372,7 +376,7 @@ public class CategoriesController : ControllerBase
 
             if (category == null)
             {
-                return NotFound(ApiResponse<CategoryDto>.Error("Kategori bulunamadı"));
+                return NotFound(ApiResponseModel<CategoryDto>.ErrorResponse("Kategori bulunamadı"));
             }
 
             // ===== BUSINESS RULES VALIDATION =====
@@ -386,7 +390,7 @@ public class CategoriesController : ControllerBase
 
             if (existingCategory != null)
             {
-                return BadRequest(ApiResponse<CategoryDto>.Error(
+                return BadRequest(ApiResponseModel<CategoryDto>.ErrorResponse(
                     "Bu isimde başka bir kategori zaten mevcut"));
             }
 
@@ -441,11 +445,11 @@ public class CategoriesController : ControllerBase
                 UpdatedAt = category.UpdatedAt
             };
 
-            return Ok(ApiResponse<CategoryDto>.CreateSuccess(categoryDto, "Kategori başarıyla güncellendi"));
+            return Ok(ApiResponseModel<CategoryDto>.SuccessResponse("Kategori başarıyla güncellendi", categoryDto));
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<CategoryDto>.Error(
+            return StatusCode(500, ApiResponseModel<CategoryDto>.ErrorResponse(
                 "Kategori güncellenirken bir hata oluştu", 
                 ex.Message));
         }
@@ -461,7 +465,7 @@ public class CategoriesController : ControllerBase
     /// <param name="id">Silinecek kategori ID'si</param>
     /// <returns>Silme işlemi sonucu</returns>
     [HttpDelete("{id}")]
-    public async Task<ActionResult<ApiResponse<object>>> DeleteCategory(int id)
+    public async Task<ActionResult<ApiResponseModel<object>>> DeleteCategory(int id)
     {
         try
         {
@@ -474,7 +478,7 @@ public class CategoriesController : ControllerBase
 
             if (category == null)
             {
-                return NotFound(ApiResponse<object>.Error("Kategori bulunamadı"));
+                return NotFound(ApiResponseModel<object>.ErrorResponse("Kategori bulunamadı"));
             }
 
             // ===== BUSINESS RULES VALIDATION =====
@@ -482,7 +486,7 @@ public class CategoriesController : ControllerBase
             // 1. Kategoriye bağlı aktif görevler var mı kontrol et
             if (category.Tasks.Any())
             {
-                return BadRequest(ApiResponse<object>.Error(
+                return BadRequest(ApiResponseModel<object>.ErrorResponse(
                     $"Bu kategoriye bağlı {category.Tasks.Count} aktif görev var. " +
                     "Önce görevleri başka kategoriye taşıyın veya silin."));
             }
@@ -490,7 +494,7 @@ public class CategoriesController : ControllerBase
             // 2. Default kategori silinemez
             if (category.IsDefault)
             {
-                return BadRequest(ApiResponse<object>.Error(
+                return BadRequest(ApiResponseModel<object>.ErrorResponse(
                     "Varsayılan kategori silinemez. Önce başka bir kategoriyi varsayılan yapın."));
             }
 
@@ -501,11 +505,11 @@ public class CategoriesController : ControllerBase
 
             await _context.SaveChangesAsync();
 
-            return Ok(ApiResponse<object>.SuccessMessage("Kategori başarıyla silindi"));
+            return Ok(ApiResponseModel<object>.SuccessResponse("Kategori başarıyla silindi"));
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<object>.Error(
+            return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
                 "Kategori silinirken bir hata oluştu", 
                 ex.Message));
         }

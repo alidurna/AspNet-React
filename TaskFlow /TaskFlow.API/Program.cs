@@ -11,8 +11,12 @@
  * 4. APPLICATION STARTUP
  */
 
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using TaskFlow.API.Data;
+using TaskFlow.API.Services;
 
 // ===== WEB APPLICATION BUILDER =====
 /*
@@ -108,6 +112,88 @@ builder.Services.AddDbContext<TaskFlowDbContext>(options =>
     }
 });
 
+// ===== JWT AUTHENTICATION SERVICES =====
+/*
+ * JWT (JSON Web Token) authentication servisleri.
+ * Bu servisler kullanıcı authentication ve authorization için kullanılır.
+ * 
+ * JWT AVANTAJLARI:
+ * - Stateless (server-side session yok)
+ * - Scalable (multiple server'larda çalışır)
+ * - Cross-platform (mobile, web, desktop)
+ * - Self-contained (user info token içinde)
+ */
+
+// JWT Service'i DI container'a kaydet
+builder.Services.AddScoped<IJwtService, JwtService>();
+
+// JWT Authentication configuration
+builder.Services.AddAuthentication(options =>
+{
+    // Default authentication scheme JWT Bearer olsun
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    // JWT validation parameters
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        // Token'ı kim oluşturdu kontrolü (issuer validation)
+        ValidateIssuer = true,
+        ValidIssuer = configuration["Jwt:Issuer"],
+        
+        // Token kim için oluşturuldu kontrolü (audience validation)
+        ValidateAudience = true,
+        ValidAudience = configuration["Jwt:Audience"],
+        
+        // Token'ın süresi dolmuş mu kontrolü
+        ValidateLifetime = true,
+        
+        // Token imzası geçerli mi kontrolü
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(configuration["Jwt:Secret"] ?? throw new InvalidOperationException("JWT Secret not found"))
+        ),
+        
+        // Clock skew - server saatleri arasındaki fark toleransı
+        ClockSkew = TimeSpan.Zero // Sıfır tolerans
+    };
+    
+    // JWT Bearer events - debugging ve logging için
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = context =>
+        {
+            // Token başarıyla validate edildiğinde
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("Token validated for user: {UserId}", 
+                context.Principal?.FindFirst("sub")?.Value);
+            return Task.CompletedTask;
+        },
+        
+        OnAuthenticationFailed = context =>
+        {
+            // Token validation başarısız olduğunda
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogWarning("Token validation failed: {Error}", context.Exception.Message);
+            return Task.CompletedTask;
+        },
+        
+        OnChallenge = context =>
+        {
+            // Unauthorized response dönülürken
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogWarning("JWT Challenge triggered for path: {Path}", context.Request.Path);
+            return Task.CompletedTask;
+        }
+    };
+});
+
+// Authorization servisleri
+builder.Services.AddAuthorization();
+
 // ===== API DOCUMENTATION (SWAGGER/OPENAPI) =====
 /*
  * Swagger/OpenAPI documentation için gerekli servisler.
@@ -196,12 +282,15 @@ app.UseCors("AllowReactApp");
 
 // ===== AUTHENTICATION & AUTHORIZATION =====
 /*
- * Şimdilik authentication eklemeyelim.
- * İlerleyen adımlarda JWT authentication ekleyeceğiz.
+ * Authentication ve authorization middleware'leri.
+ * Bu middleware'ler JWT token'ları validate eder ve kullanıcı yetkilerini kontrol eder.
  * 
- * app.UseAuthentication();    // JWT token validation
- * app.UseAuthorization();     // Role/policy based authorization
+ * ÖNEMLİ: Sıralama kritik!
+ * 1. UseAuthentication() - Token validation
+ * 2. UseAuthorization() - Permission checking
  */
+app.UseAuthentication();    // JWT token validation
+app.UseAuthorization();     // Role/policy based authorization
 
 // ===== CONTROLLER ROUTING =====
 /*

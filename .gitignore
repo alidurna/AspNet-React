@@ -1,0 +1,158 @@
+# ===== ASP.NET CORE & .NET =====
+## Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Visual Studio cache/options directory
+.vs/
+
+## Visual Studio Code cache directory
+.vscode/
+
+## MSTest test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+## NUNIT
+*.VisualState.xml
+TestResult.xml
+
+## Build Results of an ATL Project
+[Dd]ebugPS/
+[Rr]eleasePS/
+dlldata.c
+
+## Benchmark Results
+BenchmarkDotNet.Artifacts/
+
+# ===== .NET CORE =====
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ===== NUGET =====
+*.nuget.props
+*.nuget.targets
+packages/
+.nuget/
+
+# ===== ENTITY FRAMEWORK =====
+migrations/
+*.db-shm
+*.db-wal
+
+# ===== SQLITE DATABASES =====
+*.db
+*.sqlite
+*.sqlite3
+
+# ===== TEMPORARY & CACHE FILES =====
+*.tmp
+*.temp
+*.cache
+*.log
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ===== SYSTEM FILES =====
+## Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+## macOS  
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+## Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# ===== JetBrains Rider =====
+.idea/
+*.sln.iml
+
+# ===== DEVELOPMENT ENVIRONMENT =====
+*.swp
+*.swo
+*~
+
+# ===== NODE.JS (for future frontend) =====
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.eslintcache
+
+# ===== REACT BUILD (for future frontend) =====
+build/
+dist/
+
+# ===== ENVIRONMENT & SECRETS =====
+.env
+.env.local
+.env.development.local
+.env.test.local  
+.env.production.local
+appsettings.Production.json
+secrets.json
+
+# ===== DOCKER =====
+Dockerfile.dev
+docker-compose.override.yml
+
+# ===== BACKUP & ARCHIVE FILES =====
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+
+# ===== LOGS =====
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# ===== COVERAGE REPORTS =====
+coverage/
+*.cover
+.coverage
+.lcov
+
+# ===== APPLICATION SPECIFIC =====
+## TaskFlow specific
+TaskFlow.db
+TaskFlow.db-shm  
+TaskFlow.db-wal
+uploads/
+temp/
+
+## Development files
+test-data/
+*.postman_environment.json
+
+# ===== KEEP THESE COMMITTED =====
+!TaskFlow-Postman-Collection.json
+!README.md
+!appsettings.json
+!appsettings.Development.json 

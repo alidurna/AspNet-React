@@ -1,11 +1,3 @@
-/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.csproj.AssemblyReference.cache
-/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.GeneratedMSBuildEditorConfig.editorconfig
-/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.AssemblyInfoInputs.cache
-/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.AssemblyInfo.cs
-/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.csproj.CoreCompileInputs.cache
-/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.MvcApplicationPartsAssemblyInfo.cs
-/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.MvcApplicationPartsAssemblyInfo.cache
-/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.sourcelink.json
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/appsettings.Development.json
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/appsettings.json
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/TaskFlow.API.staticwebassets.endpoints.json
@@ -14,7 +6,9 @@
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/TaskFlow.API.runtimeconfig.json
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/TaskFlow.API.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/TaskFlow.API.pdb
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/BCrypt.Net-Next.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Humanizer.dll
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Microsoft.AspNetCore.OpenApi.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Microsoft.Bcl.AsyncInterfaces.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Microsoft.Build.Locator.dll
@@ -40,6 +34,12 @@
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Microsoft.Extensions.Logging.Abstractions.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Microsoft.Extensions.Options.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Microsoft.Extensions.Primitives.dll
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Microsoft.IdentityModel.Abstractions.dll
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Microsoft.IdentityModel.JsonWebTokens.dll
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Microsoft.IdentityModel.Logging.dll
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Microsoft.IdentityModel.Protocols.dll
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Microsoft.IdentityModel.Tokens.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Microsoft.OpenApi.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Mono.TextTemplating.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/SQLitePCLRaw.batteries_v2.dll
@@ -54,6 +54,7 @@
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/System.Composition.Hosting.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/System.Composition.Runtime.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/System.Composition.TypedParts.dll
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/System.IdentityModel.Tokens.Jwt.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/cs/Microsoft.CodeAnalysis.resources.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/de/Microsoft.CodeAnalysis.resources.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/es/Microsoft.CodeAnalysis.resources.dll
@@ -140,6 +141,14 @@
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/runtimes/win-arm64/native/e_sqlite3.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/runtimes/win-x64/native/e_sqlite3.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/runtimes/win-x86/native/e_sqlite3.dll
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.csproj.AssemblyReference.cache
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.GeneratedMSBuildEditorConfig.editorconfig
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.AssemblyInfoInputs.cache
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.AssemblyInfo.cs
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.csproj.CoreCompileInputs.cache
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.MvcApplicationPartsAssemblyInfo.cs
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.MvcApplicationPartsAssemblyInfo.cache
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.sourcelink.json
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/scopedcss/bundle/TaskFlow.API.styles.css
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets.build.json
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets.build.json.cache

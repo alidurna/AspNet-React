@@ -90,6 +90,16 @@ public class User
     public string? ProfileImageUrl { get; set; }
 
     /// <summary>
+    /// Kullanıcının telefon numarası
+    /// Nullable: İsteğe bağlı alan
+    /// Phone: Telefon numarası format kontrolü
+    /// </summary>
+    [Phone(ErrorMessage = "Geçerli bir telefon numarası giriniz")]
+    [MaxLength(20, ErrorMessage = "Telefon numarası en fazla 20 karakter olabilir")]
+    [Display(Name = "Telefon Numarası")]
+    public string? PhoneNumber { get; set; }
+
+    /// <summary>
     /// Kullanıcının kendi hakkında yazdığı açıklama
     /// Nullable: İsteğe bağlı
     /// MaxLength: Uzun açıklamalara izin veriyoruz
