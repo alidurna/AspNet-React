@@ -1,0 +1,266 @@
+{
+	"info": {
+		"_postman_id": "taskflow-api-collection",
+		"name": "TaskFlow API",
+		"description": "TaskFlow Task Management API Test Collection",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Categories",
+			"item": [
+				{
+					"name": "1. GET All Categories",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5280/api/categories",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5280",
+							"path": [
+								"api",
+								"categories"
+							]
+						}
+					}
+				},
+				{
+					"name": "2. POST Create Category - İş",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"İş Görevleri\",\n  \"description\": \"Ofis ve iş ile ilgili görevler\",\n  \"colorCode\": \"#FF5733\",\n  \"icon\": \"briefcase\",\n  \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5280/api/categories",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5280",
+							"path": [
+								"api",
+								"categories"
+							]
+						}
+					}
+				},
+				{
+					"name": "3. POST Create Category - Kişisel",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Kişisel\",\n  \"description\": \"Kişisel yapılacaklar ve hobiler\",\n  \"colorCode\": \"#33FF57\",\n  \"icon\": \"user\",\n  \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5280/api/categories",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5280",
+							"path": [
+								"api",
+								"categories"
+							]
+						}
+					}
+				},
+				{
+					"name": "4. POST Create Category - Alışveriş",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Alışveriş\",\n  \"description\": \"Market ve alışveriş listeleri\",\n  \"colorCode\": \"#3357FF\",\n  \"icon\": \"shopping-cart\",\n  \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5280/api/categories",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5280",
+							"path": [
+								"api",
+								"categories"
+							]
+						}
+					}
+				},
+				{
+					"name": "5. GET Single Category (ID=1)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5280/api/categories/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5280",
+							"path": [
+								"api",
+								"categories",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "6. PUT Update Category (ID=1)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"İş & Ofis\",\n  \"description\": \"Güncellenmiş iş görevleri ve ofis işleri\",\n  \"colorCode\": \"#FF6B33\",\n  \"icon\": \"building\",\n  \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "http://localhost:5280/api/categories/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5280",
+							"path": [
+								"api",
+								"categories",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "7. GET Categories with Filter",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5280/api/categories?search=iş&isActive=true",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5280",
+							"path": [
+								"api",
+								"categories"
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "iş"
+								},
+								{
+									"key": "isActive",
+									"value": "true"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "8. DELETE Category (ID=3)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:5280/api/categories/3",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5280",
+							"path": [
+								"api",
+								"categories",
+								"3"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "API Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5280/swagger",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5280",
+							"path": [
+								"swagger"
+							]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5280",
+			"type": "string"
+		}
+	]
+} 
