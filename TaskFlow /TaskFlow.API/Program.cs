@@ -17,6 +17,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using TaskFlow.API.Data;
 using TaskFlow.API.Services;
+using TaskFlow.API.Interfaces;
 
 // ===== WEB APPLICATION BUILDER =====
 /*
@@ -124,8 +125,26 @@ builder.Services.AddDbContext<TaskFlowDbContext>(options =>
  * - Self-contained (user info token içinde)
  */
 
-// JWT Service'i DI container'a kaydet
+// ===== CUSTOM SERVICES REGISTRATION =====
+/*
+ * Uygulama seviyesindeki custom service'leri DI container'a kaydet.
+ * Service implementation'ları dependency sırasına göre kaydedilir.
+ */
+
+// JWT Service - Authentication için gerekli
 builder.Services.AddScoped<IJwtService, JwtService>();
+
+// Password Service - Şifre hash'leme ve validation için
+builder.Services.AddScoped<IPasswordService, PasswordService>();
+
+// User Service - Kullanıcı yönetimi ve authentication için
+builder.Services.AddScoped<IUserService, UserService>();
+
+// Category Service - Kategori yönetimi için
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+
+// Task Service - Görev yönetimi için
+builder.Services.AddScoped<ITaskService, TaskService>();
 
 // JWT Authentication configuration
 builder.Services.AddAuthentication(options =>

@@ -151,7 +151,6 @@
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.sourcelink.json
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/scopedcss/bundle/TaskFlow.API.styles.css
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets.build.json
-/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets.build.json.cache
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets.development.json
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets.build.endpoints.json
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.BE976348.Up2Date
@@ -160,3 +159,10 @@
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.pdb
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.genruntimeconfig.cache
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/ref/TaskFlow.API.dll
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/System.Text.Json.dll
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets/msbuild.TaskFlow.API.Microsoft.AspNetCore.StaticWebAssets.props
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets/msbuild.TaskFlow.API.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets/msbuild.build.TaskFlow.API.props
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets/msbuild.buildMultiTargeting.TaskFlow.API.props
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets/msbuild.buildTransitive.TaskFlow.API.props
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets.pack.json
