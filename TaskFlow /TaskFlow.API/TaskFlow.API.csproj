@@ -1,0 +1,83 @@
+<!-- 
+  TaskFlow.API.csproj - Proje Konfigürasyon Dosyası
+  ================================================
+  Bu dosya ASP.NET Core Web API projemizin yapılandırmasını tutar.
+  NuGet paketleri, framework versiyonu ve proje ayarları burada tanımlanır.
+-->
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- 
+    Microsoft.NET.Sdk.Web: ASP.NET Core Web projesi için gerekli SDK
+    Bu SDK şunları sağlar:
+    - ASP.NET Core framework referansları
+    - Web sunucusu (Kestrel) desteği  
+    - MVC, Web API, SignalR gibi web teknolojileri
+  -->
+
+  <PropertyGroup>
+    <!-- Proje özelliklerini tanımlayan grup -->
+    
+    <!-- .NET 9.0 framework kullanıyoruz (en güncel LTS version) -->
+    <TargetFramework>net9.0</TargetFramework>
+    
+    <!-- 
+      Nullable Reference Types aktif - C# 8+ özelliği
+      Null değer alabilecek türleri açıkça belirtmemizi sağlar
+      Bu sayede null reference hatalarını compile-time'da yakalarız
+    -->
+    <Nullable>enable</Nullable>
+    
+    <!-- 
+      Implicit Usings aktif - C# 10+ özelliği  
+      Yaygın kullanılan using directiveleri otomatik dahil edilir:
+      - using System;
+      - using System.Collections.Generic;
+      - using Microsoft.AspNetCore.Builder; (Web projelerinde)
+      - vb.
+    -->
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- NuGet paket referansları - dış kütüphaneler -->
+    
+    <!-- 
+      OpenAPI (Swagger) desteği
+      Nedir: API dokümantasyonu ve test arayüzü sağlar
+      Kullanım: /swagger endpoint'inde API'yi test edebiliriz
+      Version: 9.0.5 - .NET 9 ile uyumlu versiyon
+    -->
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.5" />
+    
+    <!-- 
+      Entity Framework Core - SQLite Provider
+      Nedir: Object-Relational Mapping (ORM) aracı
+      SQLite: Dosya tabanlı veritabanı, geliştirme için ideal
+      Özellikler:
+      - C# sınıflarını veritabanı tablolarına çevirir
+      - LINQ ile type-safe sorgular yazabiliriz
+      - Migration sistemi ile veritabanı versiyonlaması
+    -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.5" />
+    
+    <!-- 
+      Entity Framework Core Tools
+      Nedir: EF Core komut satırı araçları
+      Komutlar:
+      - dotnet ef migrations add [name]     -> Yeni migration oluşturur
+      - dotnet ef database update          -> Veritabanını günceller
+      - dotnet ef database drop            -> Veritabanını siler
+      
+      IncludeAssets: Hangi asset'lerin dahil edileceği
+      PrivateAssets="all": Bu paket sadece geliştirme sırasında kullanılır,
+                          final uygulamaya dahil edilmez (boyut optimizasyonu)
+    -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.5">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.4" />
+  </ItemGroup>
+
+</Project>
