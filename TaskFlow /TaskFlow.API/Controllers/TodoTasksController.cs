@@ -1,16 +1,15 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using TaskFlow.API.Data;
 using TaskFlow.API.DTOs;
-using TaskFlow.API.Models;
+using TaskFlow.API.Interfaces;
 
 namespace TaskFlow.API.Controllers
 {
     /// <summary>
     /// TodoTask yönetimi için API Controller
     /// Task CRUD operations, filtering, completion tracking ve hierarchy management
+    /// Service Layer pattern kullanarak business logic'i ayırır
     /// </summary>
     /// <remarks>
     /// Bu controller TaskFlow uygulamasının ana fonksiyonelliğini sağlar.
@@ -33,14 +32,14 @@ namespace TaskFlow.API.Controllers
         #region Private Fields
 
         /// <summary>
-        /// Entity Framework database context
-        /// Task, User, Category verilerine erişim için
+        /// Task business logic servisi
+        /// CRUD operations ve business rules için kullanılır
         /// </summary>
-        private readonly TaskFlowDbContext _context;
+        private readonly ITaskService _taskService;
 
         /// <summary>
         /// ASP.NET Core logging servisi
-        /// Hata ve bilgi logları için
+        /// Hata ve bilgi logları için kullanılır
         /// </summary>
         private readonly ILogger<TodoTasksController> _logger;
 
@@ -52,13 +51,13 @@ namespace TaskFlow.API.Controllers
         /// TodoTasksController constructor
         /// Dependency Injection ile gerekli servisleri alır
         /// </summary>
-        /// <param name="context">Database context</param>
+        /// <param name="taskService">Task business logic servisi</param>
         /// <param name="logger">Logging servisi</param>
         public TodoTasksController(
-            TaskFlowDbContext context,
+            ITaskService taskService,
             ILogger<TodoTasksController> logger)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _taskService = taskService ?? throw new ArgumentNullException(nameof(taskService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -76,10 +75,10 @@ namespace TaskFlow.API.Controllers
         /// <response code="401">Token geçersiz veya eksik</response>
         /// <response code="500">Sunucu hatası</response>
         [HttpGet]
-        [ProducesResponseType(typeof(ApiResponseModel<List<TodoTaskDto>>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
-        public async Task<ActionResult<ApiResponseModel<List<TodoTaskDto>>>> GetTasks(
+        public async Task<ActionResult<ApiResponseModel<object>>> GetTasks(
             [FromQuery] TodoTaskFilterDto filter)
         {
             try
@@ -91,152 +90,38 @@ namespace TaskFlow.API.Controllers
                     return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
                 }
 
-                // Base query - sadece kendi task'ları
-                var query = _context.TodoTasks
-                    .Include(t => t.Category)
-                    .Include(t => t.ParentTask)
-                    .Where(t => t.UserId == userId.Value && t.IsActive);
+                // TaskService ile task'ları getir (pagination ile)
+                var (tasks, pagination) = await _taskService.GetTasksAsync(userId.Value, filter);
 
-                // ===== FILTERING =====
+                _logger.LogDebug("Retrieved {Count} tasks for user {UserId}", tasks.Count, userId.Value);
 
-                // Kategori filtresi
-                if (filter.CategoryId.HasValue)
-                {
-                    query = query.Where(t => t.CategoryId == filter.CategoryId.Value);
-                }
-
-                // Parent task filtresi
-                if (filter.ParentTaskId.HasValue)
-                {
-                    query = query.Where(t => t.ParentTaskId == filter.ParentTaskId.Value);
-                }
-                else if (filter.OnlyParentTasks)
-                {
-                    query = query.Where(t => t.ParentTaskId == null);
-                }
-
-                // Completion status filtresi
-                if (filter.IsCompleted.HasValue)
-                {
-                    query = query.Where(t => t.IsCompleted == filter.IsCompleted.Value);
-                }
-
-                // Priority filtresi
-                if (!string.IsNullOrWhiteSpace(filter.Priority))
-                {
-                    if (Enum.TryParse<Priority>(filter.Priority, out var priority))
-                    {
-                        query = query.Where(t => t.Priority == priority);
-                    }
-                }
-
-                // Text search (title ve description'da arama)
-                if (!string.IsNullOrWhiteSpace(filter.SearchText))
-                {
-                    var searchLower = filter.SearchText.ToLower();
-                    query = query.Where(t => 
-                        t.Title.ToLower().Contains(searchLower) || 
-                        (t.Description != null && t.Description.ToLower().Contains(searchLower)));
-                }
-
-                // Tag filtresi
-                if (!string.IsNullOrWhiteSpace(filter.Tag))
-                {
-                    query = query.Where(t => 
-                        t.Tags != null && t.Tags.ToLower().Contains(filter.Tag.ToLower()));
-                }
-
-                // Due date range filtresi
-                if (filter.DueDateFrom.HasValue)
-                {
-                    query = query.Where(t => t.DueDate >= filter.DueDateFrom.Value);
-                }
-                if (filter.DueDateTo.HasValue)
-                {
-                    query = query.Where(t => t.DueDate <= filter.DueDateTo.Value);
-                }
-
-                // Overdue filtresi
-                if (filter.IsOverdue == true)
-                {
-                    var now = DateTime.UtcNow;
-                    query = query.Where(t => t.DueDate.HasValue && t.DueDate.Value < now && !t.IsCompleted);
-                }
-
-                // ===== SORTING =====
-                query = filter.SortBy?.ToLower() switch
-                {
-                    "title" => filter.SortAscending ? query.OrderBy(t => t.Title) : query.OrderByDescending(t => t.Title),
-                    "duedate" => filter.SortAscending ? query.OrderBy(t => t.DueDate) : query.OrderByDescending(t => t.DueDate),
-                    "priority" => filter.SortAscending ? query.OrderBy(t => t.Priority) : query.OrderByDescending(t => t.Priority),
-                    "createdat" => filter.SortAscending ? query.OrderBy(t => t.CreatedAt) : query.OrderByDescending(t => t.CreatedAt),
-                    "updatedat" => filter.SortAscending ? query.OrderBy(t => t.UpdatedAt) : query.OrderByDescending(t => t.UpdatedAt),
-                    "completion" => filter.SortAscending ? query.OrderBy(t => t.CompletionPercentage) : query.OrderByDescending(t => t.CompletionPercentage),
-                    _ => query.OrderByDescending(t => t.CreatedAt) // Default: newest first
-                };
-
-                // ===== PAGINATION =====
-                var totalCount = await query.CountAsync();
-                var totalPages = (int)Math.Ceiling((double)totalCount / filter.PageSize);
-
-                var tasks = await query
-                    .Skip((filter.Page - 1) * filter.PageSize)
-                    .Take(filter.PageSize)
-                    .ToListAsync();
-
-                // ===== DTO MAPPING =====
-                var taskDtos = new List<TodoTaskDto>();
-
-                foreach (var task in tasks)
-                {
-                    var taskDto = await MapToDto(task, filter.IncludeSubTasks);
-                    taskDtos.Add(taskDto);
-                }
-
-                // ===== RESPONSE =====
+                // Response object oluştur
                 var response = new
                 {
-                    Tasks = taskDtos,
-                    Pagination = new
-                    {
-                        CurrentPage = filter.Page,
-                        PageSize = filter.PageSize,
-                        TotalCount = totalCount,
-                        TotalPages = totalPages,
-                        HasPreviousPage = filter.Page > 1,
-                        HasNextPage = filter.Page < totalPages
-                    },
-                    FilterSummary = new
-                    {
-                        TotalTasks = totalCount,
-                        CompletedTasks = taskDtos.Count(t => t.IsCompleted),
-                        PendingTasks = taskDtos.Count(t => !t.IsCompleted),
-                        OverdueTasks = taskDtos.Count(t => t.IsOverdue)
-                    }
+                    Tasks = tasks,
+                    Pagination = pagination
                 };
 
-                _logger.LogInformation("Tasks retrieved for user {UserId}: {Count} tasks", userId, totalCount);
-
                 return Ok(ApiResponseModel<object>.SuccessResponse(
-                    $"{totalCount} task bulundu (Sayfa {filter.Page}/{totalPages})",
-                    response));
+                    $"{tasks.Count} görev bulundu",
+                    response
+                ));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving tasks for user");
+                _logger.LogError(ex, "Error getting tasks for user");
                 return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
-                    "Task'lar getirilirken bir hata oluştu"));
+                    "Görevler getirilirken bir hata oluştu"));
             }
         }
 
         /// <summary>
-        /// Belirli bir task'i ID'sine göre getirir
-        /// Task detay sayfası için kullanılır
+        /// Belirli bir task'ı ID'sine göre getirir
         /// </summary>
         /// <param name="id">Task ID'si</param>
         /// <returns>Task detayları</returns>
-        /// <response code="200">Task detayları başarıyla getirildi</response>
-        /// <response code="401">Token geçersiz</response>
+        /// <response code="200">Task başarıyla getirildi</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
         /// <response code="404">Task bulunamadı</response>
         /// <response code="500">Sunucu hatası</response>
         [HttpGet("{id:int}")]
@@ -248,47 +133,42 @@ namespace TaskFlow.API.Controllers
         {
             try
             {
+                // JWT token'dan user ID'yi al
                 var userId = GetCurrentUserId();
                 if (!userId.HasValue)
                 {
                     return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
                 }
 
-                // Task'i bul (sadece kendi task'ları)
-                var task = await _context.TodoTasks
-                    .Include(t => t.Category)
-                    .Include(t => t.ParentTask)
-                    .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId.Value && t.IsActive);
+                // TaskService ile task'ı getir
+                var task = await _taskService.GetTaskByIdAsync(userId.Value, id, includeSubTasks: true);
 
                 if (task == null)
                 {
-                    return NotFound(ApiResponseModel<object>.ErrorResponse("Task bulunamadı"));
+                    return NotFound(ApiResponseModel<TodoTaskDto>.ErrorResponse("Görev bulunamadı"));
                 }
 
-                // DTO'ya map et (sub-tasks dahil)
-                var taskDto = await MapToDto(task, includeSubTasks: true);
-
                 return Ok(ApiResponseModel<TodoTaskDto>.SuccessResponse(
-                    "Task detayları başarıyla getirildi",
-                    taskDto));
+                    "Görev başarıyla getirildi",
+                    task
+                ));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving task {TaskId}", id);
-                return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
-                    "Task detayları getirilirken bir hata oluştu"));
+                _logger.LogError(ex, "Error getting task {TaskId}", id);
+                return StatusCode(500, ApiResponseModel<TodoTaskDto>.ErrorResponse(
+                    "Görev getirilirken bir hata oluştu"));
             }
         }
 
         /// <summary>
         /// Yeni task oluşturur
-        /// Kategori ve parent task kontrolü yapar
         /// </summary>
-        /// <param name="createDto">Yeni task bilgileri</param>
+        /// <param name="createDto">Task oluşturma bilgileri</param>
         /// <returns>Oluşturulan task</returns>
         /// <response code="201">Task başarıyla oluşturuldu</response>
-        /// <response code="400">Geçersiz veri</response>
-        /// <response code="401">Token geçersiz</response>
+        /// <response code="400">Geçersiz veri veya business rule ihlali</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
         /// <response code="500">Sunucu hatası</response>
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponseModel<TodoTaskDto>), 201)]
@@ -307,127 +187,55 @@ namespace TaskFlow.API.Controllers
                         .SelectMany(v => v.Errors)
                         .Select(e => e.ErrorMessage)
                         .ToList();
+
                     return BadRequest(ApiResponseModel<object>.ErrorResponse("Validation hatası", errors));
                 }
 
+                // JWT token'dan user ID'yi al
                 var userId = GetCurrentUserId();
                 if (!userId.HasValue)
                 {
                     return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
                 }
 
-                // ===== BUSINESS VALIDATION =====
+                // TaskService ile task oluştur
+                var task = await _taskService.CreateTaskAsync(userId.Value, createDto);
 
-                // Kategori kontrolü
-                var category = await _context.Categories
-                    .FirstOrDefaultAsync(c => c.Id == createDto.CategoryId && 
-                                            c.UserId == userId.Value && 
-                                            c.IsActive);
-
-                if (category == null)
-                {
-                    return BadRequest(ApiResponseModel<object>.ErrorResponse(
-                        "Seçilen kategori bulunamadı veya size ait değil"));
-                }
-
-                // Parent task kontrolü (eğer belirtilmişse)
-                TodoTask? parentTask = null;
-                if (createDto.ParentTaskId.HasValue)
-                {
-                    parentTask = await _context.TodoTasks
-                        .FirstOrDefaultAsync(t => t.Id == createDto.ParentTaskId.Value && 
-                                                t.UserId == userId.Value && 
-                                                t.IsActive);
-
-                    if (parentTask == null)
-                    {
-                        return BadRequest(ApiResponseModel<object>.ErrorResponse(
-                            "Seçilen üst task bulunamadı veya size ait değil"));
-                    }
-
-                    // Circular reference kontrolü (derin hierarchy engellemek için)
-                    var maxDepth = 5; // Business rule
-                    var currentDepth = await GetTaskDepth(parentTask.Id);
-                    if (currentDepth >= maxDepth)
-                    {
-                        return BadRequest(ApiResponseModel<object>.ErrorResponse(
-                            $"Task hierarchy {maxDepth} seviyeden derin olamaz"));
-                    }
-                }
-
-                // User task limit kontrolü
-                var userTaskCount = await _context.TodoTasks
-                    .CountAsync(t => t.UserId == userId.Value && t.IsActive);
-
-                const int maxTasksPerUser = 1000; // Business rule
-                if (userTaskCount >= maxTasksPerUser)
-                {
-                    return BadRequest(ApiResponseModel<object>.ErrorResponse(
-                        $"Maksimum {maxTasksPerUser} task oluşturabilirsiniz"));
-                }
-
-                // ===== ENTITY CREATION =====
-                var task = new TodoTask
-                {
-                    UserId = userId.Value,
-                    CategoryId = createDto.CategoryId,
-                    ParentTaskId = createDto.ParentTaskId,
-                    Title = createDto.Title.Trim(),
-                    Description = string.IsNullOrWhiteSpace(createDto.Description) 
-                        ? null 
-                        : createDto.Description.Trim(),
-                    Priority = Enum.Parse<Priority>(createDto.Priority),
-                    CompletionPercentage = createDto.CompletionPercentage,
-                    DueDate = createDto.DueDate,
-                    ReminderDate = createDto.ReminderDate,
-                    StartDate = createDto.StartDate,
-                    IsCompleted = createDto.CompletionPercentage >= 100,
-                    CompletedAt = createDto.CompletionPercentage >= 100 ? DateTime.UtcNow : null,
-                    IsActive = true,
-                    Tags = string.IsNullOrWhiteSpace(createDto.Tags) 
-                        ? null 
-                        : createDto.Tags.Trim(),
-                    Notes = string.IsNullOrWhiteSpace(createDto.Notes) 
-                        ? null 
-                        : createDto.Notes.Trim(),
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-
-                // Database'e ekle
-                _context.TodoTasks.Add(task);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("New task created: {TaskId} by user {UserId}", task.Id, userId);
-
-                // DTO'ya map et
-                var taskDto = await MapToDto(task, includeSubTasks: false);
+                _logger.LogInformation("Task created successfully: {TaskId} for user {UserId}", 
+                    task.Id, userId.Value);
 
                 return CreatedAtAction(
-                    nameof(GetTask),
-                    new { id = task.Id },
-                    ApiResponseModel<TodoTaskDto>.SuccessResponse(
-                        "Task başarıyla oluşturuldu",
-                        taskDto));
+                    actionName: nameof(GetTask),
+                    routeValues: new { id = task.Id },
+                    value: ApiResponseModel<TodoTaskDto>.SuccessResponse(
+                        "Görev başarıyla oluşturuldu",
+                        task
+                    )
+                );
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Business rule violations
+                _logger.LogWarning("Task creation failed: {Error}", ex.Message);
+                return BadRequest(ApiResponseModel<object>.ErrorResponse(ex.Message));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating task for user");
+                _logger.LogError(ex, "Error creating task");
                 return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
-                    "Task oluşturulurken bir hata oluştu"));
+                    "Görev oluşturulurken bir hata oluştu"));
             }
         }
 
         /// <summary>
-        /// Mevcut task'i günceller
-        /// Partial update desteği sağlar
+        /// Task'ı günceller
         /// </summary>
-        /// <param name="id">Task ID'si</param>
-        /// <param name="updateDto">Güncellenecek task bilgileri</param>
+        /// <param name="id">Güncellenecek task ID'si</param>
+        /// <param name="updateDto">Güncelleme bilgileri</param>
         /// <returns>Güncellenmiş task</returns>
         /// <response code="200">Task başarıyla güncellendi</response>
-        /// <response code="400">Geçersiz veri</response>
-        /// <response code="401">Token geçersiz</response>
+        /// <response code="400">Geçersiz veri veya business rule ihlali</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
         /// <response code="404">Task bulunamadı</response>
         /// <response code="500">Sunucu hatası</response>
         [HttpPut("{id:int}")]
@@ -449,157 +257,54 @@ namespace TaskFlow.API.Controllers
                         .SelectMany(v => v.Errors)
                         .Select(e => e.ErrorMessage)
                         .ToList();
+
                     return BadRequest(ApiResponseModel<object>.ErrorResponse("Validation hatası", errors));
                 }
 
+                // JWT token'dan user ID'yi al
                 var userId = GetCurrentUserId();
                 if (!userId.HasValue)
                 {
                     return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
                 }
 
-                // Task'i bul
-                var task = await _context.TodoTasks
-                    .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId.Value && t.IsActive);
+                // TaskService ile task'ı güncelle
+                var updatedTask = await _taskService.UpdateTaskAsync(userId.Value, id, updateDto);
 
-                if (task == null)
-                {
-                    return NotFound(ApiResponseModel<object>.ErrorResponse("Task bulunamadı"));
-                }
-
-                // ===== BUSINESS VALIDATION =====
-
-                // Kategori kontrolü (eğer değiştirilmişse)
-                if (updateDto.CategoryId.HasValue && updateDto.CategoryId != task.CategoryId)
-                {
-                    var category = await _context.Categories
-                        .FirstOrDefaultAsync(c => c.Id == updateDto.CategoryId.Value && 
-                                                c.UserId == userId.Value && 
-                                                c.IsActive);
-
-                    if (category == null)
-                    {
-                        return BadRequest(ApiResponseModel<object>.ErrorResponse(
-                            "Seçilen kategori bulunamadı veya size ait değil"));
-                    }
-                }
-
-                // Parent task kontrolü (eğer değiştirilmişse)
-                if (updateDto.ParentTaskId.HasValue && updateDto.ParentTaskId != task.ParentTaskId)
-                {
-                    if (updateDto.ParentTaskId == task.Id)
-                    {
-                        return BadRequest(ApiResponseModel<object>.ErrorResponse(
-                            "Task kendisinin alt task'ı olamaz"));
-                    }
-
-                    var parentTask = await _context.TodoTasks
-                        .FirstOrDefaultAsync(t => t.Id == updateDto.ParentTaskId.Value && 
-                                                t.UserId == userId.Value && 
-                                                t.IsActive);
-
-                    if (parentTask == null)
-                    {
-                        return BadRequest(ApiResponseModel<object>.ErrorResponse(
-                            "Seçilen üst task bulunamadı veya size ait değil"));
-                    }
-
-                    // Circular reference kontrolü
-                    if (await IsCircularReference(task.Id, updateDto.ParentTaskId.Value))
-                    {
-                        return BadRequest(ApiResponseModel<object>.ErrorResponse(
-                            "Bu işlem döngüsel referans oluşturacaktır"));
-                    }
-                }
-
-                // ===== UPDATE ENTITY =====
-                var wasCompleted = task.IsCompleted;
-
-                // Sadece null olmayan değerleri güncelle (partial update)
-                if (updateDto.CategoryId.HasValue)
-                    task.CategoryId = updateDto.CategoryId.Value;
-
-                if (updateDto.ParentTaskId.HasValue)
-                    task.ParentTaskId = updateDto.ParentTaskId.Value;
-
-                if (!string.IsNullOrWhiteSpace(updateDto.Title))
-                    task.Title = updateDto.Title.Trim();
-
-                if (updateDto.Description != null)
-                    task.Description = string.IsNullOrWhiteSpace(updateDto.Description) 
-                        ? null 
-                        : updateDto.Description.Trim();
-
-                if (!string.IsNullOrWhiteSpace(updateDto.Priority))
-                    task.Priority = Enum.Parse<Priority>(updateDto.Priority);
-
-                if (updateDto.CompletionPercentage.HasValue)
-                {
-                    task.CompletionPercentage = updateDto.CompletionPercentage.Value;
-                    
-                    // Completion status güncelle
-                    var isNowCompleted = updateDto.CompletionPercentage.Value >= 100;
-                    if (isNowCompleted && !wasCompleted)
-                    {
-                        task.IsCompleted = true;
-                        task.CompletedAt = DateTime.UtcNow;
-                    }
-                    else if (!isNowCompleted && wasCompleted)
-                    {
-                        task.IsCompleted = false;
-                        task.CompletedAt = null;
-                    }
-                }
-
-                if (updateDto.DueDate.HasValue)
-                    task.DueDate = updateDto.DueDate.Value;
-
-                if (updateDto.ReminderDate.HasValue)
-                    task.ReminderDate = updateDto.ReminderDate.Value;
-
-                if (updateDto.StartDate.HasValue)
-                    task.StartDate = updateDto.StartDate.Value;
-
-                if (updateDto.Tags != null)
-                    task.Tags = string.IsNullOrWhiteSpace(updateDto.Tags) 
-                        ? null 
-                        : updateDto.Tags.Trim();
-
-                if (updateDto.Notes != null)
-                    task.Notes = string.IsNullOrWhiteSpace(updateDto.Notes) 
-                        ? null 
-                        : updateDto.Notes.Trim();
-
-                task.UpdatedAt = DateTime.UtcNow;
-
-                // Değişiklikleri kaydet
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Task updated: {TaskId} by user {UserId}", id, userId);
-
-                // DTO'ya map et
-                var taskDto = await MapToDto(task, includeSubTasks: false);
+                _logger.LogInformation("Task updated successfully: {TaskId}", id);
 
                 return Ok(ApiResponseModel<TodoTaskDto>.SuccessResponse(
-                    "Task başarıyla güncellendi",
-                    taskDto));
+                    "Görev başarıyla güncellendi",
+                    updatedTask
+                ));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Business rule violations or not found
+                _logger.LogWarning("Task update failed: {Error}", ex.Message);
+                
+                if (ex.Message.Contains("bulunamadı"))
+                {
+                    return NotFound(ApiResponseModel<object>.ErrorResponse(ex.Message));
+                }
+                
+                return BadRequest(ApiResponseModel<object>.ErrorResponse(ex.Message));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating task {TaskId}", id);
                 return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
-                    "Task güncellenirken bir hata oluştu"));
+                    "Görev güncellenirken bir hata oluştu"));
             }
         }
 
         /// <summary>
-        /// Task'i siler (soft delete)
-        /// İlişkili alt task'ları da pasif yapar
+        /// Task'ı siler (soft delete)
         /// </summary>
-        /// <param name="id">Task ID'si</param>
-        /// <returns>Silme sonucu</returns>
+        /// <param name="id">Silinecek task ID'si</param>
+        /// <returns>Silme işlemi sonucu</returns>
         /// <response code="200">Task başarıyla silindi</response>
-        /// <response code="401">Token geçersiz</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
         /// <response code="404">Task bulunamadı</response>
         /// <response code="500">Sunucu hatası</response>
         [HttpDelete("{id:int}")]
@@ -611,164 +316,471 @@ namespace TaskFlow.API.Controllers
         {
             try
             {
+                // JWT token'dan user ID'yi al
                 var userId = GetCurrentUserId();
                 if (!userId.HasValue)
                 {
                     return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
                 }
 
-                // Task'i bul
-                var task = await _context.TodoTasks
-                    .Include(t => t.SubTasks)
-                    .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId.Value && t.IsActive);
+                // TaskService ile task'ı sil
+                var deleted = await _taskService.DeleteTaskAsync(userId.Value, id);
 
-                if (task == null)
+                if (!deleted)
                 {
-                    return NotFound(ApiResponseModel<object>.ErrorResponse("Task bulunamadı"));
+                    return NotFound(ApiResponseModel<object>.ErrorResponse("Görev bulunamadı"));
                 }
 
-                // Soft delete - task ve alt task'ları pasif yap
-                await SoftDeleteTaskAndSubTasks(task);
-
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Task deleted: {TaskId} by user {UserId}", id, userId);
-
-                var deletedCount = 1 + (task.SubTasks?.Count(st => st.IsActive) ?? 0);
+                _logger.LogInformation("Task deleted successfully: {TaskId}", id);
 
                 return Ok(ApiResponseModel<object>.SuccessResponse(
-                    $"Task ve {deletedCount - 1} alt task başarıyla silindi"));
+                    "Görev başarıyla silindi"
+                ));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Business rule violations
+                _logger.LogWarning("Task deletion failed: {Error}", ex.Message);
+                return BadRequest(ApiResponseModel<object>.ErrorResponse(ex.Message));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting task {TaskId}", id);
                 return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
-                    "Task silinirken bir hata oluştu"));
+                    "Görev silinirken bir hata oluştu"));
             }
         }
 
         #endregion
 
-        #region Special Operations
+        #region Task Completion Endpoints
 
         /// <summary>
-        /// Task'i tamamlar veya tamamlamayı geri alır
-        /// Completion tracking için özel endpoint
+        /// Task'ın tamamlanma durumunu günceller
         /// </summary>
         /// <param name="id">Task ID'si</param>
-        /// <param name="completeDto">Completion bilgileri</param>
+        /// <param name="completeDto">Tamamlanma bilgileri</param>
         /// <returns>Güncellenmiş task</returns>
+        /// <response code="200">Task durumu başarıyla güncellendi</response>
+        /// <response code="400">Geçersiz veri</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
+        /// <response code="404">Task bulunamadı</response>
+        /// <response code="500">Sunucu hatası</response>
         [HttpPatch("{id:int}/complete")]
         [ProducesResponseType(typeof(ApiResponseModel<TodoTaskDto>), 200)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 404)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
         public async Task<ActionResult<ApiResponseModel<TodoTaskDto>>> CompleteTask(
             int id,
             [FromBody] CompleteTaskDto completeDto)
         {
             try
             {
+                // Model validation
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .ToList();
+
+                    return BadRequest(ApiResponseModel<object>.ErrorResponse("Validation hatası", errors));
+                }
+
+                // JWT token'dan user ID'yi al
                 var userId = GetCurrentUserId();
                 if (!userId.HasValue)
                 {
                     return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
                 }
 
-                var task = await _context.TodoTasks
-                    .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId.Value && t.IsActive);
+                // TaskService ile task completion güncelle
+                var updatedTask = await _taskService.CompleteTaskAsync(userId.Value, id, completeDto);
 
-                if (task == null)
+                var message = completeDto.IsCompleted ? "Görev tamamlandı" : "Görev tamamlanmamış olarak işaretlendi";
+                _logger.LogInformation("Task completion updated: {TaskId} - {IsCompleted}", id, completeDto.IsCompleted);
+
+                return Ok(ApiResponseModel<TodoTaskDto>.SuccessResponse(message, updatedTask));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Business rule violations or not found
+                _logger.LogWarning("Task completion update failed: {Error}", ex.Message);
+                
+                if (ex.Message.Contains("bulunamadı"))
                 {
-                    return NotFound(ApiResponseModel<object>.ErrorResponse("Task bulunamadı"));
+                    return NotFound(ApiResponseModel<object>.ErrorResponse(ex.Message));
                 }
-
-                // Completion status güncelle
-                task.IsCompleted = completeDto.IsCompleted;
-                task.CompletionPercentage = completeDto.CompletionPercentage ?? 
-                    (completeDto.IsCompleted ? 100 : task.CompletionPercentage);
-                task.CompletedAt = completeDto.IsCompleted ? DateTime.UtcNow : null;
-                task.UpdatedAt = DateTime.UtcNow;
-
-                // Completion note varsa notes'a ekle
-                if (!string.IsNullOrWhiteSpace(completeDto.CompletionNote))
-                {
-                    var timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm");
-                    var note = $"[{timestamp}] Tamamlama notu: {completeDto.CompletionNote}";
-                    task.Notes = string.IsNullOrWhiteSpace(task.Notes) 
-                        ? note 
-                        : $"{task.Notes}\n\n{note}";
-                }
-
-                await _context.SaveChangesAsync();
-
-                var action = completeDto.IsCompleted ? "tamamlandı" : "tamamlama geri alındı";
-                _logger.LogInformation("Task {Action}: {TaskId} by user {UserId}", action, id, userId);
-
-                var taskDto = await MapToDto(task, includeSubTasks: false);
-
-                return Ok(ApiResponseModel<TodoTaskDto>.SuccessResponse(
-                    $"Task {action}",
-                    taskDto));
+                
+                return BadRequest(ApiResponseModel<object>.ErrorResponse(ex.Message));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error completing task {TaskId}", id);
+                _logger.LogError(ex, "Error updating task completion {TaskId}", id);
                 return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
-                    "Task completion güncellenirken bir hata oluştu"));
+                    "Görev durumu güncellenirken bir hata oluştu"));
             }
         }
 
         /// <summary>
-        /// Kullanıcının task istatistiklerini getirir
-        /// Dashboard için özet bilgiler
+        /// Task'ın progress yüzdesini günceller
         /// </summary>
-        /// <returns>Task istatistikleri</returns>
-        [HttpGet("statistics")]
-        [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
+        /// <param name="id">Task ID'si</param>
+        /// <param name="progressDto">Progress bilgileri</param>
+        /// <returns>Güncellenmiş task</returns>
+        /// <response code="200">Progress başarıyla güncellendi</response>
+        /// <response code="400">Geçersiz veri</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
+        /// <response code="404">Task bulunamadı</response>
+        /// <response code="500">Sunucu hatası</response>
+        [HttpPatch("{id:int}/progress")]
+        [ProducesResponseType(typeof(ApiResponseModel<TodoTaskDto>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
-        public async Task<ActionResult<ApiResponseModel<object>>> GetTaskStatistics()
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 404)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+        public async Task<ActionResult<ApiResponseModel<TodoTaskDto>>> UpdateTaskProgress(
+            int id,
+            [FromBody] UpdateTaskProgressDto progressDto)
         {
             try
             {
+                // Model validation
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .ToList();
+
+                    return BadRequest(ApiResponseModel<object>.ErrorResponse("Validation hatası", errors));
+                }
+
+                // JWT token'dan user ID'yi al
                 var userId = GetCurrentUserId();
                 if (!userId.HasValue)
                 {
                     return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
                 }
 
-                var now = DateTime.UtcNow;
+                // TaskService ile progress güncelle
+                var updatedTask = await _taskService.UpdateTaskProgressAsync(userId.Value, id, progressDto.CompletionPercentage);
 
-                var stats = new
+                _logger.LogInformation("Task progress updated: {TaskId} - {Progress}%", id, progressDto.CompletionPercentage);
+
+                return Ok(ApiResponseModel<TodoTaskDto>.SuccessResponse(
+                    $"Görev ilerlemesi %{progressDto.CompletionPercentage} olarak güncellendi",
+                    updatedTask
+                ));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Business rule violations or not found
+                _logger.LogWarning("Task progress update failed: {Error}", ex.Message);
+                
+                if (ex.Message.Contains("bulunamadı"))
                 {
-                    TotalTasks = await _context.TodoTasks.CountAsync(t => t.UserId == userId.Value && t.IsActive),
-                    CompletedTasks = await _context.TodoTasks.CountAsync(t => t.UserId == userId.Value && t.IsActive && t.IsCompleted),
-                    PendingTasks = await _context.TodoTasks.CountAsync(t => t.UserId == userId.Value && t.IsActive && !t.IsCompleted),
-                    OverdueTasks = await _context.TodoTasks.CountAsync(t => t.UserId == userId.Value && t.IsActive && !t.IsCompleted && t.DueDate.HasValue && t.DueDate.Value < now),
-                    TodayTasks = await _context.TodoTasks.CountAsync(t => t.UserId == userId.Value && t.IsActive && t.DueDate.HasValue && t.DueDate.Value.Date == now.Date),
-                    ThisWeekTasks = await _context.TodoTasks.CountAsync(t => t.UserId == userId.Value && t.IsActive && t.DueDate.HasValue && t.DueDate.Value >= now.Date && t.DueDate.Value < now.Date.AddDays(7)),
-                    HighPriorityTasks = await _context.TodoTasks.CountAsync(t => t.UserId == userId.Value && t.IsActive && !t.IsCompleted && (t.Priority == Priority.High || t.Priority == Priority.Critical)),
-                    TasksByCategory = await _context.TodoTasks
-                        .Where(t => t.UserId == userId.Value && t.IsActive)
-                        .GroupBy(t => new { t.CategoryId, t.Category.Name })
-                        .Select(g => new { CategoryId = g.Key.CategoryId, CategoryName = g.Key.Name, TaskCount = g.Count() })
-                        .ToListAsync(),
-                    TasksByPriority = await _context.TodoTasks
-                        .Where(t => t.UserId == userId.Value && t.IsActive)
-                        .GroupBy(t => t.Priority)
-                        .Select(g => new { Priority = g.Key.ToString(), TaskCount = g.Count() })
-                        .ToListAsync()
-                };
-
-                return Ok(ApiResponseModel<object>.SuccessResponse(
-                    "Task istatistikleri başarıyla getirildi",
-                    stats));
+                    return NotFound(ApiResponseModel<object>.ErrorResponse(ex.Message));
+                }
+                
+                return BadRequest(ApiResponseModel<object>.ErrorResponse(ex.Message));
+            }
+            catch (ArgumentException ex)
+            {
+                // Invalid percentage range
+                _logger.LogWarning("Invalid progress percentage: {Error}", ex.Message);
+                return BadRequest(ApiResponseModel<object>.ErrorResponse(ex.Message));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting task statistics for user");
+                _logger.LogError(ex, "Error updating task progress {TaskId}", id);
                 return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
+                    "Görev ilerlemesi güncellenirken bir hata oluştu"));
+            }
+        }
+
+        #endregion
+
+        #region Search & Filter Endpoints
+
+        /// <summary>
+        /// Task'larda arama yapar
+        /// </summary>
+        /// <param name="searchText">Arama metni</param>
+        /// <param name="maxResults">Maksimum sonuç sayısı</param>
+        /// <returns>Arama sonuçları</returns>
+        /// <response code="200">Arama başarıyla tamamlandı</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
+        /// <response code="500">Sunucu hatası</response>
+        [HttpGet("search")]
+        [ProducesResponseType(typeof(ApiResponseModel<List<TodoTaskDto>>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+        public async Task<ActionResult<ApiResponseModel<List<TodoTaskDto>>>> SearchTasks(
+            [FromQuery] string searchText,
+            [FromQuery] int maxResults = 50)
+        {
+            try
+            {
+                // JWT token'dan user ID'yi al
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+                }
+
+                // TaskService ile arama yap
+                var tasks = await _taskService.SearchTasksAsync(userId.Value, searchText, maxResults);
+
+                return Ok(ApiResponseModel<List<TodoTaskDto>>.SuccessResponse(
+                    $"{tasks.Count} görev bulundu",
+                    tasks
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching tasks");
+                return StatusCode(500, ApiResponseModel<List<TodoTaskDto>>.ErrorResponse(
+                    "Arama sırasında bir hata oluştu"));
+            }
+        }
+
+        /// <summary>
+        /// Süresi geçmiş task'ları getirir
+        /// </summary>
+        /// <returns>Süresi geçmiş task'lar</returns>
+        /// <response code="200">Süresi geçmiş task'lar başarıyla getirildi</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
+        /// <response code="500">Sunucu hatası</response>
+        [HttpGet("overdue")]
+        [ProducesResponseType(typeof(ApiResponseModel<List<TodoTaskDto>>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+        public async Task<ActionResult<ApiResponseModel<List<TodoTaskDto>>>> GetOverdueTasks()
+        {
+            try
+            {
+                // JWT token'dan user ID'yi al
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+                }
+
+                // TaskService ile overdue task'ları getir
+                var tasks = await _taskService.GetOverdueTasksAsync(userId.Value);
+
+                return Ok(ApiResponseModel<List<TodoTaskDto>>.SuccessResponse(
+                    $"{tasks.Count} süresi geçmiş görev bulundu",
+                    tasks
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting overdue tasks");
+                return StatusCode(500, ApiResponseModel<List<TodoTaskDto>>.ErrorResponse(
+                    "Süresi geçmiş görevler getirilirken bir hata oluştu"));
+            }
+        }
+
+        /// <summary>
+        /// Bugün yapılacak task'ları getirir
+        /// </summary>
+        /// <returns>Bugünkü task'lar</returns>
+        /// <response code="200">Bugünkü task'lar başarıyla getirildi</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
+        /// <response code="500">Sunucu hatası</response>
+        [HttpGet("today")]
+        [ProducesResponseType(typeof(ApiResponseModel<List<TodoTaskDto>>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+        public async Task<ActionResult<ApiResponseModel<List<TodoTaskDto>>>> GetTasksDueToday()
+        {
+            try
+            {
+                // JWT token'dan user ID'yi al
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+                }
+
+                // TaskService ile bugünkü task'ları getir
+                var tasks = await _taskService.GetTasksDueTodayAsync(userId.Value);
+
+                return Ok(ApiResponseModel<List<TodoTaskDto>>.SuccessResponse(
+                    $"{tasks.Count} bugünkü görev bulundu",
+                    tasks
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting tasks due today");
+                return StatusCode(500, ApiResponseModel<List<TodoTaskDto>>.ErrorResponse(
+                    "Bugünkü görevler getirilirken bir hata oluştu"));
+            }
+        }
+
+        /// <summary>
+        /// Bu hafta yapılacak task'ları getirir
+        /// </summary>
+        /// <returns>Bu haftaki task'lar</returns>
+        /// <response code="200">Bu haftaki task'lar başarıyla getirildi</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
+        /// <response code="500">Sunucu hatası</response>
+        [HttpGet("this-week")]
+        [ProducesResponseType(typeof(ApiResponseModel<List<TodoTaskDto>>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+        public async Task<ActionResult<ApiResponseModel<List<TodoTaskDto>>>> GetTasksDueThisWeek()
+        {
+            try
+            {
+                // JWT token'dan user ID'yi al
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+                }
+
+                // TaskService ile bu haftaki task'ları getir
+                var tasks = await _taskService.GetTasksDueThisWeekAsync(userId.Value);
+
+                return Ok(ApiResponseModel<List<TodoTaskDto>>.SuccessResponse(
+                    $"{tasks.Count} bu haftaki görev bulundu",
+                    tasks
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting tasks due this week");
+                return StatusCode(500, ApiResponseModel<List<TodoTaskDto>>.ErrorResponse(
+                    "Bu haftaki görevler getirilirken bir hata oluştu"));
+            }
+        }
+
+        #endregion
+
+        #region Hierarchy Endpoints
+
+        /// <summary>
+        /// Belirli bir task'ın alt task'larını getirir
+        /// </summary>
+        /// <param name="parentId">Parent task ID'si</param>
+        /// <returns>Alt task'lar</returns>
+        /// <response code="200">Alt task'lar başarıyla getirildi</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
+        /// <response code="500">Sunucu hatası</response>
+        [HttpGet("{parentId:int}/subtasks")]
+        [ProducesResponseType(typeof(ApiResponseModel<List<TodoTaskDto>>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+        public async Task<ActionResult<ApiResponseModel<List<TodoTaskDto>>>> GetSubTasks(int parentId)
+        {
+            try
+            {
+                // JWT token'dan user ID'yi al
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+                }
+
+                // TaskService ile alt task'ları getir
+                var subTasks = await _taskService.GetSubTasksAsync(userId.Value, parentId);
+
+                return Ok(ApiResponseModel<List<TodoTaskDto>>.SuccessResponse(
+                    $"{subTasks.Count} alt görev bulundu",
+                    subTasks
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting sub-tasks for parent {ParentId}", parentId);
+                return StatusCode(500, ApiResponseModel<List<TodoTaskDto>>.ErrorResponse(
+                    "Alt görevler getirilirken bir hata oluştu"));
+            }
+        }
+
+        #endregion
+
+        #region Statistics Endpoints
+
+        /// <summary>
+        /// Kullanıcının task istatistiklerini getirir
+        /// </summary>
+        /// <returns>Task istatistikleri</returns>
+        /// <response code="200">İstatistikler başarıyla getirildi</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
+        /// <response code="500">Sunucu hatası</response>
+        [HttpGet("statistics")]
+        [ProducesResponseType(typeof(ApiResponseModel<TaskStatsDto>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+        public async Task<ActionResult<ApiResponseModel<TaskStatsDto>>> GetTaskStatistics()
+        {
+            try
+            {
+                // JWT token'dan user ID'yi al
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+                }
+
+                // TaskService ile istatistikleri getir
+                var stats = await _taskService.GetTaskStatsAsync(userId.Value);
+
+                return Ok(ApiResponseModel<TaskStatsDto>.SuccessResponse(
+                    "Görev istatistikleri getirildi",
+                    stats
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting task statistics");
+                return StatusCode(500, ApiResponseModel<TaskStatsDto>.ErrorResponse(
                     "İstatistikler getirilirken bir hata oluştu"));
+            }
+        }
+
+        /// <summary>
+        /// Priority bazında task istatistiklerini getirir
+        /// </summary>
+        /// <returns>Priority istatistikleri</returns>
+        /// <response code="200">Priority istatistikleri başarıyla getirildi</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
+        /// <response code="500">Sunucu hatası</response>
+        [HttpGet("statistics/priority")]
+        [ProducesResponseType(typeof(ApiResponseModel<List<TaskPriorityStatsDto>>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+        public async Task<ActionResult<ApiResponseModel<List<TaskPriorityStatsDto>>>> GetTaskPriorityStatistics()
+        {
+            try
+            {
+                // JWT token'dan user ID'yi al
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+                }
+
+                // TaskService ile priority istatistiklerini getir
+                var stats = await _taskService.GetTaskPriorityStatsAsync(userId.Value);
+
+                return Ok(ApiResponseModel<List<TaskPriorityStatsDto>>.SuccessResponse(
+                    "Priority istatistikleri getirildi",
+                    stats
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting task priority statistics");
+                return StatusCode(500, ApiResponseModel<List<TaskPriorityStatsDto>>.ErrorResponse(
+                    "Priority istatistikleri getirilirken bir hata oluştu"));
             }
         }
 
@@ -777,165 +789,13 @@ namespace TaskFlow.API.Controllers
         #region Helper Methods
 
         /// <summary>
-        /// JWT token'dan mevcut kullanıcı ID'sini alma helper methodu
+        /// JWT token'dan mevcut kullanıcının ID'sini alır
         /// </summary>
+        /// <returns>User ID veya null</returns>
         private int? GetCurrentUserId()
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
-                ?? User.FindFirst("sub")?.Value;
-
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
-            {
-                return null;
-            }
-
-            return userId;
-        }
-
-        /// <summary>
-        /// TodoTask entity'sini TodoTaskDto'ya map eden helper method
-        /// </summary>
-        private async Task<TodoTaskDto> MapToDto(TodoTask task, bool includeSubTasks = false)
-        {
-            var dto = new TodoTaskDto
-            {
-                Id = task.Id,
-                UserId = task.UserId,
-                CategoryId = task.CategoryId,
-                ParentTaskId = task.ParentTaskId,
-                Title = task.Title,
-                Description = task.Description,
-                Priority = task.Priority.ToString(),
-                CompletionPercentage = task.CompletionPercentage,
-                DueDate = task.DueDate,
-                ReminderDate = task.ReminderDate,
-                StartDate = task.StartDate,
-                IsCompleted = task.IsCompleted,
-                CompletedAt = task.CompletedAt,
-                IsActive = task.IsActive,
-                Tags = task.Tags,
-                Notes = task.Notes,
-                CreatedAt = task.CreatedAt,
-                UpdatedAt = task.UpdatedAt
-            };
-
-            // Category bilgilerini ekle
-            if (task.Category != null)
-            {
-                dto.Category = new CategoryDto
-                {
-                    Id = task.Category.Id,
-                    Name = task.Category.Name,
-                    Description = task.Category.Description,
-                    ColorCode = task.Category.ColorCode,
-                    Icon = task.Category.Icon,
-                    IsActive = task.Category.IsActive,
-                    IsDefault = task.Category.IsDefault,
-                    CreatedAt = task.Category.CreatedAt,
-                    UpdatedAt = task.Category.UpdatedAt
-                };
-            }
-
-            // Parent task bilgilerini ekle (sığ mapping)
-            if (task.ParentTask != null)
-            {
-                dto.ParentTask = new TodoTaskDto
-                {
-                    Id = task.ParentTask.Id,
-                    Title = task.ParentTask.Title,
-                    IsCompleted = task.ParentTask.IsCompleted,
-                    Priority = task.ParentTask.Priority.ToString()
-                };
-            }
-
-            // Sub-tasks ekle (eğer istenirse)
-            if (includeSubTasks)
-            {
-                var subTasks = await _context.TodoTasks
-                    .Include(t => t.Category)
-                    .Where(t => t.ParentTaskId == task.Id && t.IsActive)
-                    .ToListAsync();
-
-                dto.SubTasks = new List<TodoTaskDto>();
-                foreach (var subTask in subTasks)
-                {
-                    var subTaskDto = await MapToDto(subTask, false); // Recursive olmayı engelle
-                    dto.SubTasks.Add(subTaskDto);
-                }
-            }
-
-            return dto;
-        }
-
-        /// <summary>
-        /// Task hierarchy depth hesaplama
-        /// </summary>
-        private async Task<int> GetTaskDepth(int taskId)
-        {
-            var depth = 0;
-            int? currentTaskId = taskId;
-
-            while (currentTaskId.HasValue)
-            {
-                var parentTask = await _context.TodoTasks
-                    .Where(t => t.Id == currentTaskId.Value)
-                    .Select(t => t.ParentTaskId)
-                    .FirstOrDefaultAsync();
-
-                if (parentTask == null)
-                    break;
-
-                depth++;
-                currentTaskId = parentTask;
-
-                // Infinite loop engellemek için maksimum depth
-                if (depth > 10)
-                    break;
-            }
-
-            return depth;
-        }
-
-        /// <summary>
-        /// Circular reference kontrolü
-        /// </summary>
-        private async Task<bool> IsCircularReference(int taskId, int newParentId)
-        {
-            int? currentParentId = newParentId;
-
-            while (currentParentId.HasValue)
-            {
-                if (currentParentId.Value == taskId)
-                    return true; // Circular reference bulundu
-
-                var parent = await _context.TodoTasks
-                    .Where(t => t.Id == currentParentId.Value)
-                    .Select(t => t.ParentTaskId)
-                    .FirstOrDefaultAsync();
-
-                currentParentId = parent;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Task ve alt task'larını soft delete yapan recursive method
-        /// </summary>
-        private async Task SoftDeleteTaskAndSubTasks(TodoTask task)
-        {
-            task.IsActive = false;
-            task.UpdatedAt = DateTime.UtcNow;
-
-            // Alt task'ları da recursively sil
-            var subTasks = await _context.TodoTasks
-                .Where(t => t.ParentTaskId == task.Id && t.IsActive)
-                .ToListAsync();
-
-            foreach (var subTask in subTasks)
-            {
-                await SoftDeleteTaskAndSubTasks(subTask);
-            }
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return int.TryParse(userIdClaim, out var userId) ? userId : null;
         }
 
         #endregion
