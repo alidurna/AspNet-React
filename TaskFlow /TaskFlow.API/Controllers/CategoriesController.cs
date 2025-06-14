@@ -4,6 +4,7 @@
  * 
  * Bu controller Categories entity'si için CRUD operations sağlar.
  * RESTful API design patterns kullanır.
+ * Service Layer pattern ile business logic ayrıştırılmıştır.
  * 
  * HTTP METHODS & ENDPOINTS:
  * ========================
@@ -23,497 +24,395 @@
  * - Standardized API responses
  */
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TaskFlow.API.Data;
+using System.Security.Claims;
 using TaskFlow.API.DTOs;
-using TaskFlow.API.Models;
+using TaskFlow.API.Interfaces;
 
 namespace TaskFlow.API.Controllers;
 
 /// <summary>
 /// Categories API Controller
 /// Kategori yönetimi için RESTful API endpoints sağlar
+/// Service Layer pattern kullanarak business logic'i ayırır
 /// </summary>
-[ApiController]  // API Controller olduğunu belirtir (otomatik model validation vb.)
-[Route("api/[controller]")]  // Route template: /api/categories
+[ApiController]
+[Route("api/[controller]")]
+[Authorize] // Tüm endpoint'ler JWT token gerektirir
+[Produces("application/json")]
 public class CategoriesController : ControllerBase
 {
-    // ===== DEPENDENCY INJECTION =====
-    /// <summary>
-    /// Entity Framework DbContext - Veritabanı işlemleri için
-    /// Constructor injection ile DI container'dan gelir
-    /// </summary>
-    private readonly TaskFlowDbContext _context;
+    #region Private Fields
 
     /// <summary>
-    /// Controller constructor
-    /// Dependency Injection ile DbContext'i alır
-    /// 
-    /// DI CONTAINER otomatik olarak:
-    /// - TaskFlowDbContext instance'ı oluşturur
-    /// - Connection string'i configure eder
-    /// - Scoped lifetime (HTTP request boyunca yaşar) sağlar
+    /// Category business logic servisi
+    /// CRUD operations ve business rules için kullanılır
     /// </summary>
-    /// <param name="context">EF Core DbContext</param>
-    public CategoriesController(TaskFlowDbContext context)
+    private readonly ICategoryService _categoryService;
+
+    /// <summary>
+    /// ASP.NET Core logging servisi
+    /// Hata ve bilgi logları için kullanılır
+    /// </summary>
+    private readonly ILogger<CategoriesController> _logger;
+
+    #endregion
+
+    #region Constructor
+
+    /// <summary>
+    /// CategoriesController constructor
+    /// Dependency Injection ile gerekli servisleri alır
+    /// </summary>
+    /// <param name="categoryService">Category business logic servisi</param>
+    /// <param name="logger">Logging servisi</param>
+    public CategoriesController(
+        ICategoryService categoryService,
+        ILogger<CategoriesController> logger)
     {
-        _context = context;
+        _categoryService = categoryService ?? throw new ArgumentNullException(nameof(categoryService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    // ===== GET /api/categories =====
+    #endregion
+
+    #region CRUD Endpoints
+
     /// <summary>
     /// Kullanıcının kategorilerini listeler
     /// Query parameters ile filtreleme destekler
-    /// 
-    /// Örnek istekler:
-    /// GET /api/categories
-    /// GET /api/categories?isActive=true
-    /// GET /api/categories?search=work&orderBy=name
     /// </summary>
     /// <param name="filter">Filtreleme parametreleri (query string'den gelir)</param>
     /// <returns>Kategoriler listesi</returns>
+    /// <response code="200">Kategoriler başarıyla getirildi</response>
+    /// <response code="401">Token geçersiz veya eksik</response>
+    /// <response code="500">Sunucu hatası</response>
     [HttpGet]
+    [ProducesResponseType(typeof(ApiResponseModel<List<CategoryDto>>), 200)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
     public async Task<ActionResult<ApiResponseModel<List<CategoryDto>>>> GetCategories(
         [FromQuery] CategoryFilterDto filter)
     {
         try
         {
-            // ŞIMDILIK sabit kullanıcı ID'si (Authentication gelince değişecek)
-            // JWT Authentication implement edilince: User.Identity.GetUserId()
-            const int currentUserId = 1; // TODO: Replace with actual user from JWT
-
-            // Base query - kullanıcının kategorileri
-            var query = _context.Categories
-                .Where(c => c.UserId == currentUserId);
-
-            // ===== FILTERING =====
-            // IsActive filter
-            if (filter.IsActive.HasValue)
+            // JWT token'dan user ID'yi al
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
             {
-                query = query.Where(c => c.IsActive == filter.IsActive.Value);
+                return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
             }
 
-            // Search filter (kategori adında arama)
-            if (!string.IsNullOrWhiteSpace(filter.Search))
-            {
-                query = query.Where(c => c.Name.Contains(filter.Search));
-            }
+            // CategoryService ile kategorileri getir
+            var categories = await _categoryService.GetCategoriesAsync(userId.Value, filter);
 
-            // OnlyDefault filter
-            if (filter.OnlyDefault.HasValue && filter.OnlyDefault.Value)
-            {
-                query = query.Where(c => c.IsDefault == true);
-            }
+            _logger.LogDebug("Retrieved {Count} categories for user {UserId}", categories.Count, userId.Value);
 
-            // ===== ORDERING =====
-            // Sıralama (OrderBy parameter'ına göre)
-            query = filter.OrderBy?.ToLower() switch
-            {
-                "createdat" => filter.OrderDirection?.ToLower() == "desc" 
-                    ? query.OrderByDescending(c => c.CreatedAt)
-                    : query.OrderBy(c => c.CreatedAt),
-                "updatedat" => filter.OrderDirection?.ToLower() == "desc"
-                    ? query.OrderByDescending(c => c.UpdatedAt)
-                    : query.OrderBy(c => c.UpdatedAt),
-                _ => filter.OrderDirection?.ToLower() == "desc"
-                    ? query.OrderByDescending(c => c.Name)
-                    : query.OrderBy(c => c.Name)
-            };
-
-            // ===== DATABASE QUERY EXECUTION =====
-            // Include ile related tasks'ları getir (statistics için)
-            var categories = await query
-                .Include(c => c.Tasks.Where(t => t.IsActive)) // Sadece aktif task'lar
-                .ToListAsync();
-
-            // ===== DTO MAPPING =====
-            // Entity'lerden DTO'lara çevir
-            var categoryDtos = categories.Select(category => new CategoryDto
-            {
-                Id = category.Id,
-                Name = category.Name,
-                Description = category.Description,
-                ColorCode = category.ColorCode,
-                Icon = category.Icon,
-                IsActive = category.IsActive,
-                IsDefault = category.IsDefault,
-                // Computed properties (Tasks navigation property'sinden hesapla)
-                TotalTaskCount = category.Tasks.Count,
-                CompletedTaskCount = category.Tasks.Count(t => t.IsCompleted),
-                PendingTaskCount = category.Tasks.Count(t => !t.IsCompleted),
-                CompletionPercentage = category.Tasks.Count > 0 
-                    ? Math.Round((decimal)category.Tasks.Count(t => t.IsCompleted) / category.Tasks.Count * 100, 1)
-                    : 0,
-                CreatedAt = category.CreatedAt,
-                UpdatedAt = category.UpdatedAt
-            }).ToList();
-
-            // ===== SUCCESS RESPONSE =====
             return Ok(ApiResponseModel<List<CategoryDto>>.SuccessResponse(
-                $"{categoryDtos.Count} kategori bulundu",
-                categoryDtos));
+                $"{categories.Count} kategori bulundu",
+                categories));
         }
         catch (Exception ex)
         {
-            // ===== ERROR HANDLING =====
-            // Production'da loglama yapılmalı
-            // Development'ta detaylı hata göster
+            _logger.LogError(ex, "Error getting categories for user");
             return StatusCode(500, ApiResponseModel<List<CategoryDto>>.ErrorResponse(
-                "Kategoriler getirilirken bir hata oluştu", 
-                ex.Message));
+                "Kategoriler getirilirken bir hata oluştu"));
         }
     }
 
-    // ===== GET /api/categories/{id} =====
     /// <summary>
     /// Belirli bir kategoriyi ID'sine göre getirir
-    /// 
-    /// Örnek istek: GET /api/categories/5
     /// </summary>
     /// <param name="id">Kategori ID'si</param>
     /// <returns>Kategori detayları</returns>
-    [HttpGet("{id}")]
+    /// <response code="200">Kategori başarıyla getirildi</response>
+    /// <response code="401">Token geçersiz veya eksik</response>
+    /// <response code="404">Kategori bulunamadı</response>
+    /// <response code="500">Sunucu hatası</response>
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(ApiResponseModel<CategoryDto>), 200)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 404)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
     public async Task<ActionResult<ApiResponseModel<CategoryDto>>> GetCategory(int id)
     {
         try
         {
-            const int currentUserId = 1; // TODO: Replace with actual user from JWT
+            // JWT token'dan user ID'yi al
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+            }
 
-            // Kategoriyi bul (sadece kendi kategorileri)
-            var category = await _context.Categories
-                .Include(c => c.Tasks.Where(t => t.IsActive))
-                .FirstOrDefaultAsync(c => c.Id == id && c.UserId == currentUserId);
+            // CategoryService ile kategoriyi getir
+            var category = await _categoryService.GetCategoryByIdAsync(userId.Value, id);
 
-            // ===== NOT FOUND CHECK =====
             if (category == null)
             {
                 return NotFound(ApiResponseModel<CategoryDto>.ErrorResponse("Kategori bulunamadı"));
             }
 
-            // ===== DTO MAPPING =====
-            var categoryDto = new CategoryDto
-            {
-                Id = category.Id,
-                Name = category.Name,
-                Description = category.Description,
-                ColorCode = category.ColorCode,
-                Icon = category.Icon,
-                IsActive = category.IsActive,
-                IsDefault = category.IsDefault,
-                TotalTaskCount = category.Tasks.Count,
-                CompletedTaskCount = category.Tasks.Count(t => t.IsCompleted),
-                PendingTaskCount = category.Tasks.Count(t => !t.IsCompleted),
-                CompletionPercentage = category.Tasks.Count > 0 
-                    ? Math.Round((decimal)category.Tasks.Count(t => t.IsCompleted) / category.Tasks.Count * 100, 1)
-                    : 0,
-                CreatedAt = category.CreatedAt,
-                UpdatedAt = category.UpdatedAt
-            };
-
-            return Ok(ApiResponseModel<CategoryDto>.SuccessResponse("Kategori bulundu", categoryDto));
+            return Ok(ApiResponseModel<CategoryDto>.SuccessResponse(
+                "Kategori başarıyla getirildi",
+                category));
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error getting category {CategoryId}", id);
             return StatusCode(500, ApiResponseModel<CategoryDto>.ErrorResponse(
-                "Kategori getirilirken bir hata oluştu", 
-                ex.Message));
+                "Kategori getirilirken bir hata oluştu"));
         }
     }
 
-    // ===== POST /api/categories =====
     /// <summary>
     /// Yeni kategori oluşturur
-    /// 
-    /// Örnek istek body:
-    /// {
-    ///   "name": "İş",
-    ///   "description": "İş ile ilgili görevler",
-    ///   "colorCode": "#3498DB",
-    ///   "icon": "fas fa-briefcase",
-    ///   "isDefault": false
-    /// }
     /// </summary>
-    /// <param name="createDto">Yeni kategori bilgileri</param>
+    /// <param name="createDto">Kategori oluşturma bilgileri</param>
     /// <returns>Oluşturulan kategori</returns>
+    /// <response code="201">Kategori başarıyla oluşturuldu</response>
+    /// <response code="400">Geçersiz veri veya business rule ihlali</response>
+    /// <response code="401">Token geçersiz veya eksik</response>
+    /// <response code="500">Sunucu hatası</response>
     [HttpPost]
+    [ProducesResponseType(typeof(ApiResponseModel<CategoryDto>), 201)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
     public async Task<ActionResult<ApiResponseModel<CategoryDto>>> CreateCategory(
         [FromBody] CreateCategoryDto createDto)
     {
         try
         {
-            // ===== MODEL VALIDATION =====
-            // [Required], [StringLength] vb. attributes otomatik kontrol edilir
+            // Model validation
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values
                     .SelectMany(v => v.Errors)
                     .Select(e => e.ErrorMessage)
                     .ToList();
-                return BadRequest(ApiResponseModel<CategoryDto>.ValidationErrorResponse(errors));
+
+                return BadRequest(ApiResponseModel<object>.ErrorResponse("Validation hatası", errors));
             }
 
-            const int currentUserId = 1; // TODO: Replace with actual user from JWT
-
-            // ===== BUSINESS RULES VALIDATION =====
-            
-            // 1. Aynı isimde kategori var mı kontrol et
-            var existingCategory = await _context.Categories
-                .FirstOrDefaultAsync(c => c.UserId == currentUserId && 
-                                         c.Name == createDto.Name && 
-                                         c.IsActive);
-
-            if (existingCategory != null)
+            // JWT token'dan user ID'yi al
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
             {
-                return BadRequest(ApiResponseModel<CategoryDto>.ErrorResponse(
-                    "Bu isimde bir kategori zaten mevcut"));
+                return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
             }
 
-            // 2. Maksimum kategori sayısı kontrolü
-            var userCategoryCount = await _context.Categories
-                .CountAsync(c => c.UserId == currentUserId && c.IsActive);
+            // CategoryService ile kategori oluştur
+            var category = await _categoryService.CreateCategoryAsync(userId.Value, createDto);
 
-            const int maxCategoriesPerUser = 50; // Business rule
-            if (userCategoryCount >= maxCategoriesPerUser)
-            {
-                return BadRequest(ApiResponseModel<CategoryDto>.ErrorResponse(
-                    $"Maksimum {maxCategoriesPerUser} kategori oluşturabilirsiniz"));
-            }
+            _logger.LogInformation("Category created successfully: {CategoryId} for user {UserId}", 
+                category.Id, userId.Value);
 
-            // ===== ENTITY CREATION =====
-            var category = new Category
-            {
-                UserId = currentUserId,
-                Name = createDto.Name,
-                Description = createDto.Description,
-                ColorCode = createDto.ColorCode ?? "#3498DB", // Default blue
-                Icon = createDto.Icon,
-                IsDefault = createDto.IsDefault,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            // ===== DEFAULT CATEGORY LOGIC =====
-            // Eğer bu kategori default olacaksa, diğer default'u false yap
-            if (createDto.IsDefault)
-            {
-                var currentDefault = await _context.Categories
-                    .FirstOrDefaultAsync(c => c.UserId == currentUserId && c.IsDefault && c.IsActive);
-
-                if (currentDefault != null)
-                {
-                    currentDefault.IsDefault = false;
-                    currentDefault.UpdatedAt = DateTime.UtcNow;
-                }
-            }
-
-            // ===== DATABASE OPERATIONS =====
-            _context.Categories.Add(category);
-            await _context.SaveChangesAsync();
-
-            // ===== RESPONSE DTO CREATION =====
-            var categoryDto = new CategoryDto
-            {
-                Id = category.Id,
-                Name = category.Name,
-                Description = category.Description,
-                ColorCode = category.ColorCode,
-                Icon = category.Icon,
-                IsActive = category.IsActive,
-                IsDefault = category.IsDefault,
-                TotalTaskCount = 0, // Yeni kategori, görev yok
-                CompletedTaskCount = 0,
-                PendingTaskCount = 0,
-                CompletionPercentage = 0,
-                CreatedAt = category.CreatedAt,
-                UpdatedAt = category.UpdatedAt
-            };
-
-            // ===== SUCCESS RESPONSE =====
-            // 201 Created status code ile response dön
             return CreatedAtAction(
-                nameof(GetCategory), 
-                new { id = category.Id }, 
-                ApiResponseModel<CategoryDto>.SuccessResponse("Kategori başarıyla oluşturuldu", categoryDto));
+                actionName: nameof(GetCategory),
+                routeValues: new { id = category.Id },
+                value: ApiResponseModel<CategoryDto>.SuccessResponse(
+                    "Kategori başarıyla oluşturuldu",
+                    category
+                )
+            );
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Business rule violations
+            _logger.LogWarning("Category creation failed: {Error}", ex.Message);
+            return BadRequest(ApiResponseModel<object>.ErrorResponse(ex.Message));
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponseModel<CategoryDto>.ErrorResponse(
-                "Kategori oluşturulurken bir hata oluştu", 
-                ex.Message));
+            _logger.LogError(ex, "Error creating category");
+            return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
+                "Kategori oluşturulurken bir hata oluştu"));
         }
     }
 
-    // ===== PUT /api/categories/{id} =====
     /// <summary>
-    /// Kategoriyi tamamen günceller
-    /// 
-    /// Örnek istek: PUT /api/categories/5
+    /// Kategoriyi günceller
     /// </summary>
     /// <param name="id">Güncellenecek kategori ID'si</param>
-    /// <param name="updateDto">Güncellenecek kategori bilgileri</param>
+    /// <param name="updateDto">Güncelleme bilgileri</param>
     /// <returns>Güncellenmiş kategori</returns>
-    [HttpPut("{id}")]
+    /// <response code="200">Kategori başarıyla güncellendi</response>
+    /// <response code="400">Geçersiz veri veya business rule ihlali</response>
+    /// <response code="401">Token geçersiz veya eksik</response>
+    /// <response code="404">Kategori bulunamadı</response>
+    /// <response code="500">Sunucu hatası</response>
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(typeof(ApiResponseModel<CategoryDto>), 200)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 404)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
     public async Task<ActionResult<ApiResponseModel<CategoryDto>>> UpdateCategory(
         int id, 
         [FromBody] UpdateCategoryDto updateDto)
     {
         try
         {
-            // ===== MODEL VALIDATION =====
+            // Model validation
             if (!ModelState.IsValid)
             {
-                return BadRequest(ApiResponseModel<CategoryDto>.ValidationErrorResponse(ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList()));
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+
+                return BadRequest(ApiResponseModel<object>.ErrorResponse("Validation hatası", errors));
             }
 
-            const int currentUserId = 1; // TODO: Replace with actual user from JWT
-
-            // ===== FIND EXISTING CATEGORY =====
-            var category = await _context.Categories
-                .Include(c => c.Tasks.Where(t => t.IsActive))
-                .FirstOrDefaultAsync(c => c.Id == id && c.UserId == currentUserId);
-
-            if (category == null)
+            // JWT token'dan user ID'yi al
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
             {
-                return NotFound(ApiResponseModel<CategoryDto>.ErrorResponse("Kategori bulunamadı"));
+                return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
             }
 
-            // ===== BUSINESS RULES VALIDATION =====
+            // CategoryService ile kategoriyi güncelle
+            var updatedCategory = await _categoryService.UpdateCategoryAsync(userId.Value, id, updateDto);
+
+            _logger.LogInformation("Category updated successfully: {CategoryId}", id);
+
+            return Ok(ApiResponseModel<CategoryDto>.SuccessResponse(
+                "Kategori başarıyla güncellendi",
+                updatedCategory
+            ));
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Business rule violations or not found
+            _logger.LogWarning("Category update failed: {Error}", ex.Message);
             
-            // Aynı isimde başka kategori var mı (kendisi hariç)
-            var existingCategory = await _context.Categories
-                .FirstOrDefaultAsync(c => c.UserId == currentUserId && 
-                                         c.Name == updateDto.Name && 
-                                         c.Id != id &&
-                                         c.IsActive);
-
-            if (existingCategory != null)
+            if (ex.Message.Contains("bulunamadı"))
             {
-                return BadRequest(ApiResponseModel<CategoryDto>.ErrorResponse(
-                    "Bu isimde başka bir kategori zaten mevcut"));
+                return NotFound(ApiResponseModel<object>.ErrorResponse(ex.Message));
             }
-
-            // ===== UPDATE ENTITY =====
-            category.Name = updateDto.Name;
-            category.Description = updateDto.Description;
-            category.ColorCode = updateDto.ColorCode ?? category.ColorCode;
-            category.Icon = updateDto.Icon;
-            category.IsActive = updateDto.IsActive;
-            category.UpdatedAt = DateTime.UtcNow;
-
-            // ===== DEFAULT CATEGORY LOGIC =====
-            if (updateDto.IsDefault && !category.IsDefault)
-            {
-                // Bu kategori default olacaksa, diğer default'u false yap
-                var currentDefault = await _context.Categories
-                    .FirstOrDefaultAsync(c => c.UserId == currentUserId && c.IsDefault && c.Id != id);
-
-                if (currentDefault != null)
-                {
-                    currentDefault.IsDefault = false;
-                    currentDefault.UpdatedAt = DateTime.UtcNow;
-                }
-
-                category.IsDefault = true;
-            }
-            else if (!updateDto.IsDefault && category.IsDefault)
-            {
-                category.IsDefault = false;
-            }
-
-            // ===== DATABASE SAVE =====
-            await _context.SaveChangesAsync();
-
-            // ===== RESPONSE DTO =====
-            var categoryDto = new CategoryDto
-            {
-                Id = category.Id,
-                Name = category.Name,
-                Description = category.Description,
-                ColorCode = category.ColorCode,
-                Icon = category.Icon,
-                IsActive = category.IsActive,
-                IsDefault = category.IsDefault,
-                TotalTaskCount = category.Tasks.Count,
-                CompletedTaskCount = category.Tasks.Count(t => t.IsCompleted),
-                PendingTaskCount = category.Tasks.Count(t => !t.IsCompleted),
-                CompletionPercentage = category.Tasks.Count > 0 
-                    ? Math.Round((decimal)category.Tasks.Count(t => t.IsCompleted) / category.Tasks.Count * 100, 1)
-                    : 0,
-                CreatedAt = category.CreatedAt,
-                UpdatedAt = category.UpdatedAt
-            };
-
-            return Ok(ApiResponseModel<CategoryDto>.SuccessResponse("Kategori başarıyla güncellendi", categoryDto));
+            
+            return BadRequest(ApiResponseModel<object>.ErrorResponse(ex.Message));
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponseModel<CategoryDto>.ErrorResponse(
-                "Kategori güncellenirken bir hata oluştu", 
-                ex.Message));
+            _logger.LogError(ex, "Error updating category {CategoryId}", id);
+            return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
+                "Kategori güncellenirken bir hata oluştu"));
         }
     }
 
-    // ===== DELETE /api/categories/{id} =====
     /// <summary>
     /// Kategoriyi siler (soft delete)
-    /// Kategoriye bağlı görevler varsa hata döner
-    /// 
-    /// Örnek istek: DELETE /api/categories/5
     /// </summary>
     /// <param name="id">Silinecek kategori ID'si</param>
     /// <returns>Silme işlemi sonucu</returns>
-    [HttpDelete("{id}")]
+    /// <response code="200">Kategori başarıyla silindi</response>
+    /// <response code="401">Token geçersiz veya eksik</response>
+    /// <response code="404">Kategori bulunamadı</response>
+    /// <response code="500">Sunucu hatası</response>
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 404)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
     public async Task<ActionResult<ApiResponseModel<object>>> DeleteCategory(int id)
     {
         try
         {
-            const int currentUserId = 1; // TODO: Replace with actual user from JWT
+            // JWT token'dan user ID'yi al
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+            }
 
-            // ===== FIND CATEGORY =====
-            var category = await _context.Categories
-                .Include(c => c.Tasks.Where(t => t.IsActive))
-                .FirstOrDefaultAsync(c => c.Id == id && c.UserId == currentUserId);
+            // CategoryService ile kategoriyi sil
+            var deleted = await _categoryService.DeleteCategoryAsync(userId.Value, id);
 
-            if (category == null)
+            if (!deleted)
             {
                 return NotFound(ApiResponseModel<object>.ErrorResponse("Kategori bulunamadı"));
             }
 
-            // ===== BUSINESS RULES VALIDATION =====
-            
-            // 1. Kategoriye bağlı aktif görevler var mı kontrol et
-            if (category.Tasks.Any())
-            {
-                return BadRequest(ApiResponseModel<object>.ErrorResponse(
-                    $"Bu kategoriye bağlı {category.Tasks.Count} aktif görev var. " +
-                    "Önce görevleri başka kategoriye taşıyın veya silin."));
-            }
+            _logger.LogInformation("Category deleted successfully: {CategoryId}", id);
 
-            // 2. Default kategori silinemez
-            if (category.IsDefault)
-            {
-                return BadRequest(ApiResponseModel<object>.ErrorResponse(
-                    "Varsayılan kategori silinemez. Önce başka bir kategoriyi varsayılan yapın."));
-            }
-
-            // ===== SOFT DELETE =====
-            // Hard delete yerine soft delete (IsActive = false)
-            category.IsActive = false;
-            category.UpdatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-
-            return Ok(ApiResponseModel<object>.SuccessResponse("Kategori başarıyla silindi"));
+            return Ok(ApiResponseModel<object>.SuccessResponse(
+                "Kategori başarıyla silindi"
+            ));
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Business rule violations
+            _logger.LogWarning("Category deletion failed: {Error}", ex.Message);
+            return BadRequest(ApiResponseModel<object>.ErrorResponse(ex.Message));
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error deleting category {CategoryId}", id);
             return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
-                "Kategori silinirken bir hata oluştu", 
-                ex.Message));
+                "Kategori silinirken bir hata oluştu"));
         }
     }
+
+    #endregion
+
+    #region Statistics Endpoints
+
+    /// <summary>
+    /// Kullanıcının kategori özet istatistiklerini getirir
+    /// </summary>
+    /// <returns>Kategori özet istatistikleri</returns>
+    /// <response code="200">İstatistikler başarıyla getirildi</response>
+    /// <response code="401">Token geçersiz veya eksik</response>
+    /// <response code="500">Sunucu hatası</response>
+    [HttpGet("statistics")]
+    [ProducesResponseType(typeof(ApiResponseModel<List<CategorySummaryDto>>), 200)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+    public async Task<ActionResult<ApiResponseModel<List<CategorySummaryDto>>>> GetCategoryStatistics()
+    {
+        try
+        {
+            // JWT token'dan user ID'yi al
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+            }
+
+            // CategoryService ile özet istatistikleri getir
+            var stats = await _categoryService.GetCategorySummaryAsync(userId.Value);
+
+            return Ok(ApiResponseModel<List<CategorySummaryDto>>.SuccessResponse(
+                "Kategori istatistikleri getirildi",
+                stats
+            ));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting category statistics");
+            return StatusCode(500, ApiResponseModel<List<CategorySummaryDto>>.ErrorResponse(
+                "İstatistikler getirilirken bir hata oluştu"));
+        }
+    }
+
+    #endregion
+
+    #region Helper Methods
+
+    /// <summary>
+    /// JWT token'dan mevcut kullanıcının ID'sini alır
+    /// </summary>
+    /// <returns>User ID veya null</returns>
+    private int? GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return int.TryParse(userIdClaim, out var userId) ? userId : null;
+    }
+
+    #endregion
 }
 
 /*
