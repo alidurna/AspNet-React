@@ -1,11 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using TaskFlow.API.Data;
 using TaskFlow.API.DTOs;
-using TaskFlow.API.Models;
-using TaskFlow.API.Services;
+using TaskFlow.API.Interfaces;
 
 namespace TaskFlow.API.Controllers
 {
@@ -31,16 +28,10 @@ namespace TaskFlow.API.Controllers
         #region Private Fields
 
         /// <summary>
-        /// Entity Framework database context
-        /// Kullanıcı verilerine erişim için kullanılır
+        /// User business logic servisi
+        /// Authentication ve kullanıcı yönetimi işlemleri için
         /// </summary>
-        private readonly TaskFlowDbContext _context;
-
-        /// <summary>
-        /// JWT token oluşturma ve validation servisi
-        /// Authentication işlemlerinde kullanılır
-        /// </summary>
-        private readonly IJwtService _jwtService;
+        private readonly IUserService _userService;
 
         /// <summary>
         /// ASP.NET Core logging servisi
@@ -56,17 +47,14 @@ namespace TaskFlow.API.Controllers
         /// UsersController constructor
         /// Dependency Injection ile gerekli servisleri alır
         /// </summary>
-        /// <param name="context">Database context</param>
-        /// <param name="jwtService">JWT token servisi</param>
+        /// <param name="userService">User business logic servisi</param>
         /// <param name="logger">Logging servisi</param>
         /// <exception cref="ArgumentNullException">Herhangi bir parametre null ise fırlatılır</exception>
         public UsersController(
-            TaskFlowDbContext context,
-            IJwtService jwtService,
+            IUserService userService,
             ILogger<UsersController> logger)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
-            _jwtService = jwtService ?? throw new ArgumentNullException(nameof(jwtService));
+            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -103,82 +91,30 @@ namespace TaskFlow.API.Controllers
                     return BadRequest(ApiResponseModel<object>.ErrorResponse("Validation hatası", errors));
                 }
 
-                // Email benzersizlik kontrolü - aynı email ile kayıt olmuş kullanıcı var mı?
-                var existingUser = await _context.Users
-                    .FirstOrDefaultAsync(u => u.Email.ToLower() == registerDto.Email.ToLower());
+                // UserService ile kullanıcı kaydı yap
+                var authResponse = await _userService.RegisterAsync(registerDto);
 
-                if (existingUser != null)
-                {
-                    _logger.LogWarning("Registration attempted with existing email: {Email}", registerDto.Email);
-                    return BadRequest(ApiResponseModel<object>.ErrorResponse("Bu email adresi zaten kayıtlı"));
-                }
-
-                // Şifre hash'leme - BCrypt kullanarak güvenli hash oluştur
-                var passwordHash = BCrypt.Net.BCrypt.HashPassword(registerDto.Password);
-
-                // Yeni User entity oluştur
-                var user = new User
-                {
-                    Email = registerDto.Email.ToLower().Trim(), // Email'i normalize et
-                    PasswordHash = passwordHash,
-                    FirstName = registerDto.FirstName.Trim(),
-                    LastName = registerDto.LastName.Trim(),
-                    PhoneNumber = string.IsNullOrWhiteSpace(registerDto.PhoneNumber) 
-                        ? null 
-                        : registerDto.PhoneNumber.Trim(),
-                    IsActive = true, // Yeni kullanıcı aktif olarak başlar
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-
-                // Database'e kullanıcıyı ekle ve kaydet
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("New user registered successfully: {Email} (ID: {UserId})", 
-                    user.Email, user.Id);
-
-                // JWT token oluştur
-                var token = _jwtService.GenerateToken(user);
-                var expirationMinutes = 60; // appsettings'den alınabilir
-
-                // UserDto oluştur (password hash'i olmadan)
-                var userDto = new UserDto
-                {
-                    Id = user.Id,
-                    Email = user.Email,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    PhoneNumber = user.PhoneNumber,
-                    CreatedAt = user.CreatedAt,
-                    UpdatedAt = user.UpdatedAt,
-                    IsActive = user.IsActive
-                };
-
-                // AuthResponse DTO oluştur
-                var authResponse = new AuthResponseDto
-                {
-                    Token = token,
-                    ExpiresInMinutes = expirationMinutes,
-                    ExpiresAt = DateTime.UtcNow.AddMinutes(expirationMinutes),
-                    User = userDto,
-                    Success = true,
-                    Message = $"Hoş geldiniz {user.FullName}! Hesabınız başarıyla oluşturuldu."
-                };
+                _logger.LogInformation("New user registered successfully: {Email}", registerDto.Email);
 
                 // Başarılı response döndür - HTTP 201 Created
                 return CreatedAtAction(
                     actionName: nameof(GetProfile),
-                    routeValues: new { id = user.Id },
+                    routeValues: new { id = authResponse.User.Id },
                     value: ApiResponseModel<AuthResponseDto>.SuccessResponse(
                         "Kullanıcı başarıyla oluşturuldu ve giriş yapıldı",
                         authResponse
                     )
                 );
             }
+            catch (InvalidOperationException ex)
+            {
+                // Business rule violations (email already exists, etc.)
+                _logger.LogWarning("Registration failed: {Error}", ex.Message);
+                return BadRequest(ApiResponseModel<object>.ErrorResponse(ex.Message));
+            }
             catch (Exception ex)
             {
-                // Hata logla ve generic error response döndür
+                // Unexpected errors
                 _logger.LogError(ex, "Error during user registration for email: {Email}", registerDto.Email);
                 return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
                     "Kullanıcı kaydı sırasında bir hata oluştu"));
@@ -215,62 +151,25 @@ namespace TaskFlow.API.Controllers
                     return BadRequest(ApiResponseModel<object>.ErrorResponse("Validation hatası", errors));
                 }
 
-                // Kullanıcıyı email ile bul
-                var user = await _context.Users
-                    .FirstOrDefaultAsync(u => u.Email.ToLower() == loginDto.Email.ToLower());
+                // UserService ile login yap
+                var authResponse = await _userService.LoginAsync(loginDto);
 
-                // Kullanıcı bulunamadı veya şifre yanlış
-                if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
-                {
-                    _logger.LogWarning("Failed login attempt for email: {Email}", loginDto.Email);
-                    return Unauthorized(ApiResponseModel<object>.ErrorResponse("Email veya şifre hatalı"));
-                }
-
-                // Kullanıcı aktif değilse giriş izni verme
-                if (!user.IsActive)
-                {
-                    _logger.LogWarning("Login attempt for inactive user: {Email}", loginDto.Email);
-                    return Unauthorized(ApiResponseModel<object>.ErrorResponse("Hesabınız pasif durumda"));
-                }
-
-                _logger.LogInformation("User logged in successfully: {Email} (ID: {UserId})", 
-                    user.Email, user.Id);
-
-                // JWT token oluştur
-                var token = _jwtService.GenerateToken(user);
-                var expirationMinutes = 60; // appsettings'den alınabilir
-
-                // UserDto oluştur
-                var userDto = new UserDto
-                {
-                    Id = user.Id,
-                    Email = user.Email,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    PhoneNumber = user.PhoneNumber,
-                    CreatedAt = user.CreatedAt,
-                    UpdatedAt = user.UpdatedAt,
-                    IsActive = user.IsActive
-                };
-
-                // AuthResponse DTO oluştur
-                var authResponse = new AuthResponseDto
-                {
-                    Token = token,
-                    ExpiresInMinutes = expirationMinutes,
-                    ExpiresAt = DateTime.UtcNow.AddMinutes(expirationMinutes),
-                    User = userDto,
-                    Success = true,
-                    Message = $"Hoş geldiniz {user.FullName}!"
-                };
+                _logger.LogInformation("User logged in successfully: {Email}", loginDto.Email);
 
                 return Ok(ApiResponseModel<AuthResponseDto>.SuccessResponse(
                     "Giriş başarılı",
                     authResponse
                 ));
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                // Invalid credentials
+                _logger.LogWarning("Login failed for email {Email}: {Error}", loginDto.Email, ex.Message);
+                return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz email veya şifre"));
+            }
             catch (Exception ex)
             {
+                // Unexpected errors
                 _logger.LogError(ex, "Error during login for email: {Email}", loginDto.Email);
                 return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
                     "Giriş sırasında bir hata oluştu"));
@@ -282,8 +181,7 @@ namespace TaskFlow.API.Controllers
         #region Profile Management Endpoints
 
         /// <summary>
-        /// Kullanıcının kendi profil bilgilerini getirme endpoint'i
-        /// JWT token ile korunmalı - sadece kendi profilini görebilir
+        /// Mevcut kullanıcının profil bilgilerini getirir (JWT token'dan user ID alır)
         /// </summary>
         /// <returns>Kullanıcı profil bilgileri</returns>
         /// <response code="200">Profil bilgileri başarıyla getirildi</response>
@@ -299,38 +197,22 @@ namespace TaskFlow.API.Controllers
             try
             {
                 // JWT token'dan user ID'yi al
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
-                    ?? User.FindFirst("sub")?.Value;
-
-                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
                 {
                     return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
                 }
 
-                // Kullanıcıyı database'den getir
-                var user = await _context.Users
-                    .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+                // UserService ile kullanıcı bilgilerini getir
+                var userDto = await _userService.GetUserByIdAsync(userId.Value);
 
-                if (user == null)
+                if (userDto == null)
                 {
                     return NotFound(ApiResponseModel<object>.ErrorResponse("Kullanıcı bulunamadı"));
                 }
 
-                // UserDto oluştur
-                var userDto = new UserDto
-                {
-                    Id = user.Id,
-                    Email = user.Email,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    PhoneNumber = user.PhoneNumber,
-                    CreatedAt = user.CreatedAt,
-                    UpdatedAt = user.UpdatedAt,
-                    IsActive = user.IsActive
-                };
-
                 return Ok(ApiResponseModel<UserDto>.SuccessResponse(
-                    "Profil bilgileri başarıyla getirildi",
+                    "Profil bilgileri getirildi",
                     userDto
                 ));
             }
@@ -338,56 +220,52 @@ namespace TaskFlow.API.Controllers
             {
                 _logger.LogError(ex, "Error getting profile for user");
                 return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
-                    "Profil bilgileri getirilemedi"));
+                    "Profil bilgileri getirilirken bir hata oluştu"));
             }
         }
 
         /// <summary>
-        /// Kullanıcı ID'si ile profil getirme (public endpoint)
-        /// Profile sayfaları için kullanılabilir
+        /// Belirli bir kullanıcının profil bilgilerini getirir (public endpoint)
         /// </summary>
         /// <param name="id">Kullanıcı ID'si</param>
         /// <returns>Kullanıcı profil bilgileri</returns>
+        /// <response code="200">Profil bilgileri başarıyla getirildi</response>
+        /// <response code="404">Kullanıcı bulunamadı</response>
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(ApiResponseModel<UserDto>), 200)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 404)]
         public async Task<ActionResult<ApiResponseModel<UserDto>>> GetProfile(int id)
         {
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Id == id && u.IsActive);
-
-            if (user == null)
+            try
             {
-                return NotFound(ApiResponseModel<object>.ErrorResponse("Kullanıcı bulunamadı"));
+                var userDto = await _userService.GetUserByIdAsync(id);
+
+                if (userDto == null)
+                {
+                    return NotFound(ApiResponseModel<object>.ErrorResponse("Kullanıcı bulunamadı"));
+                }
+
+                return Ok(ApiResponseModel<UserDto>.SuccessResponse(
+                    "Kullanıcı bilgileri getirildi",
+                    userDto
+                ));
             }
-
-            var userDto = new UserDto
+            catch (Exception ex)
             {
-                Id = user.Id,
-                Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                PhoneNumber = user.PhoneNumber,
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt,
-                IsActive = user.IsActive
-            };
-
-            return Ok(ApiResponseModel<UserDto>.SuccessResponse(
-                "Kullanıcı profili başarıyla getirildi",
-                userDto
-            ));
+                _logger.LogError(ex, "Error getting user profile for ID: {UserId}", id);
+                return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
+                    "Kullanıcı bilgileri getirilirken bir hata oluştu"));
+            }
         }
 
         /// <summary>
-        /// Kullanıcı profil güncelleme endpoint'i
-        /// JWT token ile korunmalı - sadece kendi profilini güncelleyebilir
+        /// Mevcut kullanıcının profil bilgilerini günceller
         /// </summary>
         /// <param name="updateDto">Güncellenecek profil bilgileri</param>
-        /// <returns>Güncellenmiş profil bilgileri</returns>
+        /// <returns>Güncellenmiş kullanıcı bilgileri</returns>
         /// <response code="200">Profil başarıyla güncellendi</response>
         /// <response code="400">Geçersiz veri</response>
-        /// <response code="401">Token geçersiz</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
         /// <response code="404">Kullanıcı bulunamadı</response>
         [HttpPut("profile")]
         [Authorize]
@@ -411,60 +289,33 @@ namespace TaskFlow.API.Controllers
                 }
 
                 // JWT token'dan user ID'yi al
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
-                    ?? User.FindFirst("sub")?.Value;
-
-                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
                 {
                     return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
                 }
 
-                // Kullanıcıyı bul
-                var user = await _context.Users
-                    .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+                // UserService ile profil güncelle
+                var updatedUser = await _userService.UpdateUserProfileAsync(userId.Value, updateDto);
 
-                if (user == null)
-                {
-                    return NotFound(ApiResponseModel<object>.ErrorResponse("Kullanıcı bulunamadı"));
-                }
-
-                // Profil bilgilerini güncelle
-                user.FirstName = updateDto.FirstName.Trim();
-                user.LastName = updateDto.LastName.Trim();
-                user.PhoneNumber = string.IsNullOrWhiteSpace(updateDto.PhoneNumber) 
-                    ? null 
-                    : updateDto.PhoneNumber.Trim();
-                user.UpdatedAt = DateTime.UtcNow;
-
-                // Değişiklikleri kaydet
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("User profile updated: {Email} (ID: {UserId})", 
-                    user.Email, user.Id);
-
-                // Güncellenmiş UserDto oluştur
-                var userDto = new UserDto
-                {
-                    Id = user.Id,
-                    Email = user.Email,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    PhoneNumber = user.PhoneNumber,
-                    CreatedAt = user.CreatedAt,
-                    UpdatedAt = user.UpdatedAt,
-                    IsActive = user.IsActive
-                };
+                _logger.LogInformation("User profile updated successfully: {UserId}", userId.Value);
 
                 return Ok(ApiResponseModel<UserDto>.SuccessResponse(
                     "Profil başarıyla güncellendi",
-                    userDto
+                    updatedUser
                 ));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Business rule violations
+                _logger.LogWarning("Profile update failed: {Error}", ex.Message);
+                return BadRequest(ApiResponseModel<object>.ErrorResponse(ex.Message));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating profile");
                 return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
-                    "Profil güncellenemedi"));
+                    "Profil güncellenirken bir hata oluştu"));
             }
         }
 
@@ -473,21 +324,13 @@ namespace TaskFlow.API.Controllers
         #region Helper Methods
 
         /// <summary>
-        /// JWT token'dan mevcut kullanıcı ID'sini alma helper methodu
-        /// Controller içinde tekrar kullanım için
+        /// JWT token'dan mevcut kullanıcının ID'sini alır
         /// </summary>
-        /// <returns>Kullanıcı ID'si veya null</returns>
+        /// <returns>User ID veya null</returns>
         private int? GetCurrentUserId()
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
-                ?? User.FindFirst("sub")?.Value;
-
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
-            {
-                return null;
-            }
-
-            return userId;
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return int.TryParse(userIdClaim, out var userId) ? userId : null;
         }
 
         #endregion
