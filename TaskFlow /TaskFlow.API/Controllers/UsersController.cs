@@ -321,6 +321,53 @@ namespace TaskFlow.API.Controllers
 
         #endregion
 
+        #region Test Endpoints (Development Only)
+
+        /// <summary>
+        /// Global exception handler'ı test etmek için endpoint
+        /// Sadece development ortamında aktif
+        /// </summary>
+        /// <param name="exceptionType">Test edilecek exception tipi</param>
+        /// <returns>Exception fırlatır</returns>
+        [HttpGet("test-exception/{exceptionType}")]
+        [ApiExplorerSettings(IgnoreApi = true)] // Swagger'da gözükmesin
+        public ActionResult TestException(string exceptionType)
+        {
+            // Sadece development ortamında çalışsın
+            if (!HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            // Exception tipine göre farklı exception'lar fırlat
+            switch (exceptionType.ToLower())
+            {
+                case "unauthorized":
+                    throw new UnauthorizedAccessException("Test unauthorized exception");
+                
+                case "notfound":
+                    throw new KeyNotFoundException("Test not found exception");
+                
+                case "badrequest":
+                    throw new ArgumentException("Test bad request exception");
+                
+                case "business":
+                    throw new InvalidOperationException("Test business rule violation");
+                
+                case "timeout":
+                    throw new TimeoutException("Test timeout exception");
+                
+                case "notimplemented":
+                    throw new NotImplementedException("Test not implemented exception");
+                
+                case "general":
+                default:
+                    throw new Exception("Test general exception");
+            }
+        }
+
+        #endregion
+
         #region Helper Methods
 
         /// <summary>

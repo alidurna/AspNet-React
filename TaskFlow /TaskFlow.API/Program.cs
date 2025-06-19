@@ -18,6 +18,7 @@ using System.Text;
 using TaskFlow.API.Data;
 using TaskFlow.API.Services;
 using TaskFlow.API.Interfaces;
+using TaskFlow.API.Extensions;
 
 // ===== WEB APPLICATION BUILDER =====
 /*
@@ -270,6 +271,14 @@ await EnsureDatabaseUpdated(app);
  * Request: Yukarıdan aşağıya
  * Response: Aşağıdan yukarıya
  */
+
+// ===== GLOBAL EXCEPTION HANDLER =====
+/*
+ * Global exception handler middleware - EN BAŞTA OLMALI!
+ * Tüm unhandled exception'ları yakalar ve standart response döndürür
+ * Development/Production ortamına göre farklı detay seviyeleri
+ */
+app.UseGlobalExceptionHandler();
 
 // ===== DEVELOPMENT MIDDLEWARE =====
 /*
