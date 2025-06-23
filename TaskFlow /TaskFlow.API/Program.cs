@@ -280,6 +280,14 @@ await EnsureDatabaseUpdated(app);
  */
 app.UseGlobalExceptionHandler();
 
+// ===== REQUEST/RESPONSE LOGGING =====
+/*
+ * Request/Response logging middleware HTTP isteklerini ve yanıtlarını loglar.
+ * Performance monitoring ve debugging için kullanılır.
+ * Global exception handler'dan sonra çalışmalıdır.
+ */
+app.UseRequestResponseLogging();
+
 // ===== DEVELOPMENT MIDDLEWARE =====
 /*
  * Development ortamında ek middleware'ler aktifleştirilir:

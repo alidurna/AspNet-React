@@ -24,20 +24,21 @@ namespace TaskFlow.API.Extensions
         }
 
         /// <summary>
-        /// Request/Response logging middleware'ini pipeline'a ekler
+        /// Request/Response Logging middleware'ini pipeline'a ekler
         /// </summary>
         /// <param name="app">WebApplication instance</param>
         /// <returns>WebApplication (fluent interface)</returns>
         /// <remarks>
-        /// Bu middleware HTTP request/response detaylarını loglar.
-        /// Performance monitoring ve debugging için kullanılır.
+        /// Bu middleware HTTP request/response detaylarını loglar ve performance monitoring sağlar.
+        /// Global Exception Handler'dan sonra çalışmalıdır.
         /// </remarks>
         public static WebApplication UseRequestResponseLogging(this WebApplication app)
         {
-            // Bu method daha sonra RequestResponseLoggingMiddleware implement edildiğinde kullanılacak
-            // app.UseMiddleware<RequestResponseLoggingMiddleware>();
+            app.UseMiddleware<RequestResponseLoggingMiddleware>();
             return app;
         }
+
+
 
         /// <summary>
         /// Global validation middleware'ini pipeline'a ekler
