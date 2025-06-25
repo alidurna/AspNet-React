@@ -166,3 +166,7 @@
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets/msbuild.buildMultiTargeting.TaskFlow.API.props
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets/msbuild.buildTransitive.TaskFlow.API.props
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets.pack.json
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Asp.Versioning.Abstractions.dll
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Asp.Versioning.Http.dll
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Asp.Versioning.Mvc.dll
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Asp.Versioning.Mvc.ApiExplorer.dll

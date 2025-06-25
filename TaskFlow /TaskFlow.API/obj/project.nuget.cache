@@ -1,9 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "gcl4OSxlfvk=",
+  "dgSpecHash": "JupgJZEMnXk=",
   "success": true,
   "projectFilePath": "/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/TaskFlow.API.csproj",
   "expectedPackageFiles": [
+    "/Users/alidurna/.nuget/packages/asp.versioning.abstractions/8.0.0/asp.versioning.abstractions.8.0.0.nupkg.sha512",
+    "/Users/alidurna/.nuget/packages/asp.versioning.http/8.0.0/asp.versioning.http.8.0.0.nupkg.sha512",
+    "/Users/alidurna/.nuget/packages/asp.versioning.mvc/8.0.0/asp.versioning.mvc.8.0.0.nupkg.sha512",
+    "/Users/alidurna/.nuget/packages/asp.versioning.mvc.apiexplorer/8.0.0/asp.versioning.mvc.apiexplorer.8.0.0.nupkg.sha512",
     "/Users/alidurna/.nuget/packages/bcrypt.net-next/4.0.3/bcrypt.net-next.4.0.3.nupkg.sha512",
     "/Users/alidurna/.nuget/packages/humanizer.core/2.14.1/humanizer.core.2.14.1.nupkg.sha512",
     "/Users/alidurna/.nuget/packages/microsoft.aspnetcore.authentication.jwtbearer/9.0.5/microsoft.aspnetcore.authentication.jwtbearer.9.0.5.nupkg.sha512",

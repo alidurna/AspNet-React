@@ -29,18 +29,21 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TaskFlow.API.DTOs;
 using TaskFlow.API.Interfaces;
+using Asp.Versioning;
 
 namespace TaskFlow.API.Controllers;
 
 /// <summary>
-/// Categories API Controller
-/// Kategori yönetimi için RESTful API endpoints sağlar
-/// Service Layer pattern kullanarak business logic'i ayırır
+/// Kategori yönetimi endpoint'leri
+/// CRUD operations ve kategori bazlı filtreleme işlemleri
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
-[Authorize] // Tüm endpoint'ler JWT token gerektirir
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
+[Authorize] // Tüm endpoint'ler authentication gerektirir
 [Produces("application/json")]
+[ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+[ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
 public class CategoriesController : ControllerBase
 {
     #region Private Fields

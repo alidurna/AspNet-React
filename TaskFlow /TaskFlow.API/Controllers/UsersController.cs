@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TaskFlow.API.DTOs;
 using TaskFlow.API.Interfaces;
+using Asp.Versioning;
 
 namespace TaskFlow.API.Controllers
 {
@@ -21,8 +22,10 @@ namespace TaskFlow.API.Controllers
     /// 4. Update: Token ile korumalı profil güncelleme
     /// </remarks>
     [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [Produces("application/json")]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
     public class UsersController : ControllerBase
     {
         #region Private Fields

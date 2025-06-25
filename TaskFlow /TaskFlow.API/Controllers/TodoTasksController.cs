@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TaskFlow.API.DTOs;
 using TaskFlow.API.Interfaces;
+using TaskFlow.API.Models;
+using Asp.Versioning;
 
 namespace TaskFlow.API.Controllers
 {
@@ -24,9 +26,12 @@ namespace TaskFlow.API.Controllers
     /// - Category integration
     /// </remarks>
     [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [Authorize] // Tüm endpoint'ler JWT token gerektirir
     [Produces("application/json")]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
     public class TodoTasksController : ControllerBase
     {
         #region Private Fields

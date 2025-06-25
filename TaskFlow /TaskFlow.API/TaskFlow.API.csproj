@@ -51,6 +51,18 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.5" />
     
     <!-- 
+      API Versioning Support
+      Nedir: RESTful API versioning desteği sağlar
+      Özellikler:
+      - URL path versioning (/api/v1/, /api/v2/)
+      - Query string versioning (?version=1.0)
+      - Header versioning (X-Version: 1.0)
+      - Media type versioning (Accept: application/json;version=1.0)
+    -->
+    <PackageReference Include="Asp.Versioning.Http" Version="8.0.0" />
+    <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.0.0" />
+    
+    <!-- 
       Entity Framework Core - SQLite Provider
       Nedir: Object-Relational Mapping (ORM) aracı
       SQLite: Dosya tabanlı veritabanı, geliştirme için ideal

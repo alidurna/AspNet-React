@@ -19,6 +19,7 @@ using TaskFlow.API.Data;
 using TaskFlow.API.Services;
 using TaskFlow.API.Interfaces;
 using TaskFlow.API.Extensions;
+using Asp.Versioning;
 
 // ===== WEB APPLICATION BUILDER =====
 /*
@@ -233,7 +234,99 @@ builder.Services.AddAuthorization();
  * AddSwaggerGen(): Swagger UI ve OpenAPI spec'i üretir
  */
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// ===== API VERSIONING =====
+/*
+ * API versioning servisleri - RESTful API versioning desteği
+ * Farklı versioning stratejileri desteklenir:
+ * - URL Path: /api/v1/users, /api/v2/users
+ * - Query String: /api/users?version=1.0
+ * - Header: X-Version: 1.0
+ * - Media Type: Accept: application/json;version=1.0
+ */
+builder.Services.AddApiVersioning(options =>
+{
+    // Default API version ayarla
+    options.DefaultApiVersion = new ApiVersion(1, 0); // v1.0
+    
+    // Version belirtilmediğinde default version kullan
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    
+    // Versioning okuma stratejileri (birden fazla aktif olabilir)
+    options.ApiVersionReader = ApiVersionReader.Combine(
+        new UrlSegmentApiVersionReader(),    // /api/v1/users
+        new QueryStringApiVersionReader(),   // ?version=1.0
+        new HeaderApiVersionReader("X-Version") // X-Version: 1.0
+    );
+    
+    // Desteklenen versiyonları response header'ında belirt
+    options.ReportApiVersions = true;
+})
+.AddMvc() // MVC Controller desteği ekle
+.AddApiExplorer(options =>
+{
+    // API Explorer configuration - Swagger için gerekli
+    // Version format: 'v'major[.minor][-status]
+    options.GroupNameFormat = "'v'VVV"; // v1.0, v2.0 format
+    
+    // Otomatik olarak deprecated version'ları belirt
+    options.SubstituteApiVersionInUrl = true;
+});
+
+builder.Services.AddSwaggerGen(options =>
+{
+    // API metadata
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "TaskFlow API",
+        Version = "v1.0",
+        Description = "Modern ASP.NET Core 9 Görev Yönetimi REST API'si",
+        Contact = new Microsoft.OpenApi.Models.OpenApiContact
+        {
+            Name = "TaskFlow Development Team",
+            Email = "dev@taskflow.com"
+        },
+        License = new Microsoft.OpenApi.Models.OpenApiLicense
+        {
+            Name = "MIT License",
+            Url = new Uri("https://opensource.org/licenses/MIT")
+        }
+    });
+    
+    // JWT Authentication için Swagger UI'da authorize butonu ekle
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\""
+    });
+    
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+    
+    // XML documentation include et (eğer varsa)
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
+});
 
 // ===== CORS (CROSS-ORIGIN RESOURCE SHARING) =====
 /*
