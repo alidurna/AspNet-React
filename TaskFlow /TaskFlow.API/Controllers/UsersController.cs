@@ -79,17 +79,8 @@ namespace TaskFlow.API.Controllers
         {
             try
             {
-                // Model validation - DTO validation attributes kontrolü
-                if (!ModelState.IsValid)
-                {
-                    var errors = ModelState.Values
-                        .SelectMany(v => v.Errors)
-                        .Select(e => e.ErrorMessage)
-                        .ToList();
-
-                    _logger.LogWarning("Register validation failed: {Errors}", string.Join(", ", errors));
-                    return BadRequest(ApiResponseModel<object>.ErrorResponse("Validation hatası", errors));
-                }
+                // Model validation artık GlobalValidationActionFilter tarafından handle ediliyor
+                // Manuel ModelState kontrolü yapmaya gerek yok
 
                 // UserService ile kullanıcı kaydı yap
                 var authResponse = await _userService.RegisterAsync(registerDto);
@@ -140,16 +131,7 @@ namespace TaskFlow.API.Controllers
         {
             try
             {
-                // Model validation
-                if (!ModelState.IsValid)
-                {
-                    var errors = ModelState.Values
-                        .SelectMany(v => v.Errors)
-                        .Select(e => e.ErrorMessage)
-                        .ToList();
-
-                    return BadRequest(ApiResponseModel<object>.ErrorResponse("Validation hatası", errors));
-                }
+                // Model validation artık GlobalValidationActionFilter tarafından handle ediliyor
 
                 // UserService ile login yap
                 var authResponse = await _userService.LoginAsync(loginDto);
@@ -277,16 +259,7 @@ namespace TaskFlow.API.Controllers
         {
             try
             {
-                // Model validation
-                if (!ModelState.IsValid)
-                {
-                    var errors = ModelState.Values
-                        .SelectMany(v => v.Errors)
-                        .Select(e => e.ErrorMessage)
-                        .ToList();
-
-                    return BadRequest(ApiResponseModel<object>.ErrorResponse("Validation hatası", errors));
-                }
+                // Model validation artık GlobalValidationActionFilter tarafından handle ediliyor
 
                 // JWT token'dan user ID'yi al
                 var userId = GetCurrentUserId();

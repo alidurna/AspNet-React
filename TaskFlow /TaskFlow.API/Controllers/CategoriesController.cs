@@ -185,16 +185,7 @@ public class CategoriesController : ControllerBase
     {
         try
         {
-            // Model validation
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState.Values
-                    .SelectMany(v => v.Errors)
-                    .Select(e => e.ErrorMessage)
-                    .ToList();
-
-                return BadRequest(ApiResponseModel<object>.ErrorResponse("Validation hatası", errors));
-            }
+            // Model validation artık GlobalValidationActionFilter tarafından handle ediliyor
 
             // JWT token'dan user ID'yi al
             var userId = GetCurrentUserId();
@@ -255,16 +246,7 @@ public class CategoriesController : ControllerBase
     {
         try
         {
-            // Model validation
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState.Values
-                    .SelectMany(v => v.Errors)
-                    .Select(e => e.ErrorMessage)
-                    .ToList();
-
-                return BadRequest(ApiResponseModel<object>.ErrorResponse("Validation hatası", errors));
-            }
+            // Model validation artık GlobalValidationActionFilter tarafından handle ediliyor
 
             // JWT token'dan user ID'yi al
             var userId = GetCurrentUserId();

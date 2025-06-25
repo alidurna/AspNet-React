@@ -63,7 +63,17 @@ var configuration = builder.Configuration;
  * - Model binding ve validation yapar
  * - JSON serialization konfigüre eder
  */
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    // Global Validation Action Filter'ı tüm controller'lara ekle
+    options.Filters.Add<TaskFlow.API.Middleware.GlobalValidationActionFilter>();
+})
+.ConfigureApiBehaviorOptions(options =>
+{
+    // [ApiController] attribute'unun otomatik model validation'ını devre dışı bırak
+    // Bizim GlobalValidationActionFilter'ımız validation'ı handle edecek
+    options.SuppressModelStateInvalidFilter = true;
+});
 
 // ===== ENTITY FRAMEWORK CORE =====
 /*
@@ -315,6 +325,14 @@ app.UseHttpsRedirection();
  * Frontend'den gelen cross-origin requests'lere izin verir.
  */
 app.UseCors("AllowReactApp");
+
+// ===== GLOBAL VALIDATION =====
+/*
+ * Global validation middleware model validation'ı centralize eder.
+ * Controller'larda manuel ModelState kontrolü yapmaya gerek kalmaz.
+ * Authentication'dan önce çalışmalıdır çünkü validation auth gerektirmez.
+ */
+app.UseGlobalValidation();
 
 // ===== AUTHENTICATION & AUTHORIZATION =====
 /*
