@@ -324,10 +324,11 @@ namespace TaskFlow.API.Services
                     TotalTasks = totalTasks,
                     CompletedTasks = completedTasks,
                     PendingTasks = pendingTasks,
-                    TotalCategories = totalCategories,
-                    LastLoginDate = user.CreatedAt, // LastLoginDate property'si yoksa CreatedAt kullan
-                    RegistrationDate = user.CreatedAt,
-                    TaskCompletionRate = totalTasks > 0 ? (decimal)completedTasks / totalTasks * 100 : 0
+                    InProgressTasks = 0, // Şu an için 0, daha sonra hesaplanabilir
+                    TaskCompletionRate = totalTasks > 0 ? (double)completedTasks / totalTasks * 100 : 0,
+                    AverageCompletionDays = 0, // Şu an için 0, daha sonra hesaplanabilir
+                    TasksCompletedThisMonth = 0, // Şu an için 0, daha sonra hesaplanabilir
+                    TasksCompletedThisWeek = 0 // Şu an için 0, daha sonra hesaplanabilir
                 };
 
                 return stats;
@@ -335,6 +336,42 @@ namespace TaskFlow.API.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting user statistics: {UserId}", userId);
+                throw;
+            }
+        }
+
+        public async Task<bool> ChangePasswordAsync(int userId, ChangePasswordDto changePasswordDto)
+        {
+            try
+            {
+                _logger.LogInformation("Changing password for user: {UserId}", userId);
+
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+
+                if (user == null)
+                {
+                    throw new InvalidOperationException("Kullanıcı bulunamadı");
+                }
+
+                // Mevcut şifre kontrolü
+                if (!_passwordService.VerifyPassword(changePasswordDto.CurrentPassword, user.PasswordHash))
+                {
+                    throw new UnauthorizedAccessException("Mevcut şifre yanlış");
+                }
+
+                // Yeni şifre hash'le
+                user.PasswordHash = _passwordService.HashPassword(changePasswordDto.NewPassword);
+                user.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Password changed successfully for user: {UserId}", userId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error changing password for user: {UserId}", userId);
                 throw;
             }
         }

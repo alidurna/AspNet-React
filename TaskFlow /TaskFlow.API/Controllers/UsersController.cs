@@ -295,6 +295,91 @@ namespace TaskFlow.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Kullanıcının istatistiklerini getirir
+        /// </summary>
+        /// <returns>Kullanıcı istatistikleri</returns>
+        /// <response code="200">İstatistikler başarıyla getirildi</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
+        /// <response code="404">Kullanıcı bulunamadı</response>
+        [HttpGet("statistics")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponseModel<UserStatsDto>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 404)]
+        public async Task<ActionResult<ApiResponseModel<UserStatsDto>>> GetUserStatistics()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+                }
+
+                var stats = await _userService.GetUserStatsAsync(userId.Value);
+                return Ok(ApiResponseModel<UserStatsDto>.SuccessResponse(
+                    "Kullanıcı istatistikleri getirildi",
+                    stats
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user statistics for user: {UserId}", GetCurrentUserId());
+                return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
+                    "İstatistikler getirilirken bir hata oluştu"));
+            }
+        }
+
+        /// <summary>
+        /// Kullanıcının şifresini değiştirir
+        /// </summary>
+        /// <param name="changePasswordDto">Şifre değiştirme bilgileri</param>
+        /// <returns>İşlem sonucu</returns>
+        /// <response code="200">Şifre başarıyla değiştirildi</response>
+        /// <response code="400">Geçersiz veri</response>
+        /// <response code="401">Token geçersiz veya mevcut şifre yanlış</response>
+        /// <response code="404">Kullanıcı bulunamadı</response>
+        [HttpPut("change-password")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 404)]
+        public async Task<ActionResult<ApiResponseModel<object>>> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+                }
+
+                await _userService.ChangePasswordAsync(userId.Value, changePasswordDto);
+                
+                return Ok(ApiResponseModel<object>.SuccessResponse(
+                    "Şifre başarıyla değiştirildi"
+                ));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Password change failed for user {UserId}: {Error}", GetCurrentUserId(), ex.Message);
+                return Unauthorized(ApiResponseModel<object>.ErrorResponse(ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning("Password change failed for user {UserId}: {Error}", GetCurrentUserId(), ex.Message);
+                return NotFound(ApiResponseModel<object>.ErrorResponse(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error changing password for user: {UserId}", GetCurrentUserId());
+                return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
+                    "Şifre değiştirme sırasında bir hata oluştu"));
+            }
+        }
+
         #endregion
 
         #region Test Endpoints (Development Only)

@@ -254,25 +254,25 @@ namespace TaskFlow.API.DTOs
     }
 
     /// <summary>
-    /// Şifre değiştirme için kullanılan DTO
-    /// Güvenlik açısından eski şifre de istenir
+    /// Kullanıcı şifre değiştirme işlemi için kullanılan DTO
+    /// Güvenlik için mevcut şifre doğrulaması gerektirir
     /// </summary>
     /// <remarks>
-    /// Güvenlik önlemi olarak mevcut şifreyi de alır
-    /// Böylece yetkisiz kişiler şifre değiştiremez
+    /// Bu DTO sadece şifre değiştirme işlemi için kullanılır
+    /// Mevcut şifre, yeni şifre ve onay alanlarını içerir
     /// </remarks>
     public class ChangePasswordDto
     {
         /// <summary>
-        /// Mevcut şifre
-        /// Güvenlik kontrolü için gerekli
+        /// Kullanıcının mevcut şifresi
+        /// Güvenlik için doğrulanması gerekir
         /// </summary>
         [Required(ErrorMessage = "Mevcut şifre alanı zorunludur")]
         [DataType(DataType.Password)]
         public string CurrentPassword { get; set; } = string.Empty;
 
         /// <summary>
-        /// Yeni şifre
+        /// Kullanıcının yeni şifresi
         /// Güvenlik kurallarına uygun olmalı
         /// </summary>
         [Required(ErrorMessage = "Yeni şifre alanı zorunludur")]
@@ -281,12 +281,71 @@ namespace TaskFlow.API.DTOs
         public string NewPassword { get; set; } = string.Empty;
 
         /// <summary>
-        /// Yeni şifre tekrar
+        /// Yeni şifre tekrar alanı
         /// NewPassword ile aynı olmalı
         /// </summary>
         [Required(ErrorMessage = "Yeni şifre tekrar alanı zorunludur")]
         [DataType(DataType.Password)]
         [Compare("NewPassword", ErrorMessage = "Yeni şifreler uyuşmuyor")]
         public string ConfirmNewPassword { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Kullanıcı istatistikleri için kullanılan DTO
+    /// Dashboard ve raporlama için kullanılır
+    /// </summary>
+    /// <remarks>
+    /// Bu DTO kullanıcının görev istatistiklerini içerir
+    /// Performance tracking ve analytics için önemli
+    /// </remarks>
+    public class UserStatsDto
+    {
+        /// <summary>
+        /// Kullanıcının toplam görev sayısı
+        /// Aktif ve tamamlanmış görevlerin toplamı
+        /// </summary>
+        public int TotalTasks { get; set; }
+
+        /// <summary>
+        /// Tamamlanmış görev sayısı
+        /// Başarı oranı hesaplama için kullanılır
+        /// </summary>
+        public int CompletedTasks { get; set; }
+
+        /// <summary>
+        /// Bekleyen görev sayısı
+        /// Aktif iş yükü göstergesi
+        /// </summary>
+        public int PendingTasks { get; set; }
+
+        /// <summary>
+        /// Devam eden görev sayısı
+        /// Güncel çalışma durumu
+        /// </summary>
+        public int InProgressTasks { get; set; }
+
+        /// <summary>
+        /// Görev tamamlama oranı (yüzde)
+        /// Performance metriği olarak kullanılır
+        /// </summary>
+        public double TaskCompletionRate { get; set; }
+
+        /// <summary>
+        /// Ortalama görev tamamlama süresi (gün)
+        /// Efficiency metriği
+        /// </summary>
+        public double AverageCompletionDays { get; set; }
+
+        /// <summary>
+        /// Bu ay tamamlanan görev sayısı
+        /// Aylık performans takibi
+        /// </summary>
+        public int TasksCompletedThisMonth { get; set; }
+
+        /// <summary>
+        /// Bu hafta tamamlanan görev sayısı
+        /// Haftalık performans takibi
+        /// </summary>
+        public int TasksCompletedThisWeek { get; set; }
     }
 } 

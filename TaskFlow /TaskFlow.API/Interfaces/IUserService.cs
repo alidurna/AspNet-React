@@ -67,6 +67,14 @@ namespace TaskFlow.API.Interfaces
         /// <returns>True: aktif, False: pasif</returns>
         Task<bool> IsUserActiveAsync(int userId);
 
+        /// <summary>
+        /// Kullanıcının şifresini değiştirir
+        /// </summary>
+        /// <param name="userId">Kullanıcı ID</param>
+        /// <param name="changePasswordDto">Şifre değiştirme bilgileri</param>
+        /// <returns>İşlem sonucu</returns>
+        Task<bool> ChangePasswordAsync(int userId, ChangePasswordDto changePasswordDto);
+
         #endregion
 
         #region User Statistics
@@ -92,17 +100,5 @@ namespace TaskFlow.API.Interfaces
         #endregion
     }
 
-    /// <summary>
-    /// Kullanıcı istatistikleri DTO'su
-    /// </summary>
-    public class UserStatsDto
-    {
-        public int TotalTasks { get; set; }
-        public int CompletedTasks { get; set; }
-        public int PendingTasks { get; set; }
-        public int TotalCategories { get; set; }
-        public DateTime LastLoginDate { get; set; }
-        public DateTime RegistrationDate { get; set; }
-        public decimal TaskCompletionRate { get; set; }
-    }
+
 } 

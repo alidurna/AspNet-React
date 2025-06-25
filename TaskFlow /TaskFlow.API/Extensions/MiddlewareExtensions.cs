@@ -48,11 +48,11 @@ namespace TaskFlow.API.Extensions
         /// <remarks>
         /// Bu middleware model validation'ı centralize eder.
         /// Controller'larda manuel ModelState kontrolü yapmaya gerek kalmaz.
-        /// Gerçek validation GlobalValidationActionFilter tarafından yapılır.
         /// </remarks>
         public static WebApplication UseGlobalValidation(this WebApplication app)
         {
-            app.UseMiddleware<GlobalValidationMiddleware>();
+            // Bu method daha sonra GlobalValidationMiddleware implement edildiğinde kullanılacak
+            // app.UseMiddleware<GlobalValidationMiddleware>();
             return app;
         }
     }

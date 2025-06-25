@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskFlow.API", "TaskFlow.API\TaskFlow.API.csproj", "{26A8DB85-0717-40E4-82B7-DA279178F477}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskFlow.Tests", "TaskFlow.Tests\TaskFlow.Tests.csproj", "{29E883BF-45EC-4C56-82AF-AEDCDFDE0553}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,18 @@ Global
 		{26A8DB85-0717-40E4-82B7-DA279178F477}.Release|x64.Build.0 = Release|Any CPU
 		{26A8DB85-0717-40E4-82B7-DA279178F477}.Release|x86.ActiveCfg = Release|Any CPU
 		{26A8DB85-0717-40E4-82B7-DA279178F477}.Release|x86.Build.0 = Release|Any CPU
+		{29E883BF-45EC-4C56-82AF-AEDCDFDE0553}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{29E883BF-45EC-4C56-82AF-AEDCDFDE0553}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{29E883BF-45EC-4C56-82AF-AEDCDFDE0553}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{29E883BF-45EC-4C56-82AF-AEDCDFDE0553}.Debug|x64.Build.0 = Debug|Any CPU
+		{29E883BF-45EC-4C56-82AF-AEDCDFDE0553}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{29E883BF-45EC-4C56-82AF-AEDCDFDE0553}.Debug|x86.Build.0 = Debug|Any CPU
+		{29E883BF-45EC-4C56-82AF-AEDCDFDE0553}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{29E883BF-45EC-4C56-82AF-AEDCDFDE0553}.Release|Any CPU.Build.0 = Release|Any CPU
+		{29E883BF-45EC-4C56-82AF-AEDCDFDE0553}.Release|x64.ActiveCfg = Release|Any CPU
+		{29E883BF-45EC-4C56-82AF-AEDCDFDE0553}.Release|x64.Build.0 = Release|Any CPU
+		{29E883BF-45EC-4C56-82AF-AEDCDFDE0553}.Release|x86.ActiveCfg = Release|Any CPU
+		{29E883BF-45EC-4C56-82AF-AEDCDFDE0553}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
