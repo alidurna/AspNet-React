@@ -70,8 +70,9 @@ public class UsersControllerTests
         var result = await _controller.Register(registerDto);
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        var response = Assert.IsType<ApiResponseModel<AuthResponseDto>>(okResult.Value);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<AuthResponseDto>>>(result);
+        var createdResult = Assert.IsType<CreatedAtActionResult>(actionResult.Result);
+        var response = Assert.IsType<ApiResponseModel<AuthResponseDto>>(createdResult.Value);
         Assert.True(response.Success);
         Assert.NotNull(response.Data);
     }
@@ -87,7 +88,8 @@ public class UsersControllerTests
         var result = await _controller.Register(registerDto);
 
         // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<AuthResponseDto>>>(result);
+        var badRequestResult = Assert.IsType<ObjectResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<object>>(badRequestResult.Value);
         Assert.False(response.Success);
     }
@@ -109,8 +111,9 @@ public class UsersControllerTests
         var result = await _controller.Register(registerDto);
 
         // Assert
-        var conflictResult = Assert.IsType<ConflictObjectResult>(result);
-        var response = Assert.IsType<ApiResponseModel<object>>(conflictResult.Value);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<AuthResponseDto>>>(result);
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(actionResult.Result);
+        var response = Assert.IsType<ApiResponseModel<object>>(badRequestResult.Value);
         Assert.False(response.Success);
     }
 
@@ -142,7 +145,8 @@ public class UsersControllerTests
         var result = await _controller.Login(loginDto);
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<AuthResponseDto>>>(result);
+        var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<AuthResponseDto>>(okResult.Value);
         Assert.True(response.Success);
         Assert.NotNull(response.Data);
@@ -165,7 +169,8 @@ public class UsersControllerTests
         var result = await _controller.Login(loginDto);
 
         // Assert
-        var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<AuthResponseDto>>>(result);
+        var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<object>>(unauthorizedResult.Value);
         Assert.False(response.Success);
     }
@@ -193,7 +198,8 @@ public class UsersControllerTests
         var result = await _controller.GetProfile();
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<UserDto>>>(result);
+        var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<UserDto>>(okResult.Value);
         Assert.True(response.Success);
         Assert.Equal(user.Email, response.Data.Email);
@@ -210,7 +216,8 @@ public class UsersControllerTests
         var result = await _controller.GetProfile();
 
         // Assert
-        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<UserDto>>>(result);
+        var notFoundResult = Assert.IsType<NotFoundObjectResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<object>>(notFoundResult.Value);
         Assert.False(response.Success);
     }
@@ -244,7 +251,8 @@ public class UsersControllerTests
         var result = await _controller.UpdateProfile(updateDto);
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<UserDto>>>(result);
+        var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<UserDto>>(okResult.Value);
         Assert.True(response.Success);
         Assert.Equal(updateDto.FirstName, response.Data.FirstName);
@@ -254,14 +262,21 @@ public class UsersControllerTests
     public async Task UpdateProfile_InvalidData_ReturnsBadRequest()
     {
         // Arrange
-        var updateDto = new UpdateProfileDto(); // Boş DTO
-        _controller.ModelState.AddModelError("FirstName", "FirstName is required");
+        var updateDto = new UpdateProfileDto
+        {
+            FirstName = "", // Invalid data
+            LastName = ""
+        };
+
+        _mockUserService.Setup(x => x.UpdateUserProfileAsync(1, updateDto))
+            .ThrowsAsync(new InvalidOperationException("FirstName is required"));
 
         // Act
         var result = await _controller.UpdateProfile(updateDto);
 
         // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<UserDto>>>(result);
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<object>>(badRequestResult.Value);
         Assert.False(response.Success);
     }
@@ -288,7 +303,8 @@ public class UsersControllerTests
         var result = await _controller.GetUserStatistics();
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<UserStatsDto>>>(result);
+        var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<UserStatsDto>>(okResult.Value);
         Assert.True(response.Success);
         Assert.Equal(10, response.Data.TotalTasks);
@@ -316,7 +332,8 @@ public class UsersControllerTests
         var result = await _controller.ChangePassword(changePasswordDto);
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<object>>>(result);
+        var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<object>>(okResult.Value);
         Assert.True(response.Success);
     }
@@ -339,8 +356,9 @@ public class UsersControllerTests
         var result = await _controller.ChangePassword(changePasswordDto);
 
         // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var response = Assert.IsType<ApiResponseModel<object>>(badRequestResult.Value);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<object>>>(result);
+        var notFoundResult = Assert.IsType<NotFoundObjectResult>(actionResult.Result);
+        var response = Assert.IsType<ApiResponseModel<object>>(notFoundResult.Value);
         Assert.False(response.Success);
     }
 

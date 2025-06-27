@@ -45,7 +45,7 @@ namespace TaskFlow.API.Services
                 // Task limit kontrolü
                 if (!await CheckTaskLimitAsync(userId))
                 {
-                    var maxTasks = _configuration.GetValue<int>("ApplicationSettings:BusinessRules:MaxTasksPerUser", 1000);
+                    var maxTasks = int.Parse(_configuration.GetSection("ApplicationSettings:BusinessRules:MaxTasksPerUser").Value ?? "1000");
                     throw new InvalidOperationException($"Maksimum görev sayısı limitine ulaştınız ({maxTasks})");
                 }
 
@@ -271,6 +271,36 @@ namespace TaskFlow.API.Services
                         : updateDto.Tags.Trim();
                 }
 
+                if (updateDto.CategoryId.HasValue)
+                {
+                    // Category validation
+                    var categoryExists = await _context.Categories
+                        .AnyAsync(c => c.Id == updateDto.CategoryId.Value && c.UserId == userId && c.IsActive);
+                    
+                    if (!categoryExists)
+                    {
+                        throw new InvalidOperationException("Geçersiz kategori");
+                    }
+                    
+                    task.CategoryId = updateDto.CategoryId.Value;
+                }
+
+                if (updateDto.CompletionPercentage.HasValue)
+                {
+                    task.CompletionPercentage = updateDto.CompletionPercentage.Value;
+                    
+                    if (updateDto.CompletionPercentage.Value == 100)
+                    {
+                        task.IsCompleted = true;
+                        task.CompletedAt = DateTime.UtcNow;
+                    }
+                    else if (updateDto.CompletionPercentage.Value == 0)
+                    {
+                        task.IsCompleted = false;
+                        task.CompletedAt = null;
+                    }
+                }
+
                 task.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
 
@@ -300,12 +330,16 @@ namespace TaskFlow.API.Services
                     return false;
                 }
 
-                // Soft delete
+                // Soft delete the main task
                 task.IsActive = false;
                 task.UpdatedAt = DateTime.UtcNow;
+                
+                // Also soft delete all sub-tasks recursively
+                await DeleteSubTasksRecursivelyAsync(userId, taskId);
+
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Task deleted successfully: {TaskId}", taskId);
+                _logger.LogInformation("Task and all sub-tasks deleted successfully: {TaskId}", taskId);
 
                 return true;
             }
@@ -313,6 +347,22 @@ namespace TaskFlow.API.Services
             {
                 _logger.LogError(ex, "Error deleting task {TaskId} for user {UserId}", taskId, userId);
                 throw;
+            }
+        }
+        
+        private async Task DeleteSubTasksRecursivelyAsync(int userId, int parentTaskId)
+        {
+            var subTasks = await _context.TodoTasks
+                .Where(t => t.UserId == userId && t.ParentTaskId == parentTaskId && t.IsActive)
+                .ToListAsync();
+
+            foreach (var subTask in subTasks)
+            {
+                subTask.IsActive = false;
+                subTask.UpdatedAt = DateTime.UtcNow;
+                
+                // Recursively delete sub-tasks of this sub-task
+                await DeleteSubTasksRecursivelyAsync(userId, subTask.Id);
             }
         }
 
@@ -336,6 +386,7 @@ namespace TaskFlow.API.Services
 
                 task.IsCompleted = completeDto.IsCompleted;
                 task.CompletedAt = completeDto.IsCompleted ? DateTime.UtcNow : null;
+                task.CompletionPercentage = completeDto.IsCompleted ? 100 : 0;
                 task.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
@@ -372,6 +423,8 @@ namespace TaskFlow.API.Services
                 }
 
                 // Progress update based on percentage
+                task.CompletionPercentage = completionPercentage;
+                
                 if (completionPercentage == 100)
                 {
                     task.IsCompleted = true;
@@ -440,6 +493,12 @@ namespace TaskFlow.API.Services
                 if (task == null || parentTask == null)
                 {
                     throw new InvalidOperationException("Görev veya parent görev bulunamadı");
+                }
+
+                // Check for circular reference
+                if (!await CheckCircularReferenceAsync(taskId, parentTaskId))
+                {
+                    throw new InvalidOperationException("Circular reference oluşacağı için bu işlem yapılamaz");
                 }
 
                 task.ParentTaskId = parentTaskId;
@@ -624,7 +683,7 @@ namespace TaskFlow.API.Services
         {
             try
             {
-                var maxDepth = _configuration.GetValue<int>("ApplicationSettings:BusinessRules:MaxSubTaskDepth", 3);
+                var maxDepth = int.Parse(_configuration.GetSection("ApplicationSettings:BusinessRules:MaxTaskDepth").Value ?? "3");
                 var currentDepth = await CalculateTaskDepthAsync(parentTaskId);
                 
                 return currentDepth < maxDepth;
@@ -681,7 +740,7 @@ namespace TaskFlow.API.Services
         {
             try
             {
-                var maxTasks = _configuration.GetValue<int>("ApplicationSettings:BusinessRules:MaxTasksPerUser", 1000);
+                var maxTasks = int.Parse(_configuration.GetSection("ApplicationSettings:BusinessRules:MaxTasksPerUser").Value ?? "1000");
                 var currentCount = await _context.TodoTasks
                     .CountAsync(t => t.UserId == userId && t.IsActive);
 
@@ -847,9 +906,12 @@ namespace TaskFlow.API.Services
                 Title = task.Title,
                 Description = task.Description,
                 Priority = task.Priority.ToString(),
+                CompletionPercentage = task.CompletionPercentage,
                 DueDate = task.DueDate,
                 ReminderDate = task.ReminderDate,
+                StartDate = task.StartDate,
                 Tags = task.Tags,
+                Notes = task.Notes,
                 IsCompleted = task.IsCompleted,
                 CompletedAt = task.CompletedAt,
                 IsActive = task.IsActive,
@@ -883,6 +945,7 @@ namespace TaskFlow.API.Services
                     CategoryId = task.ParentTask.CategoryId,
                     Title = task.ParentTask.Title,
                     Priority = task.ParentTask.Priority.ToString(),
+                    CompletionPercentage = task.ParentTask.CompletionPercentage,
                     IsCompleted = task.ParentTask.IsCompleted,
                     CreatedAt = task.ParentTask.CreatedAt,
                     UpdatedAt = task.ParentTask.UpdatedAt

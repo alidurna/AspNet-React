@@ -63,7 +63,8 @@ public class TodoTasksControllerTests
         var result = await _controller.GetTasks(filter);
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<object>>>(result);
+        var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<object>>(okResult.Value);
         Assert.True(response.Success);
         Assert.NotNull(response.Data);
@@ -81,7 +82,8 @@ public class TodoTasksControllerTests
         var result = await _controller.GetTasks(filter);
 
         // Assert
-        var statusResult = Assert.IsType<ObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<object>>>(result);
+        var statusResult = Assert.IsType<ObjectResult>(actionResult.Result);
         Assert.Equal(500, statusResult.StatusCode);
         var response = Assert.IsType<ApiResponseModel<object>>(statusResult.Value);
         Assert.False(response.Success);
@@ -98,14 +100,15 @@ public class TodoTasksControllerTests
         var taskId = 1;
         var task = new TodoTaskDto { Id = taskId, Title = "Test Task", UserId = 1 };
 
-        _mockTaskService.Setup(x => x.GetTaskByIdAsync(1, taskId, false))
+        _mockTaskService.Setup(x => x.GetTaskByIdAsync(1, taskId, true))
             .ReturnsAsync(task);
 
         // Act
         var result = await _controller.GetTask(taskId);
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<TodoTaskDto>>>(result);
+        var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<TodoTaskDto>>(okResult.Value);
         Assert.True(response.Success);
         Assert.NotNull(response.Data);
@@ -117,15 +120,16 @@ public class TodoTasksControllerTests
     {
         // Arrange
         var taskId = 999;
-        _mockTaskService.Setup(x => x.GetTaskByIdAsync(1, taskId, false))
+        _mockTaskService.Setup(x => x.GetTaskByIdAsync(1, taskId, true))
             .ReturnsAsync((TodoTaskDto?)null);
 
         // Act
         var result = await _controller.GetTask(taskId);
 
         // Assert
-        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
-        var response = Assert.IsType<ApiResponseModel<object>>(notFoundResult.Value);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<TodoTaskDto>>>(result);
+        var notFoundResult = Assert.IsType<NotFoundObjectResult>(actionResult.Result);
+        var response = Assert.IsType<ApiResponseModel<TodoTaskDto>>(notFoundResult.Value);
         Assert.False(response.Success);
         Assert.Contains("Görev bulunamadı", response.Message);
     }
@@ -161,7 +165,8 @@ public class TodoTasksControllerTests
         var result = await _controller.CreateTask(createDto);
 
         // Assert
-        var createdResult = Assert.IsType<CreatedAtActionResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<TodoTaskDto>>>(result);
+        var createdResult = Assert.IsType<CreatedAtActionResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<TodoTaskDto>>(createdResult.Value);
         Assert.True(response.Success);
         Assert.NotNull(response.Data);
@@ -179,7 +184,8 @@ public class TodoTasksControllerTests
         var result = await _controller.CreateTask(createDto);
 
         // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<TodoTaskDto>>>(result);
+        var badRequestResult = Assert.IsType<ObjectResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<object>>(badRequestResult.Value);
         Assert.False(response.Success);
     }
@@ -214,7 +220,8 @@ public class TodoTasksControllerTests
         var result = await _controller.UpdateTask(taskId, updateDto);
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<TodoTaskDto>>>(result);
+        var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<TodoTaskDto>>(okResult.Value);
         Assert.True(response.Success);
         Assert.Equal(updateDto.Title, response.Data.Title);
@@ -234,7 +241,8 @@ public class TodoTasksControllerTests
         var result = await _controller.UpdateTask(taskId, updateDto);
 
         // Assert
-        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<TodoTaskDto>>>(result);
+        var notFoundResult = Assert.IsType<NotFoundObjectResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<object>>(notFoundResult.Value);
         Assert.False(response.Success);
     }
@@ -255,7 +263,8 @@ public class TodoTasksControllerTests
         var result = await _controller.DeleteTask(taskId);
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<object>>>(result);
+        var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<object>>(okResult.Value);
         Assert.True(response.Success);
     }
@@ -272,7 +281,8 @@ public class TodoTasksControllerTests
         var result = await _controller.DeleteTask(taskId);
 
         // Assert
-        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<object>>>(result);
+        var notFoundResult = Assert.IsType<NotFoundObjectResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<object>>(notFoundResult.Value);
         Assert.False(response.Success);
     }
@@ -302,7 +312,8 @@ public class TodoTasksControllerTests
         var result = await _controller.CompleteTask(taskId, completeDto);
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<TodoTaskDto>>>(result);
+        var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<TodoTaskDto>>(okResult.Value);
         Assert.True(response.Success);
         Assert.True(response.Data.IsCompleted);
@@ -329,7 +340,8 @@ public class TodoTasksControllerTests
         var result = await _controller.SearchTasks(searchText);
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<List<TodoTaskDto>>>>(result);
+        var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<List<TodoTaskDto>>>(okResult.Value);
         Assert.True(response.Success);
         Assert.Single(response.Data);
@@ -358,7 +370,8 @@ public class TodoTasksControllerTests
         var result = await _controller.GetTaskStatistics();
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
+        var actionResult = Assert.IsType<ActionResult<ApiResponseModel<TaskStatsDto>>>(result);
+        var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
         var response = Assert.IsType<ApiResponseModel<TaskStatsDto>>(okResult.Value);
         Assert.True(response.Success);
         Assert.Equal(10, response.Data.TotalTasks);

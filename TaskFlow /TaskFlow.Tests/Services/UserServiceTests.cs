@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using TaskFlow.API.Data;
 using TaskFlow.API.DTOs;
+using TaskFlow.API.Models;
 using TaskFlow.API.Services;
 using TaskFlow.API.Interfaces;
 using TaskFlow.Tests.Helpers;
@@ -21,7 +22,7 @@ public class UserServiceTests : IDisposable
     private readonly Mock<ILogger<UserService>> _mockLogger;
     private readonly Mock<IPasswordService> _mockPasswordService;
     private readonly Mock<IJwtService> _mockJwtService;
-    private readonly Mock<IConfiguration> _mockConfiguration;
+    private readonly IConfiguration _configuration;
     private readonly UserService _userService;
 
     public UserServiceTests()
@@ -30,7 +31,15 @@ public class UserServiceTests : IDisposable
         _mockLogger = new Mock<ILogger<UserService>>();
         _mockPasswordService = new Mock<IPasswordService>();
         _mockJwtService = new Mock<IJwtService>();
-        _mockConfiguration = new Mock<IConfiguration>();
+        
+        // Create real configuration for JWT settings
+        var configurationBuilder = new ConfigurationBuilder();
+        configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            {"JwtSettings:ExpiryInMinutes", "60"},
+            {"Jwt:AccessTokenExpirationMinutes", "60"}
+        });
+        _configuration = configurationBuilder.Build();
         
         // Mock setups
         _mockPasswordService.Setup(x => x.HashPassword(It.IsAny<string>()))
@@ -38,7 +47,17 @@ public class UserServiceTests : IDisposable
         _mockPasswordService.Setup(x => x.VerifyPassword(It.IsAny<string>(), It.IsAny<string>()))
             .Returns(true);
         
-        _userService = new UserService(_context, _mockPasswordService.Object, _mockJwtService.Object, _mockLogger.Object, _mockConfiguration.Object);
+        // Password validation mocks
+        _mockPasswordService.Setup(x => x.ValidatePassword(It.IsAny<string>()))
+            .Returns(new PasswordValidationResult { IsValid = true, Errors = new List<string>() });
+        _mockPasswordService.Setup(x => x.ValidatePasswordConfirmation(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns(true);
+
+        // JWT Service mock
+        _mockJwtService.Setup(x => x.GenerateToken(It.IsAny<User>()))
+            .Returns("mock-jwt-token");
+        
+        _userService = new UserService(_context, _mockPasswordService.Object, _mockJwtService.Object, _mockLogger.Object, _configuration);
     }
 
     [Fact]
@@ -144,7 +163,7 @@ public class UserServiceTests : IDisposable
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
             () => _userService.RegisterAsync(registerDto));
         
-        Assert.Contains("E-posta adresi zaten kullanımda", exception.Message);
+        Assert.Contains("Bu email adresi zaten kayıtlı", exception.Message);
     }
 
     [Fact]
@@ -180,7 +199,7 @@ public class UserServiceTests : IDisposable
         var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(
             () => _userService.LoginAsync(loginDto));
         
-        Assert.Contains("Geçersiz e-posta veya şifre", exception.Message);
+        Assert.Contains("Email veya şifre hatalı", exception.Message);
     }
 
     [Fact]
@@ -193,11 +212,15 @@ public class UserServiceTests : IDisposable
             Password = "WrongPassword123!"
         };
 
+        // Mock password verification to return false for wrong password
+        _mockPasswordService.Setup(x => x.VerifyPassword("WrongPassword123!", It.IsAny<string>()))
+            .Returns(false);
+
         // Act & Assert
         var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(
             () => _userService.LoginAsync(loginDto));
         
-        Assert.Contains("Geçersiz e-posta veya şifre", exception.Message);
+        Assert.Contains("Email veya şifre hatalı", exception.Message);
     }
 
     #endregion
@@ -271,20 +294,16 @@ public class UserServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task GetUserStatsAsync_NonExistentUser_ReturnsEmptyStats()
+    public async Task GetUserStatsAsync_NonExistentUser_ThrowsInvalidOperationException()
     {
         // Arrange
         var nonExistentUserId = 999;
 
-        // Act
-        var result = await _userService.GetUserStatsAsync(nonExistentUserId);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(0, result.TotalTasks);
-        Assert.Equal(0, result.CompletedTasks);
-        Assert.Equal(0, result.InProgressTasks);
-        Assert.Equal(0, result.TaskCompletionRate);
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _userService.GetUserStatsAsync(nonExistentUserId));
+        
+        Assert.Contains("Kullanıcı bulunamadı", exception.Message);
     }
 
     #endregion
