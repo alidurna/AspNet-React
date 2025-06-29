@@ -56,6 +56,22 @@ var configuration = builder.Configuration;
  * - Transient: Her injection'da yeni instance
  */
 
+// ===== CORS CONFIGURATION =====
+/*
+ * CORS (Cross-Origin Resource Sharing) ayarları
+ * Frontend (React) ile Backend (ASP.NET Core) arasındaki iletişim için gerekli
+ */
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000") // React development server
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 // ===== API CONTROLLERS =====
 /*
  * AddControllers() method'u:

@@ -1,0 +1,268 @@
+/**
+ * TaskFlow Frontend - Global CSS Styles
+ * 
+ * Bu dosya, TaskFlow uygulamasının global CSS stillerini içerir.
+ * Tailwind CSS direktifleri ve custom component sınıfları burada tanımlanır.
+ * 
+ * İçerik:
+ * - Tailwind CSS base, components, utilities import'ları
+ * - Google Fonts (Inter) import'u
+ * - Custom component sınıfları (.btn-primary, .input-field, .card, .gradient-bg)
+ * - Global reset ve base styles
+ * - Responsive utilities
+ * 
+ * Kullanım:
+ * - main.tsx dosyasında import edilir
+ * - Tüm uygulama boyunca geçerli olan stiller
+ * - Component'lerde className olarak kullanılır
+ */
+
+/* ===== GOOGLE FONTS IMPORT ===== */
+/* Inter font family - modern, okunabilir sans-serif font */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+/* ===== TAILWIND CSS DIRECTIVES ===== */
+/* Tailwind CSS'in temel katmanlarını import eder */
+
+/* Base layer - HTML element'lerin reset'i ve temel stilleri */
+@tailwind base;
+
+/* Components layer - özelleştirilmiş component sınıfları */
+@tailwind components;
+
+/* Utilities layer - utility sınıfları (margin, padding, color vs.) */
+@tailwind utilities;
+
+/* ===== CUSTOM COMPONENT CLASSES ===== */
+/* Tekrar kullanılabilir component sınıfları */
+
+@layer components {
+  /* ===== BUTTON COMPONENTS ===== */
+
+  /* Primary Button - Ana buton stili */
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-6 rounded-lg 
+           shadow-sm hover:shadow-md transition-all duration-200 
+           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Secondary Button - İkincil buton stili */
+  .btn-secondary {
+    @apply bg-secondary-100 hover:bg-secondary-200 text-secondary-700 font-medium py-3 px-6 rounded-lg 
+           border border-secondary-300 transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Outline Button - Çerçeveli buton stili */
+  .btn-outline {
+    @apply border-2 border-primary-600 text-primary-600 hover:bg-primary-600 hover:text-white 
+           font-medium py-3 px-6 rounded-lg transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* ===== INPUT COMPONENTS ===== */
+
+  /* Input Field - Standart input stili */
+  .input-field {
+    @apply block w-full px-4 py-3 border border-gray-300 rounded-lg 
+           focus:ring-2 focus:ring-primary-500 focus:border-primary-500 
+           placeholder-gray-400 text-gray-900 bg-white
+           transition-all duration-200 ease-in-out
+           disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed;
+  }
+
+  /* Input Field with Error - Hatalı input stili */
+  .input-field-error {
+    @apply input-field border-error-500 focus:ring-error-500 focus:border-error-500;
+  }
+
+  /* Input Field with Success - Başarılı input stili */
+  .input-field-success {
+    @apply input-field border-success-500 focus:ring-success-500 focus:border-success-500;
+  }
+
+  /* ===== CARD COMPONENTS ===== */
+
+  /* Card - Temel kart stili */
+  .card {
+    @apply bg-white rounded-xl border border-gray-200 shadow-sm 
+           hover:shadow-md transition-shadow duration-200 p-6;
+  }
+
+  /* Card with hover effect - Hover efektli kart */
+  .card-hover {
+    @apply card hover:shadow-lg hover:-translate-y-1 transform transition-all duration-300;
+  }
+
+  /* Card compact - Küçük padding'li kart */
+  .card-compact {
+    @apply bg-white rounded-lg border border-gray-200 shadow-sm p-4;
+  }
+
+  /* ===== LAYOUT COMPONENTS ===== */
+
+  /* Container - Merkezi container */
+  .container-center {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Form Container - Form wrapper */
+  .form-container {
+    @apply max-w-md mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200;
+  }
+
+  /* ===== BACKGROUND COMPONENTS ===== */
+
+  /* Gradient Background - Ana gradient arkaplan */
+  .gradient-bg {
+    @apply bg-gradient-to-br from-primary-600 via-primary-700 to-secondary-600;
+  }
+
+  /* Light Gradient Background - Açık gradient arkaplan */
+  .gradient-bg-light {
+    @apply bg-gradient-to-br from-primary-50 via-blue-50 to-secondary-50;
+  }
+
+  /* ===== TEXT COMPONENTS ===== */
+
+  /* Heading Primary - Ana başlık stili */
+  .heading-primary {
+    @apply text-3xl sm:text-4xl font-bold text-gray-900 mb-4;
+  }
+
+  /* Heading Secondary - İkincil başlık stili */
+  .heading-secondary {
+    @apply text-xl sm:text-2xl font-semibold text-gray-800 mb-3;
+  }
+
+  /* Text Muted - Soluk metin stili */
+  .text-muted {
+    @apply text-gray-600 text-sm;
+  }
+
+  /* ===== UTILITY COMPONENTS ===== */
+
+  /* Loading Spinner - Yükleme animasyonu */
+  .loading-spinner {
+    @apply animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-primary-600;
+  }
+
+  /* Divider - Ayırıcı çizgi */
+  .divider {
+    @apply border-t border-gray-200 my-6;
+  }
+
+  /* Badge - Küçük etiket */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  /* Badge Primary */
+  .badge-primary {
+    @apply badge bg-primary-100 text-primary-800;
+  }
+
+  /* Badge Success */
+  .badge-success {
+    @apply badge bg-success-100 text-success-800;
+  }
+
+  /* Badge Warning */
+  .badge-warning {
+    @apply badge bg-warning-100 text-warning-800;
+  }
+
+  /* Badge Error */
+  .badge-error {
+    @apply badge bg-error-100 text-error-800;
+  }
+}
+
+/* ===== CUSTOM BASE STYLES ===== */
+@layer base {
+  /* HTML ve Body temel stilleri */
+  html {
+    @apply scroll-smooth; /* Smooth scrolling */
+  }
+
+  body {
+    @apply font-sans text-gray-900 bg-gray-50 antialiased; /* Temel font ve renk */
+  }
+
+  /* Heading element'leri için temel stiller */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-semibold leading-tight; /* Font weight ve line height */
+  }
+
+  /* Link element'leri için temel stiller */
+  a {
+    @apply text-primary-600 hover:text-primary-700 transition-colors duration-200;
+  }
+
+  /* Focus outline'ı kaldır (custom focus ring'ler kullanıyoruz) */
+  *:focus {
+    @apply outline-none;
+  }
+
+  /* Scrollbar stilleri (Webkit tabanlı tarayıcılar için) */
+  ::-webkit-scrollbar {
+    @apply w-2; /* Scrollbar genişliği */
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100; /* Scrollbar track rengi */
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 rounded-full; /* Scrollbar thumb rengi ve şekli */
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500; /* Scrollbar thumb hover rengi */
+  }
+}
+
+/* ===== RESPONSIVE UTILITIES ===== */
+@layer utilities {
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
+  /* Custom aspect ratios */
+  .aspect-square {
+    aspect-ratio: 1 / 1;
+  }
+
+  .aspect-video {
+    aspect-ratio: 16 / 9;
+  }
+
+  /* Text truncation utilities */
+  .truncate-2-lines {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .truncate-3-lines {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
