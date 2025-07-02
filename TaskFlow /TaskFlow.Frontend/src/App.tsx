@@ -5,7 +5,10 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+import { Provider } from "react-redux";
+import { store } from "./store";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ToastProvider } from "./components/ui/Toast";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -16,14 +19,20 @@ import Dashboard from "./pages/Dashboard";
  * Bu component, tüm uygulamanın kök component'idir ve routing yapılandırmasını içerir.
  * React Router kullanarak sayfa navigasyonunu yönetir.
  *
+ * Provider Hierarchy:
+ * - Redux Provider: Global state management
+ * - AuthProvider: Authentication context
+ * - ToastProvider: Notification system
+ * - Router: Page navigation
+ *
  * Mevcut Route'lar:
  * - "/" : Ana sayfa - Login'e yönlendirir
  * - "/login" : Kullanıcı giriş sayfası
  * - "/register" : Yeni kullanıcı kayıt sayfası
+ * - "/dashboard" : Ana kontrol paneli
  * - "*" : Catch-all route - 404 durumları için Login'e yönlendirir
  *
  * Gelecekte Eklenecek Route'lar:
- * - "/dashboard" : Ana kontrol paneli
  * - "/tasks" : Görev yönetimi sayfası
  * - "/categories" : Kategori yönetimi sayfası
  * - "/profile" : Kullanıcı profil sayfası
@@ -37,81 +46,84 @@ import Dashboard from "./pages/Dashboard";
  */
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        {/* ===== MAIN ROUTING CONFIGURATION ===== */}
-        <Routes>
-          {/* ===== HOME ROUTE ===== */}
-          {/* Ana sayfa - kullanıcıyı login sayfasına yönlendirir */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+    <Provider store={store}>
+      <AuthProvider>
+        <ToastProvider />
+        <Router>
+          {/* ===== MAIN ROUTING CONFIGURATION ===== */}
+          <Routes>
+            {/* ===== HOME ROUTE ===== */}
+            {/* Ana sayfa - kullanıcıyı login sayfasına yönlendirir */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
 
-          {/* ===== AUTHENTICATION ROUTES ===== */}
-          {/* Login sayfası - kullanıcı girişi için */}
-          <Route path="/login" element={<Login />} />
+            {/* ===== AUTHENTICATION ROUTES ===== */}
+            {/* Login sayfası - kullanıcı girişi için */}
+            <Route path="/login" element={<Login />} />
 
-          {/* Register sayfası - yeni kullanıcı kaydı için */}
-          <Route path="/register" element={<Register />} />
+            {/* Register sayfası - yeni kullanıcı kaydı için */}
+            <Route path="/register" element={<Register />} />
 
-          {/* Dashboard sayfası - ana kontrol paneli */}
-          <Route path="/dashboard" element={<Dashboard />} />
+            {/* Dashboard sayfası - ana kontrol paneli */}
+            <Route path="/dashboard" element={<Dashboard />} />
 
-          {/* ===== CATCH-ALL ROUTE ===== */}
-          {/* 404 durumları ve geçersiz URL'ler için */}
-          {/* Kullanıcıyı login sayfasına yönlendirir */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
+            {/* ===== CATCH-ALL ROUTE ===== */}
+            {/* 404 durumları ve geçersiz URL'ler için */}
+            {/* Kullanıcıyı login sayfasına yönlendirir */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
 
-          {/* 
-        ===== FUTURE PROTECTED ROUTES =====
-        İleride authentication context implementasyonu sonrası eklenecek:
-        
-        <Route 
-          path="/dashboard" 
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/tasks" 
-          element={
-            <ProtectedRoute>
-              <Tasks />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/categories" 
-          element={
-            <ProtectedRoute>
-              <Categories />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/profile" 
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/settings" 
-          element={
-            <ProtectedRoute>
-              <Settings />
-            </ProtectedRoute>
-          } 
-        />
-        */}
-        </Routes>
-      </Router>
-    </AuthProvider>
+            {/* 
+          ===== FUTURE PROTECTED ROUTES =====
+          İleride authentication context implementasyonu sonrası eklenecek:
+          
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/tasks" 
+            element={
+              <ProtectedRoute>
+                <Tasks />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/categories" 
+            element={
+              <ProtectedRoute>
+                <Categories />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/settings" 
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            } 
+          />
+          */}
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </Provider>
   );
 }
 

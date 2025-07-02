@@ -127,6 +127,32 @@ namespace TaskFlow.API.DTOs
         /// </summary>
         public DateTime UpdatedAt { get; set; }
 
+        // ===== AUTOMAPPER COMPUTED PROPERTIES =====
+
+        /// <summary>
+        /// Kategori adı (AutoMapper tarafından hesaplanır)
+        /// Category navigation property'sinden alınır
+        /// </summary>
+        public string CategoryName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Kategori rengi (AutoMapper tarafından hesaplanır)
+        /// Category navigation property'sinden alınır
+        /// </summary>
+        public string CategoryColor { get; set; } = "#6B7280";
+
+        /// <summary>
+        /// Kullanıcı adı (AutoMapper tarafından hesaplanır)
+        /// User navigation property'sinden alınır
+        /// </summary>
+        public string UserName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Bitiş tarihine kalan gün sayısı (AutoMapper tarafından hesaplanır)
+        /// Due date'e göre hesaplanır
+        /// </summary>
+        public int? DaysUntilDue { get; set; }
+
         // ===== NAVIGATION PROPERTIES =====
 
         /// <summary>

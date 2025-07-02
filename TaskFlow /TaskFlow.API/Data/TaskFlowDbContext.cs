@@ -367,16 +367,14 @@ public class TaskFlowDbContext : DbContext
         });
     }
 
-    /// <summary>
+        /// <summary>
     /// Varsayılan veri ekleme (Seed Data)
-    /// İlk migration'da otomatik olarak eklenir
+    /// Şimdilik boş - register ile test kullanıcısı oluşturacağız
     /// </summary>
     /// <param name="modelBuilder">Model builder instance</param>
     private static void SeedData(ModelBuilder modelBuilder)
     {
-        // Şimdilik seed data eklemeyelim
-        // Migration oluşturduktan sonra ekleyeceğiz
-        // Bu bölüm ilerleyen adımlarda doldurulacak
+        // Şimdilik seed data yok - register ile kullanıcı oluşturacağız
     }
 
     // ===== SAVECHANGES OVERRIDE =====

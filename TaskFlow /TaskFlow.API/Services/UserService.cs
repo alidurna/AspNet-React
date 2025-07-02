@@ -3,6 +3,7 @@ using TaskFlow.API.Data;
 using TaskFlow.API.DTOs;
 using TaskFlow.API.Interfaces;
 using TaskFlow.API.Models;
+using AutoMapper;
 
 namespace TaskFlow.API.Services
 {
@@ -19,6 +20,7 @@ namespace TaskFlow.API.Services
         private readonly IJwtService _jwtService;
         private readonly ILogger<UserService> _logger;
         private readonly IConfiguration _configuration;
+        private readonly IMapper _mapper;
 
         #endregion
 
@@ -29,13 +31,15 @@ namespace TaskFlow.API.Services
             IPasswordService passwordService,
             IJwtService jwtService,
             ILogger<UserService> logger,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IMapper mapper)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _passwordService = passwordService ?? throw new ArgumentNullException(nameof(passwordService));
             _jwtService = jwtService ?? throw new ArgumentNullException(nameof(jwtService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
         #endregion
@@ -385,17 +389,9 @@ namespace TaskFlow.API.Services
             if (user == null)
                 throw new ArgumentNullException(nameof(user));
 
-            return new UserDto
-            {
-                Id = user.Id,
-                Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                PhoneNumber = user.PhoneNumber,
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt,
-                IsActive = user.IsActive
-            };
+            // AutoMapper ile otomatik mapping
+            // Manuel 12 satır kod → 1 satır!
+            return _mapper.Map<UserDto>(user);
         }
 
         #endregion

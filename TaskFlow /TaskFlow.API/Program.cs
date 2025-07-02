@@ -174,6 +174,22 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 // Task Service - Görev yönetimi için
 builder.Services.AddScoped<ITaskService, TaskService>();
 
+// ===== AUTOMAPPER CONFIGURATION =====
+/*
+ * AutoMapper - Object-Object mapping library
+ * Entity ↔ DTO dönüşümlerini otomatikleştirir
+ * 
+ * AddAutoMapper(Assembly): Belirtilen assembly'deki tüm Profile'ları tarar
+ * Profiles/MappingProfile.cs dosyasındaki mapping kurallarını yükler
+ * 
+ * AVANTAJLARI:
+ * - Manuel mapping kodunu azaltır (50+ satır → 1 satır)
+ * - Type-safe mapping sağlar
+ * - Performance optimizasyonu yapar
+ * - Maintainability artırır
+ */
+builder.Services.AddAutoMapper(typeof(Program).Assembly);
+
 // JWT Authentication configuration
 builder.Services.AddAuthentication(options =>
 {

@@ -170,3 +170,5 @@
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Asp.Versioning.Http.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Asp.Versioning.Mvc.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Asp.Versioning.Mvc.ApiExplorer.dll
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/AutoMapper.dll
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/AutoMapper.Extensions.Microsoft.DependencyInjection.dll

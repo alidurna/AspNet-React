@@ -71,6 +71,24 @@ namespace TaskFlow.API.DTOs
         /// Pasif kullanıcılar sisteme giriş yapamaz
         /// </summary>
         public bool IsActive { get; set; } = true;
+
+        /// <summary>
+        /// Kullanıcının toplam görev sayısı
+        /// AutoMapper tarafından hesaplanır
+        /// </summary>
+        public int TotalTaskCount { get; set; }
+
+        /// <summary>
+        /// Kullanıcının tamamladığı görev sayısı
+        /// AutoMapper tarafından hesaplanır
+        /// </summary>
+        public int CompletedTaskCount { get; set; }
+
+        /// <summary>
+        /// Kullanıcının bekleyen görev sayısı
+        /// AutoMapper tarafından hesaplanır
+        /// </summary>
+        public int PendingTaskCount { get; set; }
     }
 
     /// <summary>

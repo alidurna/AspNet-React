@@ -26,6 +26,7 @@ import DashboardLayout from "../components/layout/DashboardLayout";
 import StatsCard from "../components/ui/StatsCard";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
+import ToastDemo from "../components/demo/ToastDemo";
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -263,6 +264,22 @@ const Dashboard: React.FC = () => {
             color={stat.color}
           />
         ))}
+      </div>
+
+      {/* Toast Demo Section */}
+      <div className="mb-8">
+        <Card>
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              🎯 Notification System Demo
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Aşağıdaki butonları kullanarak yeni toast notification sistemini
+              test edebilirsiniz.
+            </p>
+            <ToastDemo />
+          </div>
+        </Card>
       </div>
 
       {/* Main Content Grid */}
