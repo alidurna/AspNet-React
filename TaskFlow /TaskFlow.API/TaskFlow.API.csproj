@@ -47,8 +47,8 @@
       Version: 9.0.5 - .NET 9 ile uyumlu versiyon
     -->
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.5" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.6" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.6" />
     
     <!-- 
       API Versioning Support
@@ -71,7 +71,7 @@
       - LINQ ile type-safe sorgular yazabiliriz
       - Migration sistemi ile veritabanı versiyonlaması
     -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.6" />
     
     <!-- 
       Entity Framework Core Tools
@@ -85,14 +85,43 @@
       PrivateAssets="all": Bu paket sadece geliştirme sırasında kullanılır,
                           final uygulamaya dahil edilmez (boyut optimizasyonu)
     -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.5">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.6">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.4" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.1" />
     <PackageReference Include="AutoMapper" Version="12.0.1" />
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.3.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.12.1" />
+    
+    <!-- 
+      Caching Layer Packages
+      ========================
+      Microsoft.Extensions.Caching.Memory: In-memory caching support
+      Microsoft.Extensions.Caching.StackExchangeRedis: Redis distributed caching
+      StackExchange.Redis: Low-level Redis client for advanced scenarios
+    -->
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.6" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.6" />
+    <PackageReference Include="StackExchange.Redis" Version="2.8.41" />
+    
+    <!-- 
+      SignalR Real-time Features
+      ===========================
+      Microsoft.AspNetCore.SignalR: Core SignalR functionality (built-in but explicit)
+      Microsoft.AspNetCore.SignalR.Protocols.MessagePack: MessagePack protocol for better performance
+    -->
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="9.0.5" />
+    
+    <!-- 
+      File Upload System
+      ===================
+      Microsoft.AspNetCore.Http.Features: Advanced HTTP features for file uploads
+      SixLabors.ImageSharp: Image processing library for avatar resizing
+      SixLabors.ImageSharp.Web: Web-optimized image processing
+    -->
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.10" />
+    <PackageReference Include="SixLabors.ImageSharp.Web" Version="3.1.5" />
   </ItemGroup>
 
 </Project>

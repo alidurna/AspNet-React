@@ -31,7 +31,16 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
  */
 const Input = forwardRef<HTMLInputElement, InputProps>(
   (
-    { label, error, icon, showPasswordToggle, type, className = "", ...props },
+    {
+      label,
+      error,
+      icon,
+      showPasswordToggle,
+      type,
+      className = "",
+      id,
+      ...props
+    },
     ref
   ) => {
     // Şifre görünürlük state'i (sadece password type için)
@@ -39,6 +48,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
 
     // Input focus durumu (border animasyonu için)
     const [isFocused, setIsFocused] = useState(false);
+
+    // Unique ID for accessibility (kullanıcı ID vermezse otomatik generate et)
+    const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
 
     // Şifre göster/gizle özelliği aktifse input type'ını değiştir
     const inputType =
@@ -53,7 +65,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         {/* ===== INPUT LABEL ===== */}
         {/* Opsiyonel label - varsa göster */}
         {label && (
-          <label className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor={inputId}
+            className="block text-sm font-medium text-gray-700"
+          >
             {label}
           </label>
         )}
@@ -72,6 +87,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           {/* ===== MAIN INPUT ELEMENT ===== */}
           <input
             ref={ref} // React Hook Form için ref
+            id={inputId} // Accessibility için unique ID
             type={inputType} // Dynamic type (password toggle için)
             className={`
               input-field

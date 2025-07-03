@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TaskFlow - Offline</title>
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+      }
+
+      .offline-container {
+        text-align: center;
+        padding: 2rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        max-width: 400px;
+        width: 90%;
+      }
+
+      .offline-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        animation: float 3s ease-in-out infinite;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+
+      h1 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        font-weight: 700;
+      }
+
+      p {
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+        opacity: 0.9;
+        line-height: 1.6;
+      }
+
+      .retry-button {
+        background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 25px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 0.5rem;
+        box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+      }
+
+      .retry-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+      }
+
+      .cached-button {
+        background: linear-gradient(45deg, #4ecdc4, #44a08d);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 25px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 0.5rem;
+        box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+      }
+
+      .cached-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(78, 205, 196, 0.4);
+      }
+
+      .connection-status {
+        margin-top: 1rem;
+        padding: 0.5rem 1rem;
+        border-radius: 15px;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      .status-offline {
+        background: rgba(255, 107, 107, 0.2);
+        border: 1px solid rgba(255, 107, 107, 0.3);
+      }
+
+      .status-online {
+        background: rgba(46, 204, 113, 0.2);
+        border: 1px solid rgba(46, 204, 113, 0.3);
+      }
+
+      .features-list {
+        text-align: left;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .features-list h3 {
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        color: #ffd700;
+      }
+
+      .features-list ul {
+        list-style: none;
+        padding: 0;
+      }
+
+      .features-list li {
+        padding: 0.5rem 0;
+        opacity: 0.9;
+      }
+
+      .features-list li::before {
+        content: "✓";
+        color: #4ecdc4;
+        font-weight: bold;
+        margin-right: 0.5rem;
+      }
+
+      .spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 1s ease-in-out infinite;
+        margin-right: 0.5rem;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="offline-container">
+      <div class="offline-icon">📱</div>
+      <h1>TaskFlow</h1>
+      <p>
+        İnternet bağlantınız kesildi. Ancak merak etmeyin, önceden kaydedilmiş
+        verilerinize erişebilirsiniz!
+      </p>
+
+      <div class="connection-status status-offline" id="connectionStatus">
+        🔴 Offline
+      </div>
+
+      <div style="margin-top: 2rem">
+        <button class="retry-button" onclick="checkConnection()">
+          <span id="retryText">Bağlantıyı Kontrol Et</span>
+          <div class="spinner hidden" id="retrySpinner"></div>
+        </button>
+        <button class="cached-button" onclick="loadCachedData()">
+          Kayıtlı Verileri Görüntüle
+        </button>
+      </div>
+
+      <div class="features-list">
+        <h3>Offline Özellikler</h3>
+        <ul>
+          <li>Önceden yüklenen görevleri görüntüle</li>
+          <li>Görev durumlarını değiştir</li>
+          <li>Yeni görevler oluştur</li>
+          <li>Veriler otomatik senkronize edilir</li>
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      // Connection status checker
+      function updateConnectionStatus() {
+        const statusElement = document.getElementById("connectionStatus");
+        if (navigator.onLine) {
+          statusElement.textContent = "🟢 Online";
+          statusElement.className = "connection-status status-online";
+        } else {
+          statusElement.textContent = "🔴 Offline";
+          statusElement.className = "connection-status status-offline";
+        }
+      }
+
+      // Check connection
+      function checkConnection() {
+        const retryText = document.getElementById("retryText");
+        const retrySpinner = document.getElementById("retrySpinner");
+
+        retryText.style.display = "none";
+        retrySpinner.classList.remove("hidden");
+
+        setTimeout(() => {
+          updateConnectionStatus();
+
+          if (navigator.onLine) {
+            // Online olduğunda ana uygulamaya yönlendir
+            window.location.href = "/";
+          } else {
+            retryText.style.display = "inline";
+            retrySpinner.classList.add("hidden");
+          }
+        }, 2000);
+      }
+
+      // Load cached data
+      function loadCachedData() {
+        try {
+          // Service Worker'dan cache'lenmiş verileri al
+          if ("caches" in window) {
+            caches.open("taskflow-api-v1.0.0").then((cache) => {
+              cache.keys().then((keys) => {
+                if (keys.length > 0) {
+                  // Cache'lenmiş veriler var, dashboard'a yönlendir
+                  window.location.href = "/dashboard?offline=true";
+                } else {
+                  alert(
+                    "Henüz cache'lenmiş veri bulunmuyor. Lütfen önce online olduğunuzda uygulamayı ziyaret edin."
+                  );
+                }
+              });
+            });
+          } else {
+            alert("Tarayıcınız offline özelliklerini desteklemiyor.");
+          }
+        } catch (error) {
+          console.error("Cache kontrol hatası:", error);
+          alert("Cache kontrol edilirken bir hata oluştu.");
+        }
+      }
+
+      // Event listeners
+      window.addEventListener("online", updateConnectionStatus);
+      window.addEventListener("offline", updateConnectionStatus);
+
+      // Initial status check
+      updateConnectionStatus();
+
+      // Periodically check connection
+      setInterval(updateConnectionStatus, 30000);
+    </script>
+  </body>
+</html>

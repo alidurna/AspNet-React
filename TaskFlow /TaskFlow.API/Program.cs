@@ -14,6 +14,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Caching.Memory;
 using System.Text;
 using TaskFlow.API.Data;
 using TaskFlow.API.Services;
@@ -65,7 +66,12 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:3000") // React development server
+        policy.WithOrigins(
+                "http://localhost:3000",  // React development server
+                "https://localhost:3000", // React HTTPS (if needed)
+                "http://localhost:5173",  // Vite development server
+                "https://localhost:5173"  // Vite HTTPS (if needed)
+              )
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -174,6 +180,58 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 // Task Service - Görev yönetimi için
 builder.Services.AddScoped<ITaskService, TaskService>();
 
+// File Upload Service - Dosya upload ve resim resize işlemleri için
+builder.Services.AddScoped<IFileUploadService, FileUploadService>();
+
+// ===== CACHE SERVICES CONFIGURATION =====
+/*
+ * Caching Layer - Performance optimizasyonu için önbellek servisleri
+ * 
+ * Memory Cache: Uygulamanın RAM'inde hızlı erişim için
+ * Distributed Cache: Redis gibi external cache store'lar için (opsiyonel)
+ * 
+ * AVANTAJLARI:
+ * - API response sürelerini %50-90 azaltır
+ * - Database yükünü azaltır
+ * - User experience'i iyileştirir
+ * - Scalability artırır
+ */
+
+// Memory Cache - built-in ASP.NET Core memory caching
+builder.Services.AddMemoryCache(options =>
+{
+    // Memory cache boyut limiti (MB cinsinden)
+    options.SizeLimit = 100; // 100MB max
+    
+    // Compact etme oranı (memory pressure durumunda)
+    options.CompactionPercentage = 0.25; // %25'ini temizle
+});
+
+// Distributed Cache - Redis kullanımı için (opsiyonel)
+// Eğer Redis connection string varsa Redis kullan, yoksa Memory Cache fallback
+var redisConnectionString = configuration.GetConnectionString("Redis");
+if (!string.IsNullOrEmpty(redisConnectionString))
+{
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = redisConnectionString;
+        options.InstanceName = "TaskFlowCache";
+    });
+    
+    // Redis mevcutsa hem memory hem distributed cache kullan
+    builder.Services.AddScoped<ICacheService, CacheService>();
+}
+else
+{
+    // Redis yoksa sadece memory cache kullan
+    builder.Services.AddScoped<ICacheService>(provider =>
+        new CacheService(
+            provider.GetRequiredService<IMemoryCache>(),
+            provider.GetRequiredService<ILogger<CacheService>>(),
+            null // No distributed cache
+        ));
+}
+
 // ===== AUTOMAPPER CONFIGURATION =====
 /*
  * AutoMapper - Object-Object mapping library
@@ -189,6 +247,37 @@ builder.Services.AddScoped<ITaskService, TaskService>();
  * - Maintainability artırır
  */
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
+
+// ===== SIGNALR CONFIGURATION =====
+/*
+ * SignalR - Real-time communication library
+ * WebSocket, Server-Sent Events, Long Polling protokollerini destekler
+ * 
+ * KULLANIM ALANLARI:
+ * - Live task updates (görev değişiklikleri)
+ * - Real-time notifications (anlık bildirimler)
+ * - Online user tracking (kimler online)
+ * - Achievement notifications (başarı bildirimleri)
+ * 
+ * AVANTAJLARI:
+ * - Instant user feedback
+ * - Real-time collaboration
+ * - Better user experience
+ * - Automatic protocol fallback
+ */
+builder.Services.AddSignalR(options =>
+{
+    // Hub bağlantı timeout süreleri
+    options.ClientTimeoutInterval = TimeSpan.FromMinutes(1); // 1 dakika
+    options.KeepAliveInterval = TimeSpan.FromSeconds(30);    // 30 saniye ping
+    
+    // Development'ta detaylı error mesajları
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableDetailedErrors = true;
+    }
+})
+.AddMessagePackProtocol(); // MessagePack protocol - daha hızlı serialization
 
 // JWT Authentication configuration
 builder.Services.AddAuthentication(options =>
@@ -443,6 +532,14 @@ if (app.Environment.IsDevelopment())
  */
 app.UseHttpsRedirection();
 
+// ===== STATIC FILES MIDDLEWARE =====
+/*
+ * Static file serving (images, CSS, JS, uploads vb.)
+ * wwwroot klasöründeki dosyaları serve eder
+ * Upload edilen avatar ve attachment'ların erişimi için gerekli
+ */
+app.UseStaticFiles();
+
 // ===== CORS MIDDLEWARE =====
 /*
  * CORS policy'sini uygular.
@@ -477,6 +574,20 @@ app.UseAuthorization();     // Role/policy based authorization
  * Attribute routing kullanır ([Route], [HttpGet] vb.)
  */
 app.MapControllers();
+
+// ===== SIGNALR HUB ROUTING =====
+/*
+ * SignalR Hub endpoint'ini map eder.
+ * Frontend'den /api/hubs/taskflow URL'si ile bağlanılır.
+ * 
+ * HUB ÖZELLİKLERİ:
+ * - Real-time task updates
+ * - Live notifications
+ * - Online user tracking
+ * - Achievement notifications
+ * - Typing indicators
+ */
+app.MapHub<TaskFlow.API.Hubs.TaskFlowHub>("/api/hubs/taskflow");
 
 // ===== ROOT ENDPOINT =====
 /*

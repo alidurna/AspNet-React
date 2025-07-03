@@ -32,7 +32,7 @@ import type {
 /**
  * API Base Configuration
  */
-const API_BASE_URL = "http://localhost:5280/api/v1.0";
+const API_BASE_URL = "https://localhost:7172/api/v1.0";
 
 /**
  * Axios Instance Oluşturma
@@ -103,10 +103,7 @@ apiClient.interceptors.request.use(
 
     if (token && tokenManager.isTokenValid()) {
       // Authorization header'ına JWT token ekle
-      config.headers = {
-        ...config.headers,
-        Authorization: `Bearer ${token}`,
-      };
+      config.headers.Authorization = `Bearer ${token}`;
     }
 
     // Request'i console'a log et (development için)

@@ -21,6 +21,7 @@ namespace TaskFlow.API.Services
         private readonly ILogger<UserService> _logger;
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
+        private readonly ICacheService _cacheService;
 
         #endregion
 
@@ -32,7 +33,8 @@ namespace TaskFlow.API.Services
             IJwtService jwtService,
             ILogger<UserService> logger,
             IConfiguration configuration,
-            IMapper mapper)
+            IMapper mapper,
+            ICacheService cacheService)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _passwordService = passwordService ?? throw new ArgumentNullException(nameof(passwordService));
@@ -40,6 +42,7 @@ namespace TaskFlow.API.Services
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _cacheService = cacheService ?? throw new ArgumentNullException(nameof(cacheService));
         }
 
         #endregion
@@ -204,10 +207,32 @@ namespace TaskFlow.API.Services
         {
             try
             {
+                // Cache key oluştur
+                var cacheKey = $"users:profile:{userId}";
+                var cacheExpiration = TimeSpan.FromMinutes(
+                    _configuration.GetValue("Cache:UsersCache:ExpirationMinutes", 60));
+
+                // Cache'ten al veya database'ten getir
+                var userDto = await _cacheService.GetAsync<UserDto>(cacheKey);
+                if (userDto != null)
+                {
+                    return userDto;
+                }
+
+                // Cache'te yoksa database'ten getir
                 var user = await _context.Users
                     .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
 
-                return user != null ? MapToDto(user) : null;
+                if (user == null)
+                {
+                    return null;
+                }
+
+                // User'ı DTO'ya çevir ve cache'e ekle
+                userDto = MapToDto(user);
+                await _cacheService.SetAsync(cacheKey, userDto, cacheExpiration);
+
+                return userDto;
             }
             catch (Exception ex)
             {
@@ -268,6 +293,10 @@ namespace TaskFlow.API.Services
 
                 await _context.SaveChangesAsync();
 
+                // Cache'i invalidate et - kullanıcı bilgileri değişti
+                await _cacheService.RemoveAsync($"users:profile:{userId}");
+                await _cacheService.RemoveAsync($"stats:user:{userId}");
+
                 _logger.LogInformation("User profile updated successfully: {UserId}", userId);
 
                 return MapToDto(user);
@@ -305,35 +334,47 @@ namespace TaskFlow.API.Services
             {
                 _logger.LogDebug("Getting user statistics: {UserId}", userId);
 
-                var user = await _context.Users
-                    .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+                // Cache key oluştur
+                var cacheKey = $"stats:user:{userId}";
+                var cacheExpiration = TimeSpan.FromMinutes(
+                    _configuration.GetValue("Cache:StatisticsCache:ExpirationMinutes", 5));
 
-                if (user == null)
-                {
-                    throw new InvalidOperationException("Kullanıcı bulunamadı");
-                }
+                // Cache'ten al veya database'ten getir
+                var stats = await _cacheService.GetOrCreateAsync(
+                    cacheKey,
+                    async () =>
+                    {
+                        var user = await _context.Users
+                            .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
 
-                // Task ve category sayılarını ayrı sorgularla al
-                var totalTasks = await _context.TodoTasks
-                    .CountAsync(t => t.UserId == userId && t.IsActive);
-                var completedTasks = await _context.TodoTasks
-                    .CountAsync(t => t.UserId == userId && t.IsActive && t.IsCompleted);
-                var totalCategories = await _context.Categories
-                    .CountAsync(c => c.UserId == userId && c.IsActive);
-                
-                var pendingTasks = totalTasks - completedTasks;
+                        if (user == null)
+                        {
+                            throw new InvalidOperationException("Kullanıcı bulunamadı");
+                        }
 
-                var stats = new UserStatsDto
-                {
-                    TotalTasks = totalTasks,
-                    CompletedTasks = completedTasks,
-                    PendingTasks = pendingTasks,
-                    InProgressTasks = 0, // Şu an için 0, daha sonra hesaplanabilir
-                    TaskCompletionRate = totalTasks > 0 ? (double)completedTasks / totalTasks * 100 : 0,
-                    AverageCompletionDays = 0, // Şu an için 0, daha sonra hesaplanabilir
-                    TasksCompletedThisMonth = 0, // Şu an için 0, daha sonra hesaplanabilir
-                    TasksCompletedThisWeek = 0 // Şu an için 0, daha sonra hesaplanabilir
-                };
+                        // Task ve category sayılarını ayrı sorgularla al
+                        var totalTasks = await _context.TodoTasks
+                            .CountAsync(t => t.UserId == userId && t.IsActive);
+                        var completedTasks = await _context.TodoTasks
+                            .CountAsync(t => t.UserId == userId && t.IsActive && t.IsCompleted);
+                        var totalCategories = await _context.Categories
+                            .CountAsync(c => c.UserId == userId && c.IsActive);
+                        
+                        var pendingTasks = totalTasks - completedTasks;
+
+                        return new UserStatsDto
+                        {
+                            TotalTasks = totalTasks,
+                            CompletedTasks = completedTasks,
+                            PendingTasks = pendingTasks,
+                            InProgressTasks = 0, // Şu an için 0, daha sonra hesaplanabilir
+                            TaskCompletionRate = totalTasks > 0 ? (double)completedTasks / totalTasks * 100 : 0,
+                            AverageCompletionDays = 0, // Şu an için 0, daha sonra hesaplanabilir
+                            TasksCompletedThisMonth = 0, // Şu an için 0, daha sonra hesaplanabilir
+                            TasksCompletedThisWeek = 0 // Şu an için 0, daha sonra hesaplanabilir
+                        };
+                    },
+                    cacheExpiration);
 
                 return stats;
             }

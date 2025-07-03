@@ -28,6 +28,8 @@
 import React, { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import AdvancedSearchModal from "../search/AdvancedSearchModal";
+import type { TaskFilterFormData } from "../../schemas/taskSchemas";
 
 interface BreadcrumbItem {
   name: string;
@@ -49,6 +51,7 @@ const Header: React.FC<HeaderProps> = ({
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
 
   // Hooks
   const { user, logout } = useAuth();
@@ -66,8 +69,16 @@ const Header: React.FC<HeaderProps> = ({
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement search functionality
-    console.log("Search query:", searchQuery);
+    if (searchQuery.trim()) {
+      // Quick search - open advanced search modal with search text
+      setIsAdvancedSearchOpen(true);
+    }
+  };
+
+  const handleAdvancedSearch = (filters: TaskFilterFormData) => {
+    // TODO: Implement actual search logic
+    console.log("Advanced search filters:", filters);
+    // This would typically dispatch to Redux store or call an API
   };
 
   return (
@@ -170,12 +181,22 @@ const Header: React.FC<HeaderProps> = ({
                       />
                     </svg>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsAdvancedSearchOpen(true)}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 px-2 py-1 text-xs bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition-colors"
+                  >
+                    Gelişmiş
+                  </button>
                 </div>
               </form>
             </div>
 
             {/* Mobile Search Button */}
-            <button className="md:hidden p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100">
+            <button
+              onClick={() => setIsAdvancedSearchOpen(true)}
+              className="md:hidden p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+            >
               <svg
                 className="w-6 h-6"
                 fill="none"
@@ -348,6 +369,14 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Advanced Search Modal */}
+      <AdvancedSearchModal
+        isOpen={isAdvancedSearchOpen}
+        onClose={() => setIsAdvancedSearchOpen(false)}
+        onSearch={handleAdvancedSearch}
+        initialFilters={{ searchText: searchQuery }}
+      />
     </header>
   );
 };

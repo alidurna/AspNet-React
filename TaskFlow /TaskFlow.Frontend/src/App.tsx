@@ -1,4 +1,3 @@
-import React from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -9,6 +8,8 @@ import { Provider } from "react-redux";
 import { store } from "./store";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ToastProvider } from "./components/ui/Toast";
+import PWAInstallBanner from "./components/ui/PWAInstallBanner";
+import usePWA from "./hooks/usePWA";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -45,10 +46,33 @@ import Dashboard from "./pages/Dashboard";
  * - Authentication context ile route protection yapılacak
  */
 function App() {
+  const { isOnline, updateAvailable, updateServiceWorker } = usePWA();
+
   return (
     <Provider store={store}>
       <AuthProvider>
         <ToastProvider />
+
+        {/* PWA Update Banner */}
+        {updateAvailable && (
+          <div className="fixed top-0 left-0 right-0 z-50 bg-blue-600 text-white p-2 text-center">
+            <span className="mr-4">Yeni sürüm mevcut!</span>
+            <button
+              onClick={updateServiceWorker}
+              className="bg-white text-blue-600 px-3 py-1 rounded font-medium"
+            >
+              Güncelle
+            </button>
+          </div>
+        )}
+
+        {/* Offline Indicator */}
+        {!isOnline && (
+          <div className="fixed top-0 left-0 right-0 z-40 bg-red-600 text-white p-2 text-center">
+            <span>🔴 Offline - İnternet bağlantınızı kontrol edin</span>
+          </div>
+        )}
+
         <Router>
           {/* ===== MAIN ROUTING CONFIGURATION ===== */}
           <Routes>
@@ -122,6 +146,9 @@ function App() {
           */}
           </Routes>
         </Router>
+
+        {/* PWA Install Banner */}
+        <PWAInstallBanner />
       </AuthProvider>
     </Provider>
   );

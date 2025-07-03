@@ -1,1 +1,20 @@
-{"Version":1,"Hash":"sCJ1jBMRSGPWV5nKrZ0drLGuVUF+gZaDnqWm5nYsLqA=","Source":"TaskFlow.API","BasePath":"_content/TaskFlow.API","Mode":"Default","ManifestType":"Build","ReferencedProjectsConfiguration":[],"DiscoveryPatterns":[],"Assets":[],"Endpoints":[]}
+{
+  "Version": 1,
+  "Hash": "b9kzAWSfA9ZpZqbo4FuUfBcPoL0nttx8Qt2NW+fESfA=",
+  "Source": "TaskFlow.API",
+  "BasePath": "_content/TaskFlow.API",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "TaskFlow.API/wwwroot",
+      "Source": "TaskFlow.API",
+      "ContentRoot": "/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/wwwroot/",
+      "BasePath": "_content/TaskFlow.API",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [],
+  "Endpoints": []
+}
