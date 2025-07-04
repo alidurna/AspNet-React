@@ -145,6 +145,58 @@ public class User
     [Display(Name = "E-posta Doğrulandı")]
     public bool IsEmailVerified { get; set; } = false;
 
+    /// <summary>
+    /// E-posta doğrulama token'ı
+    /// E-posta doğrulama için kullanılır
+    /// </summary>
+    [MaxLength(500, ErrorMessage = "E-posta doğrulama token'ı en fazla 500 karakter olabilir")]
+    [Display(Name = "E-posta Doğrulama Token")]
+    public string? EmailVerificationToken { get; set; }
+
+    /// <summary>
+    /// E-posta doğrulama token'ının son geçerlilik tarihi
+    /// Token expire olması için
+    /// </summary>
+    [Display(Name = "E-posta Doğrulama Token Bitiş Tarihi")]
+    public DateTime? EmailVerificationTokenExpiry { get; set; }
+
+    /// <summary>
+    /// Şifre sıfırlama token'ı
+    /// Şifre sıfırlama için kullanılır
+    /// </summary>
+    [MaxLength(500, ErrorMessage = "Şifre sıfırlama token'ı en fazla 500 karakter olabilir")]
+    [Display(Name = "Şifre Sıfırlama Token")]
+    public string? PasswordResetToken { get; set; }
+
+    /// <summary>
+    /// Şifre sıfırlama token'ının son geçerlilik tarihi
+    /// Token expire olması için
+    /// </summary>
+    [Display(Name = "Şifre Sıfırlama Token Bitiş Tarihi")]
+    public DateTime? PasswordResetTokenExpiry { get; set; }
+
+    /// <summary>
+    /// Kullanıcının aktif refresh token'ı
+    /// JWT token yenileme için kullanılır
+    /// </summary>
+    [MaxLength(500, ErrorMessage = "Refresh token en fazla 500 karakter olabilir")]
+    [Display(Name = "Refresh Token")]
+    public string? RefreshToken { get; set; }
+
+    /// <summary>
+    /// Refresh token'ın son geçerlilik tarihi
+    /// Token expire olması için
+    /// </summary>
+    [Display(Name = "Refresh Token Bitiş Tarihi")]
+    public DateTime? RefreshTokenExpiry { get; set; }
+
+    /// <summary>
+    /// Kullanıcının son giriş yapma tarihi
+    /// Aktivite tracking için
+    /// </summary>
+    [Display(Name = "Son Giriş Tarihi")]
+    public DateTime? LastLoginDate { get; set; }
+
     // ===== NAVIGATION PROPERTIES (İLİŞKİLER) =====
 
     /// <summary>

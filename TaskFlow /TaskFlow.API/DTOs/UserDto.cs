@@ -204,6 +204,12 @@ namespace TaskFlow.API.DTOs
         public string Token { get; set; } = string.Empty;
 
         /// <summary>
+        /// JWT refresh token
+        /// Access token yenileme için kullanılır
+        /// </summary>
+        public string RefreshToken { get; set; } = string.Empty;
+
+        /// <summary>
         /// Token'ın geçerlilik süresi (dakika)
         /// Client-side'da token yenileme için kullanılır
         /// </summary>
@@ -365,5 +371,128 @@ namespace TaskFlow.API.DTOs
         /// Haftalık performans takibi
         /// </summary>
         public int TasksCompletedThisWeek { get; set; }
+    }
+
+    /// <summary>
+    /// Password reset request DTO'su
+    /// Kullanıcının şifre sıfırlama isteği için
+    /// </summary>
+    public class PasswordResetRequestDto
+    {
+        /// <summary>
+        /// Şifre sıfırlama isteği yapılan email adresi
+        /// </summary>
+        [Required(ErrorMessage = "Email adresi gereklidir")]
+        [EmailAddress(ErrorMessage = "Geçerli bir email adresi giriniz")]
+        public string Email { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Password reset DTO'su
+    /// Şifre sıfırlama işlemi için
+    /// </summary>
+    public class PasswordResetDto
+    {
+        /// <summary>
+        /// Şifre sıfırlama token'ı
+        /// </summary>
+        [Required(ErrorMessage = "Reset token gereklidir")]
+        public string Token { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Yeni şifre
+        /// </summary>
+        [Required(ErrorMessage = "Yeni şifre gereklidir")]
+        [MinLength(8, ErrorMessage = "Şifre en az 8 karakter olmalıdır")]
+        [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]", 
+            ErrorMessage = "Şifre en az 1 küçük harf, 1 büyük harf, 1 rakam ve 1 özel karakter içermelidir")]
+        public string NewPassword { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Yeni şifre tekrarı
+        /// </summary>
+        [Required(ErrorMessage = "Şifre tekrarı gereklidir")]
+        [Compare("NewPassword", ErrorMessage = "Şifreler eşleşmiyor")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Email verification request DTO'su
+    /// Email doğrulama isteği için
+    /// </summary>
+    public class EmailVerificationRequestDto
+    {
+        /// <summary>
+        /// Doğrulama isteği yapılan email adresi
+        /// </summary>
+        [Required(ErrorMessage = "Email adresi gereklidir")]
+        [EmailAddress(ErrorMessage = "Geçerli bir email adresi giriniz")]
+        public string Email { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Email verification DTO'su
+    /// Email doğrulama işlemi için
+    /// </summary>
+    public class EmailVerificationDto
+    {
+        /// <summary>
+        /// Email doğrulama token'ı
+        /// </summary>
+        [Required(ErrorMessage = "Verification token gereklidir")]
+        public string Token { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Doğrulanacak email adresi
+        /// </summary>
+        [Required(ErrorMessage = "Email adresi gereklidir")]
+        [EmailAddress(ErrorMessage = "Geçerli bir email adresi giriniz")]
+        public string Email { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Token refresh request DTO'su
+    /// Access token yenileme isteği için
+    /// </summary>
+    public class TokenRefreshRequestDto
+    {
+        /// <summary>
+        /// Yenilenecek access token
+        /// </summary>
+        [Required(ErrorMessage = "Access token gereklidir")]
+        public string AccessToken { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Refresh token
+        /// </summary>
+        [Required(ErrorMessage = "Refresh token gereklidir")]
+        public string RefreshToken { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Token refresh response DTO'su
+    /// Yenilenmiş token bilgileri için
+    /// </summary>
+    public class TokenRefreshResponseDto
+    {
+        /// <summary>
+        /// Yeni access token
+        /// </summary>
+        public string AccessToken { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Yeni refresh token
+        /// </summary>
+        public string RefreshToken { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Token geçerlilik süresi (dakika)
+        /// </summary>
+        public int ExpiresInMinutes { get; set; }
+
+        /// <summary>
+        /// Token son geçerlilik tarihi
+        /// </summary>
+        public DateTime ExpiresAt { get; set; }
     }
 } 

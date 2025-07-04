@@ -3,6 +3,9 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
 
+// Performance monitoring
+import "./services/performance";
+
 /**
  * TaskFlow Uygulaması Entry Point (Giriş Noktası)
  *

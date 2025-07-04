@@ -244,53 +244,36 @@ namespace TaskFlow.API.Controllers
         }
 
         /// <summary>
-        /// Mevcut kullanıcının profil bilgilerini günceller
+        /// Kullanıcının profilini günceller
         /// </summary>
-        /// <param name="updateDto">Güncellenecek profil bilgileri</param>
+        /// <param name="updateDto">Güncelleme bilgileri</param>
         /// <returns>Güncellenmiş kullanıcı bilgileri</returns>
-        /// <response code="200">Profil başarıyla güncellendi</response>
-        /// <response code="400">Geçersiz veri</response>
-        /// <response code="401">Token geçersiz veya eksik</response>
-        /// <response code="404">Kullanıcı bulunamadı</response>
         [HttpPut("profile")]
-        [Authorize]
         [ProducesResponseType(typeof(ApiResponseModel<UserDto>), 200)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
-        [ProducesResponseType(typeof(ApiResponseModel<object>), 404)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
         public async Task<ActionResult<ApiResponseModel<UserDto>>> UpdateProfile([FromBody] UpdateProfileDto updateDto)
         {
             try
             {
-                // Model validation artık GlobalValidationActionFilter tarafından handle ediliyor
-
-                // JWT token'dan user ID'yi al
                 var userId = GetCurrentUserId();
                 if (!userId.HasValue)
                 {
                     return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
                 }
 
-                // UserService ile profil güncelle
-                var updatedUser = await _userService.UpdateUserProfileAsync(userId.Value, updateDto);
-
-                _logger.LogInformation("User profile updated successfully: {UserId}", userId.Value);
+                var user = await _userService.UpdateUserProfileAsync(userId.Value, updateDto);
 
                 return Ok(ApiResponseModel<UserDto>.SuccessResponse(
                     "Profil başarıyla güncellendi",
-                    updatedUser
+                    user
                 ));
-            }
-            catch (InvalidOperationException ex)
-            {
-                // Business rule violations
-                _logger.LogWarning("Profile update failed: {Error}", ex.Message);
-                return BadRequest(ApiResponseModel<object>.ErrorResponse(ex.Message));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating profile");
-                return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
+                _logger.LogError(ex, "Error updating user profile");
+                return StatusCode(500, ApiResponseModel<UserDto>.ErrorResponse(
                     "Profil güncellenirken bir hata oluştu"));
             }
         }
@@ -336,16 +319,11 @@ namespace TaskFlow.API.Controllers
         /// </summary>
         /// <param name="changePasswordDto">Şifre değiştirme bilgileri</param>
         /// <returns>İşlem sonucu</returns>
-        /// <response code="200">Şifre başarıyla değiştirildi</response>
-        /// <response code="400">Geçersiz veri</response>
-        /// <response code="401">Token geçersiz veya mevcut şifre yanlış</response>
-        /// <response code="404">Kullanıcı bulunamadı</response>
-        [HttpPut("change-password")]
-        [Authorize]
+        [HttpPost("change-password")]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
-        [ProducesResponseType(typeof(ApiResponseModel<object>), 404)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
         public async Task<ActionResult<ApiResponseModel<object>>> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
         {
             try
@@ -357,26 +335,249 @@ namespace TaskFlow.API.Controllers
                 }
 
                 await _userService.ChangePasswordAsync(userId.Value, changePasswordDto);
-                
+
                 return Ok(ApiResponseModel<object>.SuccessResponse(
-                    "Şifre başarıyla değiştirildi"
+                    "Şifreniz başarıyla değiştirildi",
+                    null
                 ));
             }
             catch (UnauthorizedAccessException ex)
             {
-                _logger.LogWarning("Password change failed for user {UserId}: {Error}", GetCurrentUserId(), ex.Message);
                 return Unauthorized(ApiResponseModel<object>.ErrorResponse(ex.Message));
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogWarning("Password change failed for user {UserId}: {Error}", GetCurrentUserId(), ex.Message);
-                return NotFound(ApiResponseModel<object>.ErrorResponse(ex.Message));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error changing password for user: {UserId}", GetCurrentUserId());
+                _logger.LogError(ex, "Error changing password");
                 return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
-                    "Şifre değiştirme sırasında bir hata oluştu"));
+                    "Şifre değiştirilirken bir hata oluştu"));
+            }
+        }
+
+        /// <summary>
+        /// Şifre sıfırlama isteği gönderir
+        /// </summary>
+        /// <param name="passwordResetRequestDto">Şifre sıfırlama istek bilgileri</param>
+        /// <returns>İşlem sonucu</returns>
+        [HttpPost("password-reset-request")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+        public async Task<ActionResult<ApiResponseModel<object>>> RequestPasswordReset([FromBody] PasswordResetRequestDto passwordResetRequestDto)
+        {
+            try
+            {
+                await _userService.RequestPasswordResetAsync(passwordResetRequestDto);
+
+                return Ok(ApiResponseModel<object>.SuccessResponse(
+                    "Şifre sıfırlama bağlantısı email adresinize gönderildi",
+                    null
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error requesting password reset");
+                return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
+                    "Şifre sıfırlama isteği gönderilirken bir hata oluştu"));
+            }
+        }
+
+        /// <summary>
+        /// Şifre sıfırlama işlemini gerçekleştirir
+        /// </summary>
+        /// <param name="passwordResetDto">Şifre sıfırlama bilgileri</param>
+        /// <returns>İşlem sonucu</returns>
+        [HttpPost("password-reset")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+        public async Task<ActionResult<ApiResponseModel<object>>> ResetPassword([FromBody] PasswordResetDto passwordResetDto)
+        {
+            try
+            {
+                await _userService.ResetPasswordAsync(passwordResetDto);
+
+                return Ok(ApiResponseModel<object>.SuccessResponse(
+                    "Şifreniz başarıyla sıfırlandı",
+                    null
+                ));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponseModel<object>.ErrorResponse(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error resetting password");
+                return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
+                    "Şifre sıfırlanırken bir hata oluştu"));
+            }
+        }
+
+        /// <summary>
+        /// E-posta doğrulama isteği gönderir
+        /// </summary>
+        /// <param name="emailVerificationRequestDto">E-posta doğrulama istek bilgileri</param>
+        /// <returns>İşlem sonucu</returns>
+        [HttpPost("email-verification-request")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+        public async Task<ActionResult<ApiResponseModel<object>>> RequestEmailVerification([FromBody] EmailVerificationRequestDto emailVerificationRequestDto)
+        {
+            try
+            {
+                await _userService.RequestEmailVerificationAsync(emailVerificationRequestDto);
+
+                return Ok(ApiResponseModel<object>.SuccessResponse(
+                    "E-posta doğrulama bağlantısı email adresinize gönderildi",
+                    null
+                ));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponseModel<object>.ErrorResponse(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error requesting email verification");
+                return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
+                    "E-posta doğrulama isteği gönderilirken bir hata oluştu"));
+            }
+        }
+
+        /// <summary>
+        /// E-posta doğrulama işlemini gerçekleştirir
+        /// </summary>
+        /// <param name="emailVerificationDto">E-posta doğrulama bilgileri</param>
+        /// <returns>İşlem sonucu</returns>
+        [HttpPost("email-verification")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+        public async Task<ActionResult<ApiResponseModel<object>>> VerifyEmail([FromBody] EmailVerificationDto emailVerificationDto)
+        {
+            try
+            {
+                await _userService.VerifyEmailAsync(emailVerificationDto);
+
+                return Ok(ApiResponseModel<object>.SuccessResponse(
+                    "E-posta adresiniz başarıyla doğrulandı",
+                    null
+                ));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponseModel<object>.ErrorResponse(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error verifying email");
+                return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
+                    "E-posta doğrulanırken bir hata oluştu"));
+            }
+        }
+
+        /// <summary>
+        /// Access token'ı yeniler
+        /// </summary>
+        /// <param name="tokenRefreshRequestDto">Token yenileme istek bilgileri</param>
+        /// <returns>Yeni token bilgileri</returns>
+        [HttpPost("refresh-token")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ApiResponseModel<TokenRefreshResponseDto>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+        public async Task<ActionResult<ApiResponseModel<TokenRefreshResponseDto>>> RefreshToken([FromBody] TokenRefreshRequestDto tokenRefreshRequestDto)
+        {
+            try
+            {
+                var result = await _userService.RefreshTokenAsync(tokenRefreshRequestDto);
+
+                return Ok(ApiResponseModel<TokenRefreshResponseDto>.SuccessResponse(
+                    "Token başarıyla yenilendi",
+                    result
+                ));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ApiResponseModel<object>.ErrorResponse(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error refreshing token");
+                return StatusCode(500, ApiResponseModel<TokenRefreshResponseDto>.ErrorResponse(
+                    "Token yenilenirken bir hata oluştu"));
+            }
+        }
+
+        /// <summary>
+        /// Kullanıcının refresh token'ını iptal eder
+        /// </summary>
+        /// <returns>İşlem sonucu</returns>
+        [HttpPost("revoke-refresh-token")]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+        public async Task<ActionResult<ApiResponseModel<object>>> RevokeRefreshToken()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+                }
+
+                await _userService.RevokeRefreshTokenAsync(userId.Value);
+
+                return Ok(ApiResponseModel<object>.SuccessResponse(
+                    "Refresh token başarıyla iptal edildi",
+                    null
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error revoking refresh token");
+                return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
+                    "Refresh token iptal edilirken bir hata oluştu"));
+            }
+        }
+
+        /// <summary>
+        /// Kullanıcının tüm aktif oturumlarını sonlandırır
+        /// </summary>
+        /// <returns>İşlem sonucu</returns>
+        [HttpPost("logout-all-sessions")]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+        public async Task<ActionResult<ApiResponseModel<object>>> LogoutAllSessions()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+                }
+
+                await _userService.LogoutAllSessionsAsync(userId.Value);
+
+                return Ok(ApiResponseModel<object>.SuccessResponse(
+                    "Tüm oturumlar başarıyla sonlandırıldı",
+                    null
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error logging out all sessions");
+                return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
+                    "Oturumlar sonlandırılırken bir hata oluştu"));
             }
         }
 

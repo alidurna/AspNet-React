@@ -56,17 +56,20 @@ const Card: React.FC<CardProps> = ({
     lg: "shadow-lg", // Büyük gölge (dramatik)
   };
 
+  // Hover efekti sınıfları
+  const hoverClasses = hover
+    ? "hover:shadow-md transition-shadow duration-200"
+    : "";
+
   return (
     <div
       className={`
         bg-white rounded-xl border border-gray-200 
         ${paddingClasses[padding]} // Seçilen padding boyutu
         ${shadowClasses[shadow]} // Seçilen gölge boyutu
-        ${
-          hover ? "hover:shadow-md transition-shadow duration-200" : ""
-        } // Hover efekti (varsa)
+        ${hoverClasses} // Hover efekti (varsa)
         ${className} // Dışarıdan gelen ek sınıflar
-      `}
+      `.trim()}
     >
       {/* Card içeriği - children prop'u ile gelen tüm içerik */}
       {children}

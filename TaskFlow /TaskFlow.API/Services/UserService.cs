@@ -100,12 +100,19 @@ namespace TaskFlow.API.Services
 
                 // JWT token oluşturma
                 var token = _jwtService.GenerateToken(user);
+                var refreshToken = _jwtService.GenerateRefreshToken(user);
                 var expirationMinutes = _configuration.GetValue<int>("Jwt:AccessTokenExpirationMinutes", 60);
+
+                // Refresh token'ı kaydet
+                user.RefreshToken = refreshToken;
+                user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7); // 7 gün geçerli
+                await _context.SaveChangesAsync();
 
                 // Response oluşturma
                 var authResponse = new AuthResponseDto
                 {
                     Token = token,
+                    RefreshToken = refreshToken,
                     ExpiresInMinutes = expirationMinutes,
                     ExpiresAt = DateTime.UtcNow.AddMinutes(expirationMinutes),
                     User = MapToDto(user),
@@ -157,7 +164,14 @@ namespace TaskFlow.API.Services
 
                 // JWT token oluştur
                 var token = _jwtService.GenerateToken(user);
+                var refreshToken = _jwtService.GenerateRefreshToken(user);
                 var expirationMinutes = _configuration.GetValue<int>("Jwt:AccessTokenExpirationMinutes", 60);
+
+                // Refresh token'ı kaydet ve LastLoginDate güncelle
+                user.RefreshToken = refreshToken;
+                user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7); // 7 gün geçerli
+                user.LastLoginDate = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Login successful for user: {Email} (ID: {UserId})", user.Email, user.Id);
 
@@ -165,6 +179,7 @@ namespace TaskFlow.API.Services
                 var authResponse = new AuthResponseDto
                 {
                     Token = token,
+                    RefreshToken = refreshToken,
                     ExpiresInMinutes = expirationMinutes,
                     ExpiresAt = DateTime.UtcNow.AddMinutes(expirationMinutes),
                     User = MapToDto(user),
@@ -417,6 +432,301 @@ namespace TaskFlow.API.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error changing password for user: {UserId}", userId);
+                throw;
+            }
+        }
+
+        public async Task<bool> RequestPasswordResetAsync(PasswordResetRequestDto passwordResetRequestDto)
+        {
+            try
+            {
+                _logger.LogInformation("Password reset request for email: {Email}", passwordResetRequestDto.Email);
+
+                var user = await GetUserByEmailAsync(passwordResetRequestDto.Email);
+                if (user == null)
+                {
+                    // Güvenlik için kullanıcı bulunamadığında da başarı döndürüyoruz
+                    _logger.LogWarning("Password reset requested for non-existent email: {Email}", passwordResetRequestDto.Email);
+                    return true;
+                }
+
+                if (!user.IsActive)
+                {
+                    _logger.LogWarning("Password reset requested for inactive user: {Email}", passwordResetRequestDto.Email);
+                    return true;
+                }
+
+                // Reset token oluştur
+                var resetToken = Guid.NewGuid().ToString("N");
+                user.PasswordResetToken = resetToken;
+                user.PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(1); // 1 saat geçerli
+                user.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                // TODO: Email gönderme servisi eklenecek
+                // await _emailService.SendPasswordResetEmailAsync(user.Email, resetToken);
+
+                _logger.LogInformation("Password reset token generated for user: {Email}", passwordResetRequestDto.Email);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error requesting password reset for email: {Email}", passwordResetRequestDto.Email);
+                throw;
+            }
+        }
+
+        public async Task<bool> ResetPasswordAsync(PasswordResetDto passwordResetDto)
+        {
+            try
+            {
+                _logger.LogInformation("Password reset attempt with token: {Token}", passwordResetDto.Token);
+
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u => u.PasswordResetToken == passwordResetDto.Token && u.IsActive);
+
+                if (user == null)
+                {
+                    throw new InvalidOperationException("Geçersiz veya süresi dolmuş token");
+                }
+
+                // Token süresi kontrolü
+                if (user.PasswordResetTokenExpiry == null || user.PasswordResetTokenExpiry < DateTime.UtcNow)
+                {
+                    throw new InvalidOperationException("Token süresi dolmuş");
+                }
+
+                // Yeni şifre hash'le ve token'ı temizle
+                user.PasswordHash = _passwordService.HashPassword(passwordResetDto.NewPassword);
+                user.PasswordResetToken = null;
+                user.PasswordResetTokenExpiry = null;
+                user.RefreshToken = null; // Mevcut refresh token'ı iptal et
+                user.RefreshTokenExpiry = null;
+                user.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Password reset successful for user: {UserId}", user.Id);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error resetting password with token: {Token}", passwordResetDto.Token);
+                throw;
+            }
+        }
+
+        public async Task<bool> RequestEmailVerificationAsync(EmailVerificationRequestDto emailVerificationRequestDto)
+        {
+            try
+            {
+                _logger.LogInformation("Email verification request for email: {Email}", emailVerificationRequestDto.Email);
+
+                var user = await GetUserByEmailAsync(emailVerificationRequestDto.Email);
+                if (user == null)
+                {
+                    throw new InvalidOperationException("Kullanıcı bulunamadı");
+                }
+
+                if (!user.IsActive)
+                {
+                    throw new InvalidOperationException("Kullanıcı hesabı deaktif");
+                }
+
+                if (user.IsEmailVerified)
+                {
+                    throw new InvalidOperationException("E-posta zaten doğrulanmış");
+                }
+
+                // Verification token oluştur
+                var verificationToken = Guid.NewGuid().ToString("N");
+                user.EmailVerificationToken = verificationToken;
+                user.EmailVerificationTokenExpiry = DateTime.UtcNow.AddHours(24); // 24 saat geçerli
+                user.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                // TODO: Email gönderme servisi eklenecek
+                // await _emailService.SendEmailVerificationAsync(user.Email, verificationToken);
+
+                _logger.LogInformation("Email verification token generated for user: {Email}", emailVerificationRequestDto.Email);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error requesting email verification for email: {Email}", emailVerificationRequestDto.Email);
+                throw;
+            }
+        }
+
+        public async Task<bool> VerifyEmailAsync(EmailVerificationDto emailVerificationDto)
+        {
+            try
+            {
+                _logger.LogInformation("Email verification attempt for email: {Email}", emailVerificationDto.Email);
+
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Email == emailVerificationDto.Email.ToLower().Trim() 
+                                          && u.EmailVerificationToken == emailVerificationDto.Token 
+                                          && u.IsActive);
+
+                if (user == null)
+                {
+                    throw new InvalidOperationException("Geçersiz veya süresi dolmuş token");
+                }
+
+                // Token süresi kontrolü
+                if (user.EmailVerificationTokenExpiry == null || user.EmailVerificationTokenExpiry < DateTime.UtcNow)
+                {
+                    throw new InvalidOperationException("Token süresi dolmuş");
+                }
+
+                // Email'i doğrulanmış olarak işaretle ve token'ı temizle
+                user.IsEmailVerified = true;
+                user.EmailVerificationToken = null;
+                user.EmailVerificationTokenExpiry = null;
+                user.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                // Cache'i temizle
+                await _cacheService.RemoveAsync($"users:profile:{user.Id}");
+
+                _logger.LogInformation("Email verified successfully for user: {UserId}", user.Id);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error verifying email for: {Email}", emailVerificationDto.Email);
+                throw;
+            }
+        }
+
+        public async Task<TokenRefreshResponseDto> RefreshTokenAsync(TokenRefreshRequestDto tokenRefreshRequestDto)
+        {
+            try
+            {
+                _logger.LogInformation("Token refresh request");
+
+                // Access token'dan user ID'yi al (expire olmuş olabilir)
+                var userId = _jwtService.GetUserIdFromToken(tokenRefreshRequestDto.AccessToken);
+                if (!userId.HasValue)
+                {
+                    throw new UnauthorizedAccessException("Geçersiz access token");
+                }
+
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Id == userId.Value && u.IsActive);
+
+                if (user == null)
+                {
+                    throw new UnauthorizedAccessException("Kullanıcı bulunamadı");
+                }
+
+                // Refresh token kontrolü
+                if (user.RefreshToken != tokenRefreshRequestDto.RefreshToken)
+                {
+                    throw new UnauthorizedAccessException("Geçersiz refresh token");
+                }
+
+                // Refresh token süresi kontrolü
+                if (user.RefreshTokenExpiry == null || user.RefreshTokenExpiry < DateTime.UtcNow)
+                {
+                    throw new UnauthorizedAccessException("Refresh token süresi dolmuş");
+                }
+
+                // Yeni token'lar oluştur
+                var newAccessToken = _jwtService.GenerateToken(user);
+                var newRefreshToken = _jwtService.GenerateRefreshToken(user);
+
+                // Yeni refresh token'ı kaydet
+                user.RefreshToken = newRefreshToken;
+                user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7); // 7 gün geçerli
+                user.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                var expirationMinutes = _configuration.GetValue<int>("Jwt:AccessTokenExpirationMinutes", 60);
+
+                _logger.LogInformation("Token refreshed successfully for user: {UserId}", user.Id);
+
+                return new TokenRefreshResponseDto
+                {
+                    AccessToken = newAccessToken,
+                    RefreshToken = newRefreshToken,
+                    ExpiresInMinutes = expirationMinutes,
+                    ExpiresAt = DateTime.UtcNow.AddMinutes(expirationMinutes)
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error refreshing token");
+                throw;
+            }
+        }
+
+        public async Task<bool> RevokeRefreshTokenAsync(int userId)
+        {
+            try
+            {
+                _logger.LogInformation("Revoking refresh token for user: {UserId}", userId);
+
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+
+                if (user == null)
+                {
+                    throw new InvalidOperationException("Kullanıcı bulunamadı");
+                }
+
+                // Refresh token'ı iptal et
+                user.RefreshToken = null;
+                user.RefreshTokenExpiry = null;
+                user.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Refresh token revoked successfully for user: {UserId}", userId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error revoking refresh token for user: {UserId}", userId);
+                throw;
+            }
+        }
+
+        public async Task<bool> LogoutAllSessionsAsync(int userId)
+        {
+            try
+            {
+                _logger.LogInformation("Logging out all sessions for user: {UserId}", userId);
+
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+
+                if (user == null)
+                {
+                    throw new InvalidOperationException("Kullanıcı bulunamadı");
+                }
+
+                // Tüm token'ları iptal et
+                user.RefreshToken = null;
+                user.RefreshTokenExpiry = null;
+                user.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                // Cache'i temizle
+                await _cacheService.RemoveAsync($"users:profile:{userId}");
+
+                _logger.LogInformation("All sessions logged out successfully for user: {UserId}", userId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error logging out all sessions for user: {UserId}", userId);
                 throw;
             }
         }

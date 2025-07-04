@@ -7,7 +7,7 @@ import React from "react";
 
 interface LoadingSpinnerProps {
   size?: "sm" | "md" | "lg" | "xl";
-  color?: "blue" | "gray" | "white";
+  color?: "primary" | "secondary" | "success" | "blue" | "gray" | "white";
   text?: string;
   fullScreen?: boolean;
   className?: string;
@@ -30,6 +30,9 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
   // Color mappings
   const colorClasses = {
+    primary: "text-primary-600",
+    secondary: "text-secondary-600",
+    success: "text-green-600",
     blue: "text-blue-600",
     gray: "text-gray-600",
     white: "text-white",
@@ -39,12 +42,11 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     animate-spin inline-block
     ${sizeClasses[size]}
     ${colorClasses[color]}
-    ${className}
-  `;
+  `.trim();
 
   const containerClasses = fullScreen
-    ? "fixed inset-0 flex items-center justify-center bg-white bg-opacity-80 z-50"
-    : "flex items-center justify-center p-4";
+    ? `fixed inset-0 flex items-center justify-center bg-white bg-opacity-80 z-50 ${className}`
+    : `flex items-center justify-center p-4 ${className}`;
 
   return (
     <div className={containerClasses}>
@@ -91,10 +93,6 @@ export const PageLoadingSpinner: React.FC<{ text?: string }> = ({
 export const ComponentLoadingSpinner: React.FC<{ text?: string }> = ({
   text = "Yükleniyor...",
 }) => <LoadingSpinner size="md" color="blue" text={text} />;
-
-export const InlineLoadingSpinner: React.FC = () => (
-  <LoadingSpinner size="sm" color="blue" />
-);
 
 export const ButtonLoadingSpinner: React.FC = () => (
   <LoadingSpinner size="sm" color="white" className="mr-2" />

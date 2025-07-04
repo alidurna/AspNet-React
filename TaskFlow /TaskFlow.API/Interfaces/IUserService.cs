@@ -70,10 +70,59 @@ namespace TaskFlow.API.Interfaces
         /// <summary>
         /// Kullanıcının şifresini değiştirir
         /// </summary>
-        /// <param name="userId">Kullanıcı ID</param>
+        /// <param name="userId">Kullanıcı ID'si</param>
         /// <param name="changePasswordDto">Şifre değiştirme bilgileri</param>
-        /// <returns>İşlem sonucu</returns>
+        /// <returns>Başarı durumu</returns>
         Task<bool> ChangePasswordAsync(int userId, ChangePasswordDto changePasswordDto);
+
+        /// <summary>
+        /// Şifre sıfırlama isteği gönderir
+        /// </summary>
+        /// <param name="passwordResetRequestDto">Şifre sıfırlama istek bilgileri</param>
+        /// <returns>Başarı durumu</returns>
+        Task<bool> RequestPasswordResetAsync(PasswordResetRequestDto passwordResetRequestDto);
+
+        /// <summary>
+        /// Şifre sıfırlama işlemini gerçekleştirir
+        /// </summary>
+        /// <param name="passwordResetDto">Şifre sıfırlama bilgileri</param>
+        /// <returns>Başarı durumu</returns>
+        Task<bool> ResetPasswordAsync(PasswordResetDto passwordResetDto);
+
+        /// <summary>
+        /// E-posta doğrulama isteği gönderir
+        /// </summary>
+        /// <param name="emailVerificationRequestDto">E-posta doğrulama istek bilgileri</param>
+        /// <returns>Başarı durumu</returns>
+        Task<bool> RequestEmailVerificationAsync(EmailVerificationRequestDto emailVerificationRequestDto);
+
+        /// <summary>
+        /// E-posta doğrulama işlemini gerçekleştirir
+        /// </summary>
+        /// <param name="emailVerificationDto">E-posta doğrulama bilgileri</param>
+        /// <returns>Başarı durumu</returns>
+        Task<bool> VerifyEmailAsync(EmailVerificationDto emailVerificationDto);
+
+        /// <summary>
+        /// Access token'ı yeniler
+        /// </summary>
+        /// <param name="tokenRefreshRequestDto">Token yenileme istek bilgileri</param>
+        /// <returns>Yeni token bilgileri</returns>
+        Task<TokenRefreshResponseDto> RefreshTokenAsync(TokenRefreshRequestDto tokenRefreshRequestDto);
+
+        /// <summary>
+        /// Kullanıcının refresh token'ını iptal eder
+        /// </summary>
+        /// <param name="userId">Kullanıcı ID'si</param>
+        /// <returns>Başarı durumu</returns>
+        Task<bool> RevokeRefreshTokenAsync(int userId);
+
+        /// <summary>
+        /// Kullanıcının tüm aktif oturumlarını sonlandırır
+        /// </summary>
+        /// <param name="userId">Kullanıcı ID'si</param>
+        /// <returns>Başarı durumu</returns>
+        Task<bool> LogoutAllSessionsAsync(int userId);
 
         #endregion
 
