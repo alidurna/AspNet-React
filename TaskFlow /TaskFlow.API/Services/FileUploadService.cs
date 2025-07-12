@@ -1,3 +1,64 @@
+// ****************************************************************************************************
+//  FILEUPLOADSERVICE.CS
+//  --------------------------------------------------------------------------------------------------
+//  Bu dosya, TaskFlow uygulamasının dosya yükleme ve yönetimi sisteminin ana servisidir. Kullanıcı avatar'ları,
+//  görev ekleri ve genel dosya yükleme işlemlerini yönetir. Dosya validasyonu, güvenli dosya adı oluşturma,
+//  resim boyutlandırma ve dosya kategorilendirme özelliklerini sağlar.
+//
+//  ANA BAŞLIKLAR:
+//  - Avatar Upload ve Management
+//  - Attachment Upload ve Management
+//  - File Validation ve Security
+//  - Image Processing ve Resizing
+//  - File Organization ve Categorization
+//  - File Deletion ve Cleanup
+//  - Performance Optimization
+//
+//  GÜVENLİK:
+//  - File type validation
+//  - File size limits
+//  - Safe filename generation
+//  - Path traversal protection
+//  - Malicious file detection
+//  - Secure file storage
+//
+//  HATA YÖNETİMİ:
+//  - Comprehensive exception handling
+//  - File validation errors
+//  - Storage system errors
+//  - Image processing failures
+//  - Graceful error recovery
+//
+//  EDGE-CASE'LER:
+//  - Large file uploads
+//  - Invalid file types
+//  - Corrupted image files
+//  - Storage space limitations
+//  - Network timeout during upload
+//  - Concurrent file operations
+//  - Unicode filenames
+//
+//  YAN ETKİLER:
+//  - File uploads consume storage space
+//  - Image processing consumes CPU
+//  - File deletions free up space
+//  - Resized images create additional files
+//  - File operations may impact system performance
+//
+//  PERFORMANS:
+//  - Efficient file validation
+//  - Optimized image processing
+//  - Stream-based file operations
+//  - Background cleanup operations
+//  - Caching for file metadata
+//
+//  SÜRDÜRÜLEBİLİRLİK:
+//  - Service layer pattern
+//  - Dependency injection
+//  - Comprehensive documentation
+//  - Extensible file system
+//  - Configuration-based settings
+// ****************************************************************************************************
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Formats.Jpeg;

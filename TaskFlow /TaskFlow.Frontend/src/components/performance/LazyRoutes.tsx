@@ -1,6 +1,97 @@
 /**
- * Lazy Routes - Performance Optimization
- * Code splitting and lazy loading for better initial load times
+ * Lazy Routes Component
+ *
+ * Bu dosya, TaskFlow uygulamasının performans optimizasyonu için
+ * lazy loading ve code splitting işlemlerini yöneten component'leri
+ * içerir. İlk yükleme sürelerini iyileştirmek için dinamik import
+ * ve route prefetching sağlar.
+ *
+ * Ana Özellikler:
+ * - Code splitting
+ * - Lazy loading
+ * - Route prefetching
+ * - Performance monitoring
+ * - Suspense fallbacks
+ * - Bundle optimization
+ *
+ * Lazy Components:
+ * - LazyLogin: Giriş sayfası
+ * - LazyRegister: Kayıt sayfası
+ * - LazyDashboard: Ana dashboard
+ * - LazyAdvancedSearchModal: Gelişmiş arama modal'ı
+ *
+ * Performance Optimizations:
+ * - Dynamic imports
+ * - Bundle splitting
+ * - Route-based code splitting
+ * - Preloading strategies
+ * - Loading time measurement
+ *
+ * Utility Functions:
+ * - withLazyLoading: HOC for lazy components
+ * - createLazyRoute: Route factory
+ * - preloadRoutes: Route prefetching
+ * - measureRouteLoad: Performance monitoring
+ *
+ * Route Preloader:
+ * - Preload individual routes
+ * - Preload all routes
+ * - Track preloaded routes
+ * - Clear preloaded cache
+ * - Error handling
+ *
+ * Loading States:
+ * - Suspense fallbacks
+ * - LoadingSpinner component
+ * - Custom fallback support
+ * - Error boundaries
+ *
+ * Performance Monitoring:
+ * - Load time measurement
+ * - Analytics integration
+ * - Error tracking
+ * - Performance metrics
+ * - Console logging
+ *
+ * Bundle Management:
+ * - Automatic code splitting
+ * - Chunk optimization
+ * - Cache management
+ * - Memory optimization
+ *
+ * Error Handling:
+ * - Load failures
+ * - Network errors
+ * - Timeout handling
+ * - Graceful degradation
+ *
+ * Analytics Integration:
+ * - Google Analytics
+ * - Custom metrics
+ * - Performance tracking
+ * - User behavior analysis
+ *
+ * Development Features:
+ * - Hot reload support
+ * - Development logging
+ * - Debug information
+ * - Performance insights
+ *
+ * Production Optimizations:
+ * - Minified bundles
+ * - Gzip compression
+ * - CDN integration
+ * - Cache strategies
+ *
+ * Sürdürülebilirlik:
+ * - TypeScript tip güvenliği
+ * - Modüler component yapısı
+ * - Açık ve anlaşılır kod
+ * - Comprehensive documentation
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
  */
 
 import { lazy, Suspense } from "react";

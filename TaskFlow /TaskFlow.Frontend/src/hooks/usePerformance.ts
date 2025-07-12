@@ -1,6 +1,106 @@
 /**
  * Performance Optimization Hooks
- * Memoization, throttling, debouncing, and performance monitoring utilities
+ *
+ * Bu dosya, TaskFlow uygulamasının performans optimizasyonu için
+ * kullanılan custom React hook'larını içerir. Memoization, throttling,
+ * debouncing, performance monitoring ve virtual scrolling gibi
+ * performans iyileştirme tekniklerini sağlar.
+ *
+ * Ana Özellikler:
+ * - Debouncing ve throttling
+ * - Memoization utilities
+ * - Performance monitoring
+ * - Virtual scrolling
+ * - Resource preloading
+ * - Memory monitoring
+ *
+ * Debouncing Hooks:
+ * - useDebounce: Değer debouncing
+ * - useDebouncedCallback: Callback debouncing
+ * - Delay-based optimization
+ * - Search input optimization
+ * - API call optimization
+ *
+ * Throttling Hooks:
+ * - useThrottle: Değer throttling
+ * - useThrottledCallback: Callback throttling
+ * - Rate limiting
+ * - Scroll event optimization
+ * - Resize event optimization
+ *
+ * Memoization Hooks:
+ * - useMemoized: Expensive computation memoization
+ * - Dependency-based caching
+ * - Performance optimization
+ * - Memory efficiency
+ * - Re-render prevention
+ *
+ * Performance Monitoring:
+ * - usePerformanceMonitor: Component render monitoring
+ * - Render count tracking
+ * - Render time measurement
+ * - Performance logging
+ * - Debug information
+ *
+ * Lazy Loading:
+ * - useIntersectionObserver: Intersection Observer API
+ * - Lazy loading support
+ * - Infinite scrolling
+ * - Image lazy loading
+ * - Component lazy loading
+ *
+ * Virtual Scrolling:
+ * - useVirtualScroll: Large list optimization
+ * - Memory efficient rendering
+ * - Smooth scrolling
+ * - Performance optimization
+ * - Large dataset handling
+ *
+ * Resource Management:
+ * - useResourcePreloader: Resource preloading
+ * - Image preloading
+ * - Font preloading
+ * - Script preloading
+ * - Cache optimization
+ *
+ * Memory Monitoring:
+ * - useMemoryMonitor: Memory usage tracking
+ * - Performance metrics
+ * - Memory leak detection
+ * - Browser memory API
+ * - Memory optimization
+ *
+ * Performance Optimization:
+ * - Efficient re-renders
+ * - Memory management
+ * - Bundle optimization
+ * - Loading optimization
+ * - Cache strategies
+ *
+ * Error Handling:
+ * - Graceful degradation
+ * - Fallback mechanisms
+ * - Error recovery
+ * - Performance fallbacks
+ * - Debug information
+ *
+ * Monitoring ve Analytics:
+ * - Performance metrics
+ * - User experience tracking
+ * - Performance insights
+ * - Optimization opportunities
+ * - Performance trends
+ *
+ * Sürdürülebilirlik:
+ * - TypeScript tip güvenliği
+ * - Modüler hook yapısı
+ * - Açık ve anlaşılır kod
+ * - Comprehensive documentation
+ * - Performance best practices
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
  */
 
 import { useCallback, useMemo, useRef, useEffect, useState } from "react";

@@ -1,3 +1,71 @@
+/**
+ * Middleware Extensions
+ * 
+ * Bu dosya, TaskFlow API'sinde middleware'lerin kolayca kaydedilmesi
+ * için extension method'ları içerir. Program.cs'de fluent interface
+ * kullanarak middleware pipeline'ını yapılandırmayı sağlar.
+ * 
+ * Ana İşlevler:
+ * - Global Exception Handler registration
+ * - Request/Response Logging registration
+ * - Global Validation registration
+ * - Fluent interface support
+ * - Middleware sıralama yönetimi
+ * 
+ * Middleware Pipeline Sırası:
+ * 1. Global Exception Handler (en başta)
+ * 2. Request/Response Logging
+ * 3. Global Validation
+ * 4. Authentication/Authorization
+ * 5. Routing
+ * 6. Endpoint execution
+ * 
+ * Extension Methods:
+ * - UseGlobalExceptionHandler: Merkezi hata yönetimi
+ * - UseRequestResponseLogging: Request/response logging
+ * - UseGlobalValidation: Model validation
+ * 
+ * Güvenlik:
+ * - Middleware sıralama kontrolü
+ * - Exception handling
+ * - Request validation
+ * - Response sanitization
+ * 
+ * Performance:
+ * - Efficient middleware registration
+ * - Minimal overhead
+ * - Optimized pipeline
+ * - Memory efficient
+ * 
+ * Monitoring:
+ * - Request logging
+ * - Performance tracking
+ * - Error monitoring
+ * - Health checks
+ * 
+ * Validation:
+ * - Model validation
+ * - Input sanitization
+ * - Business rule validation
+ * - Error message formatting
+ * 
+ * Logging:
+ * - Structured logging
+ * - Request correlation
+ * - Performance metrics
+ * - Error tracking
+ * 
+ * Sürdürülebilirlik:
+ * - Clean architecture
+ * - Separation of concerns
+ * - Easy maintenance
+ * - Clear documentation
+ * 
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
+ */
+
 using TaskFlow.API.Middleware;
 
 namespace TaskFlow.API.Extensions

@@ -1,3 +1,76 @@
+/**
+ * ITaskService Interface
+ * 
+ * Bu dosya, görev (TodoTask) yönetimi işlemlerini tanımlayan kapsamlı
+ * interface'i içerir. CRUD operasyonları, hiyerarşik yapı yönetimi,
+ * arama/filtreleme ve istatistik işlemlerini kapsar.
+ * 
+ * Ana İşlevler:
+ * - CRUD operasyonları (Create, Read, Update, Delete)
+ * - Hiyerarşik task yapısı (parent-child ilişkileri)
+ * - Task tamamlama ve ilerleme takibi
+ * - Arama ve filtreleme işlemleri
+ * - İstatistik ve raporlama
+ * - Business rule validation
+ * 
+ * CRUD Operations:
+ * - CreateTaskAsync: Yeni task oluşturma
+ * - GetTasksAsync: Filtrelenmiş task listesi
+ * - GetTaskByIdAsync: Belirli task detayı
+ * - UpdateTaskAsync: Task güncelleme
+ * - DeleteTaskAsync: Task silme (soft delete)
+ * 
+ * Hierarchy Management:
+ * - GetSubTasksAsync: Alt task'ları listeleme
+ * - SetParentTaskAsync: Parent-child ilişkisi kurma
+ * - RemoveParentTaskAsync: Parent ilişkisini kaldırma
+ * - CheckTaskDepthLimitAsync: Derinlik limiti kontrolü
+ * - CheckCircularReferenceAsync: Döngüsel referans kontrolü
+ * 
+ * Task Completion:
+ * - CompleteTaskAsync: Task tamamlama/geri alma
+ * - UpdateTaskProgressAsync: İlerleme yüzdesi güncelleme
+ * 
+ * Search & Filter:
+ * - SearchTasksAsync: Metin bazlı arama
+ * - GetOverdueTasksAsync: Vadesi geçmiş task'lar
+ * - GetTasksDueTodayAsync: Bugün vadesi gelenler
+ * - GetTasksDueThisWeekAsync: Bu hafta vadesi gelenler
+ * 
+ * Statistics:
+ * - GetTaskStatsAsync: Genel istatistikler
+ * - GetTaskStatsByCategoryAsync: Kategori bazlı istatistikler
+ * - GetTaskPriorityStatsAsync: Öncelik bazlı dağılım
+ * 
+ * Business Rules:
+ * - Task limit kontrolleri
+ * - Derinlik limiti (maksimum 5 seviye)
+ * - Döngüsel referans koruması
+ * - Silme işlemi güvenliği
+ * 
+ * Performance:
+ * - Async/await pattern
+ * - Efficient pagination
+ * - Optimized queries
+ * - Caching strategies
+ * 
+ * Security:
+ * - User-based access control
+ * - Data isolation
+ * - Input validation
+ * - SQL injection protection
+ * 
+ * Sürdürülebilirlik:
+ * - SOLID principles
+ * - Comprehensive documentation
+ * - Testable design
+ * - Clear separation of concerns
+ * 
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
+ */
+
 using TaskFlow.API.DTOs;
 using TaskFlow.API.Models;
 

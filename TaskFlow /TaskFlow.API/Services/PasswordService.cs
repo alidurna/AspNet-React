@@ -1,3 +1,63 @@
+// ****************************************************************************************************
+//  PASSWORDSERVICE.CS
+//  --------------------------------------------------------------------------------------------------
+//  Bu dosya, TaskFlow uygulamasının şifre yönetimi sisteminin ana servisidir. Şifre hash'leme, doğrulama,
+//  güvenlik kontrolü ve güvenli şifre oluşturma işlemlerini yönetir. BCrypt algoritması kullanarak güvenli
+//  şifre yönetimi sağlar.
+//
+//  ANA BAŞLIKLAR:
+//  - Password Hashing ve Verification
+//  - Password Validation ve Strength Analysis
+//  - Security Checks ve Common Password Detection
+//  - Secure Password Generation
+//  - Password Reset Token Management
+//  - Password Strength Scoring
+//
+//  GÜVENLİK:
+//  - BCrypt hashing algorithm (work factor: 12)
+//  - Common password blacklist
+//  - Password strength validation
+//  - Secure random token generation
+//  - Input sanitization
+//  - Brute force protection
+//
+//  HATA YÖNETİMİ:
+//  - Comprehensive exception handling
+//  - Password validation errors
+//  - Hashing failures
+//  - Verification errors
+//  - Graceful error recovery
+//
+//  EDGE-CASE'LER:
+//  - Null or empty passwords
+//  - Very long passwords
+//  - Special characters in passwords
+//  - Unicode characters
+//  - Malformed hash strings
+//  - Common password attempts
+//  - Weak password patterns
+//
+//  YAN ETKİLER:
+//  - Password hashing is CPU intensive
+//  - Password validation affects user experience
+//  - Security checks may block weak passwords
+//  - Token generation creates new reset data
+//  - Password strength scoring provides feedback
+//
+//  PERFORMANS:
+//  - Optimized BCrypt work factor
+//  - Efficient password validation
+//  - Fast common password checking
+//  - Minimal memory allocation
+//  - Caching for validation results
+//
+//  SÜRDÜRÜLEBİLİRLİK:
+//  - Service layer pattern
+//  - Dependency injection
+//  - Comprehensive documentation
+//  - Extensible password system
+//  - Configuration-based settings
+// ****************************************************************************************************
 using System.Text.RegularExpressions;
 using TaskFlow.API.Interfaces;
 

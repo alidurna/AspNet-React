@@ -1,23 +1,99 @@
 /**
- * Sidebar Navigation Component - TaskFlow Dashboard
+ * Sidebar Navigation Component
  *
- * Bu component, dashboard'un sol tarafındaki navigation menüsünü oluşturur.
- * Ana navigation linklerini, kullanıcı bilgilerini ve menü durumunu yönetir.
+ * Bu dosya, TaskFlow uygulamasının dashboard'unun sol tarafındaki
+ * navigasyon menüsünü oluşturan component'i içerir. Ana navigasyon
+ * linklerini, kullanıcı bilgilerini ve menü durumunu yönetir.
  *
- * Özellikler:
+ * Ana Özellikler:
  * - Responsive sidebar (mobile'da collapse/expand)
  * - Active link highlighting
  * - Icon'lu menu items
  * - User profile section
  * - Logout functionality
  * - Smooth animations
+ * - Mobile overlay
  *
- * Props:
+ * Navigasyon Menüsü:
+ * - Dashboard: Ana sayfa
+ * - Görevler: Task yönetimi
+ * - Kategoriler: Kategori yönetimi
+ * - İstatistikler: Performans metrikleri
+ *
+ * Responsive Davranış:
+ * - Desktop: Sabit açık sidebar
+ * - Mobile: Overlay sidebar
+ * - Tablet: Adaptive layout
+ * - Touch-friendly interface
+ *
+ * Props Interface:
  * - isOpen: Sidebar'ın açık/kapalı durumu
- * - onToggle: Sidebar toggle function
+ * - onToggle: Sidebar toggle fonksiyonu
  *
- * Usage:
- * <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
+ * State Management:
+ * - Sidebar open/close state
+ * - Active route tracking
+ * - User authentication state
+ * - Navigation history
+ *
+ * Kullanıcı Bölümü:
+ * - Profil fotoğrafı
+ * - Kullanıcı adı
+ * - Email adresi
+ * - Çıkış butonu
+ * - Ayarlar linki
+ *
+ * Styling:
+ * - Tailwind CSS tabanlı
+ * - Consistent design system
+ * - Modern UI/UX
+ * - Smooth transitions
+ *
+ * Animation:
+ * - Slide-in/out transitions
+ * - Hover effects
+ * - Active state animations
+ * - Loading states
+ *
+ * Accessibility:
+ * - Keyboard navigation
+ * - Screen reader support
+ * - Focus management
+ * - ARIA labels
+ *
+ * Performance:
+ * - Optimized re-renders
+ * - Efficient route checking
+ * - Memory management
+ * - Lazy loading
+ *
+ * Mobile Features:
+ * - Touch gestures
+ * - Swipe to close
+ * - Overlay background
+ * - Close button
+ *
+ * Navigation Logic:
+ * - Route matching
+ * - Active link detection
+ * - History management
+ * - Deep linking
+ *
+ * Error Handling:
+ * - Navigation errors
+ * - Authentication errors
+ * - Logout failures
+ * - Graceful fallbacks
+ *
+ * Sürdürülebilirlik:
+ * - TypeScript tip güvenliği
+ * - Modüler component yapısı
+ * - Açık ve anlaşılır kod
+ * - Comprehensive documentation
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
  */
 
 import React from "react";

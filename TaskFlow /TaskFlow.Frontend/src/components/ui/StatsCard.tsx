@@ -1,36 +1,97 @@
 /**
- * Stats Card Component - TaskFlow Dashboard
+ * Stats Card Component
  *
- * Bu component, dashboard'ta kullanılan istatistik kartlarını oluşturur.
- * Task sayıları, tamamlanma oranları gibi metrikleri gösterir.
+ * Bu dosya, TaskFlow uygulamasının dashboard'ında kullanılan istatistik
+ * kartlarını oluşturan component'i içerir. Görev sayıları, tamamlanma
+ * oranları ve diğer metrikleri görsel olarak sunar.
  *
- * Özellikler:
+ * Ana Özellikler:
  * - Icon'lu istatistik gösterimi
  * - Trend indicators (artış/azalış)
  * - Progress bar desteği
- * - Customizable colors
- * - Hover animations
- * - Loading states
+ * - 5 farklı renk teması
+ * - Hover animasyonları
+ * - Loading state'leri
+ * - Clickable kartlar
  *
- * Props:
+ * Renk Temaları:
+ * - blue: Mavi tema (varsayılan)
+ * - purple: Mor tema
+ * - green: Yeşil tema
+ * - yellow: Sarı tema
+ * - red: Kırmızı tema
+ *
+ * Props Interface:
  * - title: Kart başlığı
- * - value: Ana değer
- * - icon: Icon component
+ * - value: Ana değer (string/number)
+ * - icon: Icon component'i
  * - trend: Trend değeri (örn: +12%)
  * - trendUp: Trend yönü (true: artış, false: azalış)
  * - progress: Progress yüzdesi (0-100)
  * - color: Renk teması
  * - isLoading: Loading durumu
+ * - onClick: Tıklama fonksiyonu
  *
- * Usage:
- * <StatsCard
- *   title="Toplam Görev"
- *   value="42"
- *   icon={<TaskIcon />}
- *   trend="+12%"
- *   trendUp={true}
- *   color="primary"
- * />
+ * Kullanım Alanları:
+ * - Dashboard istatistikleri
+ * - Görev sayıları
+ * - Tamamlanma oranları
+ * - Performans metrikleri
+ * - Kategori bazlı istatistikler
+ *
+ * Styling:
+ * - Tailwind CSS tabanlı
+ * - Consistent design system
+ * - Color-coded themes
+ * - Responsive design
+ * - Smooth animations
+ *
+ * Loading State:
+ * - Skeleton loading
+ * - Pulse animation
+ * - Placeholder content
+ * - Graceful fallback
+ *
+ * Accessibility:
+ * - Semantic HTML
+ * - Screen reader support
+ * - Keyboard navigation
+ * - Focus indicators
+ * - ARIA labels
+ *
+ * Performance:
+ * - Optimized re-renders
+ * - Efficient animations
+ * - Memory management
+ * - Bundle optimization
+ *
+ * Animation:
+ * - Hover effects
+ * - Progress bar animation
+ * - Smooth transitions
+ * - Loading animations
+ *
+ * Responsive Design:
+ * - Mobile-first approach
+ * - Flexible layout
+ * - Adaptive sizing
+ * - Touch-friendly
+ *
+ * Error Handling:
+ * - Graceful fallbacks
+ * - Invalid data handling
+ * - Edge case management
+ * - State recovery
+ *
+ * Sürdürülebilirlik:
+ * - TypeScript tip güvenliği
+ * - Modüler component yapısı
+ * - Açık ve anlaşılır kod
+ * - Comprehensive documentation
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
  */
 
 import React from "react";

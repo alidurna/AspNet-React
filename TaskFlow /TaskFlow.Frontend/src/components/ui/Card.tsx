@@ -1,3 +1,79 @@
+/**
+ * Card Component
+ *
+ * Bu dosya, TaskFlow uygulaması için özelleştirilmiş yeniden kullanılabilir
+ * kart component'ini içerir. İçerik gruplamak ve görsel hiyerarşi
+ * oluşturmak için tasarlanmış modern bir UI component'idir.
+ *
+ * Ana Özellikler:
+ * - 3 farklı padding boyutu (sm, md, lg)
+ * - 3 farklı gölge boyutu (sm, md, lg)
+ * - Opsiyonel hover efekti
+ * - Beyaz background ile modern tasarım
+ * - Rounded köşeler
+ * - Border ile subtle çerçeve
+ * - Responsive tasarım
+ *
+ * Padding Boyutları:
+ * - sm: 16px (küçük kartlar)
+ * - md: 24px (orta kartlar) - varsayılan
+ * - lg: 32px (büyük kartlar)
+ *
+ * Gölge Boyutları:
+ * - sm: Subtle gölge (hafif)
+ * - md: Belirgin gölge (orta)
+ * - lg: Dramatik gölge (güçlü)
+ *
+ * Kullanım Alanları:
+ * - Login/Register formları
+ * - Dashboard kartları
+ * - Task listeleri
+ * - Profile bilgileri
+ * - İstatistik kartları
+ * - Modal içerikleri
+ *
+ * Styling:
+ * - Tailwind CSS tabanlı
+ * - Consistent design system
+ * - Modern UI/UX prensipleri
+ * - Accessibility friendly
+ *
+ * Props Interface:
+ * - children: Kart içeriği
+ * - className: Ek CSS sınıfları
+ * - padding: İç boşluk boyutu
+ * - shadow: Gölge boyutu
+ * - hover: Hover efekti
+ *
+ * Performance:
+ * - Optimized re-renders
+ * - Efficient CSS classes
+ * - Minimal bundle impact
+ * - Memory efficient
+ *
+ * Accessibility:
+ * - Semantic HTML structure
+ * - Screen reader support
+ * - Keyboard navigation
+ * - Focus indicators
+ *
+ * Responsive Design:
+ * - Mobile-first approach
+ * - Flexible layout
+ * - Adaptive sizing
+ * - Touch-friendly
+ *
+ * Sürdürülebilirlik:
+ * - TypeScript tip güvenliği
+ * - Modüler component yapısı
+ * - Açık ve anlaşılır kod
+ * - Comprehensive documentation
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
+ */
+
 import React from "react";
 
 /**

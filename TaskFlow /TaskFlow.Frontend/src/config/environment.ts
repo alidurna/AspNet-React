@@ -1,8 +1,87 @@
 /**
- * Environment Configuration - TaskFlow Frontend
+ * Environment Configuration
  *
- * Centralized configuration management for different environments
- * CDN, API, and feature flag configurations
+ * Bu dosya, TaskFlow frontend uygulamasının farklı ortamlar (development,
+ * production, test) için merkezi konfigürasyon yönetimini içerir.
+ * API, CDN, performans ve özellik bayrakları için kapsamlı ayarlar sağlar.
+ *
+ * Ana Özellikler:
+ * - Ortam bazlı konfigürasyon (dev/prod/test)
+ * - API endpoint yönetimi
+ * - CDN ve statik asset yönetimi
+ * - Performans monitoring ayarları
+ * - Feature flag yönetimi
+ * - Build bilgileri
+ *
+ * Ortam Konfigürasyonları:
+ * - Development: Localhost API, tam performans monitoring
+ * - Production: Production API, CDN, optimize edilmiş ayarlar
+ * - Test: Test API, minimal özellikler
+ *
+ * API Yönetimi:
+ * - Base URL konfigürasyonu
+ * - Timeout ayarları
+ * - Endpoint URL oluşturma
+ * - Error handling
+ *
+ * CDN Yönetimi:
+ * - Asset URL oluşturma
+ * - Version kontrolü
+ * - Preload optimizasyonu
+ * - Cache warming
+ * - Image format optimizasyonu
+ *
+ * Performans:
+ * - Monitoring enable/disable
+ * - Sample rate ayarları
+ * - Analytics endpoint
+ * - Bundle analysis
+ *
+ * Feature Flags:
+ * - PWA desteği
+ * - Offline modu
+ * - Bundle analysis
+ * - Real-time updates
+ *
+ * Güvenlik:
+ * - Environment-based security
+ * - API key management
+ * - CORS configuration
+ * - HTTPS enforcement
+ *
+ * Build Bilgileri:
+ * - App version
+ * - Build timestamp
+ * - Commit hash
+ * - Environment detection
+ *
+ * Utility Sınıfları:
+ * - CDNManager: CDN işlemleri
+ * - APIManager: API işlemleri
+ * - Environment detection
+ * - Configuration helpers
+ *
+ * Performans Optimizasyonları:
+ * - Asset preloading
+ * - Cache warming
+ * - Image format detection
+ * - Lazy loading support
+ *
+ * Monitoring:
+ * - Performance metrics
+ * - Error tracking
+ * - User analytics
+ * - Build monitoring
+ *
+ * Sürdürülebilirlik:
+ * - Centralized configuration
+ * - Environment isolation
+ * - Easy maintenance
+ * - Clear documentation
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
  */
 
 export interface EnvironmentConfig {

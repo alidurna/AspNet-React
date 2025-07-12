@@ -1,6 +1,94 @@
 /**
  * PWA Install Banner Component
- * Shows a beautiful banner to prompt users to install the app
+ *
+ * Bu dosya, TaskFlow uygulamasının Progressive Web App (PWA) kurulum
+ * banner'ını içerir. Kullanıcıları uygulamayı cihazlarına yüklemeye
+ * teşvik eden güzel ve etkileşimli bir banner sağlar.
+ *
+ * Ana Özellikler:
+ * - Otomatik kurulum kontrolü
+ * - Gecikmeli gösterim (3 saniye)
+ * - Dismissal yönetimi
+ * - Session storage entegrasyonu
+ * - Smooth animasyonlar
+ * - Responsive tasarım
+ *
+ * PWA Özellikleri:
+ * - Offline çalışma
+ * - Anlık bildirimler
+ * - Daha hızlı yükleme
+ * - Native app deneyimi
+ * - Home screen shortcut
+ *
+ * Banner Davranışı:
+ * - Sadece kurulabilir cihazlarda gösterilir
+ * - Zaten kurulu olanlarda gizlenir
+ * - Kullanıcı kapatırsa session boyunca gizli kalır
+ * - 3 saniye gecikme ile gösterilir
+ *
+ * Props Interface:
+ * - className: Ek CSS sınıfları
+ * - onInstall: Kurulum callback'i
+ * - onDismiss: Kapatma callback'i
+ *
+ * Kullanım Alanları:
+ * - Ana sayfa
+ * - Dashboard
+ * - Mobil cihazlar
+ * - Desktop tarayıcılar
+ *
+ * Styling:
+ * - Gradient background
+ * - Modern card design
+ * - Smooth transitions
+ * - Responsive layout
+ * - Mobile-first approach
+ *
+ * Animation:
+ * - Slide-up entrance
+ * - Fade effects
+ * - Progress bar animation
+ * - Hover effects
+ *
+ * State Management:
+ * - Installation status
+ * - Dismissal state
+ * - Visibility control
+ * - Session persistence
+ *
+ * Accessibility:
+ * - ARIA labels
+ * - Keyboard navigation
+ * - Screen reader support
+ * - Focus management
+ *
+ * Performance:
+ * - Lazy loading
+ * - Efficient state updates
+ * - Minimal re-renders
+ * - Memory optimization
+ *
+ * Error Handling:
+ * - Installation failures
+ * - Browser compatibility
+ * - Graceful fallbacks
+ * - User feedback
+ *
+ * Browser Support:
+ * - Chrome/Edge (Chromium)
+ * - Firefox
+ * - Safari (iOS)
+ * - Progressive enhancement
+ *
+ * Sürdürülebilirlik:
+ * - TypeScript tip güvenliği
+ * - Modüler component yapısı
+ * - Açık ve anlaşılır kod
+ * - Comprehensive documentation
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
  */
 
 import React, { useState, useEffect } from "react";

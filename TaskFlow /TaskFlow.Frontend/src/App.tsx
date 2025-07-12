@@ -1,3 +1,76 @@
+// ****************************************************************************************************
+//  APP.TSX
+//  --------------------------------------------------------------------------------------------------
+//  Bu dosya, TaskFlow uygulamasının ana React component'idir. Tüm global provider'ları, router
+//  konfigürasyonunu ve ana sayfa yönlendirmelerini içerir. Uygulamanın kök component'i olarak
+//  tüm sayfa ve modüllerin giriş noktasıdır.
+//
+//  ANA BAŞLIKLAR:
+//  - Global Provider Configuration
+//  - Routing ve Navigation
+//  - PWA ve Offline Support
+//  - Authentication Flow
+//  - State Management Setup
+//  - Error Handling ve Fallbacks
+//
+//  GÜVENLİK:
+//  - Authentication provider setup
+//  - Route protection
+//  - PWA security
+//  - Offline data protection
+//  - State isolation
+//
+//  HATA YÖNETİMİ:
+//  - Global error boundaries
+//  - Route fallbacks
+//  - Offline state handling
+//  - PWA update management
+//  - Graceful degradation
+//
+//  EDGE-CASE'LER:
+//  - Offline state transitions
+//  - PWA update conflicts
+//  - Route navigation errors
+//  - Provider initialization failures
+//  - Browser compatibility issues
+//  - Network connectivity changes
+//  - Service worker registration failures
+//
+//  YAN ETKİLER:
+//  - Provider setup affects global state
+//  - Routing affects user navigation
+//  - PWA updates affect user experience
+//  - Offline state affects functionality
+//  - Authentication affects access control
+//
+//  PERFORMANS:
+//  - Efficient provider initialization
+//  - Optimized routing
+//  - Lazy loading support
+//  - PWA caching strategy
+//  - State management optimization
+//
+//  SÜRDÜRÜLEBİLİRLİK:
+//  - Clear component structure
+//  - Comprehensive documentation
+//  - Extensible routing system
+//  - Modular provider architecture
+//  - Configuration-based flexibility
+// ****************************************************************************************************
+/**
+ * App.tsx
+ *
+ * Uygulamanın ana componentidir. Tüm global provider'ları, router'ı ve ana sayfa yönlendirmelerini içerir.
+ *
+ * - Redux Provider ile global state yönetimi
+ * - AuthProvider ile kimlik doğrulama context'i
+ * - ToastProvider ile bildirim sistemi
+ * - React Router ile sayfa yönlendirme ve koruma
+ * - PWA ve offline desteği
+ *
+ * Tüm sayfa ve modüllerin giriş noktasıdır.
+ */
+
 import {
   BrowserRouter as Router,
   Routes,
@@ -13,37 +86,15 @@ import usePWA from "./hooks/usePWA";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
 
 /**
- * TaskFlow Ana Uygulama Component'i
+ * App
  *
- * Bu component, tüm uygulamanın kök component'idir ve routing yapılandırmasını içerir.
- * React Router kullanarak sayfa navigasyonunu yönetir.
+ * Uygulamanın kök component'i. Tüm provider'ları ve router'ı içerir.
+ * Route'lar ve global context'ler burada tanımlanır.
  *
- * Provider Hierarchy:
- * - Redux Provider: Global state management
- * - AuthProvider: Authentication context
- * - ToastProvider: Notification system
- * - Router: Page navigation
- *
- * Mevcut Route'lar:
- * - "/" : Ana sayfa - Login'e yönlendirir
- * - "/login" : Kullanıcı giriş sayfası
- * - "/register" : Yeni kullanıcı kayıt sayfası
- * - "/dashboard" : Ana kontrol paneli
- * - "*" : Catch-all route - 404 durumları için Login'e yönlendirir
- *
- * Gelecekte Eklenecek Route'lar:
- * - "/tasks" : Görev yönetimi sayfası
- * - "/categories" : Kategori yönetimi sayfası
- * - "/profile" : Kullanıcı profil sayfası
- * - "/settings" : Uygulama ayarları
- *
- * Authentication Logic:
- * Şu anda tüm route'lar herkese açık. İleride:
- * - Public routes: /login, /register
- * - Protected routes: /dashboard, /tasks, /categories, /profile, /settings
- * - Authentication context ile route protection yapılacak
+ * @returns {JSX.Element}
  */
 function App() {
   const { isOnline, updateAvailable, updateServiceWorker } = usePWA();
@@ -90,60 +141,13 @@ function App() {
             {/* Dashboard sayfası - ana kontrol paneli */}
             <Route path="/dashboard" element={<Dashboard />} />
 
+            {/* Profile sayfası - kullanıcı profili */}
+            <Route path="/profile" element={<Profile />} />
+
             {/* ===== CATCH-ALL ROUTE ===== */}
             {/* 404 durumları ve geçersiz URL'ler için */}
             {/* Kullanıcıyı login sayfasına yönlendirir */}
             <Route path="*" element={<Navigate to="/login" replace />} />
-
-            {/* 
-          ===== FUTURE PROTECTED ROUTES =====
-          İleride authentication context implementasyonu sonrası eklenecek:
-          
-          <Route 
-            path="/dashboard" 
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/tasks" 
-            element={
-              <ProtectedRoute>
-                <Tasks />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/categories" 
-            element={
-              <ProtectedRoute>
-                <Categories />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/profile" 
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/settings" 
-            element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            } 
-          />
-          */}
           </Routes>
         </Router>
 

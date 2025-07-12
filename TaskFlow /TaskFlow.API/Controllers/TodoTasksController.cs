@@ -8,6 +8,61 @@ using Asp.Versioning;
 
 namespace TaskFlow.API.Controllers
 {
+    // ****************************************************************************************************
+    //  TODOTASKSCONTROLLER.CS
+    //  --------------------------------------------------------------------------------------------------
+    //  Bu dosya, TaskFlow uygulamasının görev yönetimi sisteminin ana API controller'ıdır. Kullanıcıların
+    //  görevlerini oluşturma, güncelleme, silme, tamamlama, filtreleme ve arama işlemlerini yönetir.
+    //  Ayrıca görev istatistikleri, alt görev yönetimi ve zaman bazlı görev listeleme özelliklerini sağlar.
+    //
+    //  ANA BAŞLIKLAR:
+    //  - CRUD Operations (Create, Read, Update, Delete)
+    //  - Task Completion ve Progress Tracking
+    //  - Advanced Filtering ve Search
+    //  - Time-based Task Queries (Today, This Week, Overdue)
+    //  - Sub-task Management (Hierarchical Tasks)
+    //  - Task Statistics ve Analytics
+    //  - Priority-based Operations
+    //
+    //  GÜVENLİK:
+    //  - JWT tabanlı authentication (tüm endpoint'ler korumalı)
+    //  - User isolation (kullanıcı sadece kendi görevlerini görür)
+    //  - Input validation ve sanitization
+    //  - Business rule enforcement
+    //
+    //  HATA YÖNETİMİ:
+    //  - Comprehensive try-catch blocks
+    //  - Specific exception handling (NotFound, Validation, etc.)
+    //  - Detailed logging for debugging
+    //  - Consistent error response format
+    //
+    //  EDGE-CASE'LER:
+    //  - Circular parent-child relationships
+    //  - Invalid task IDs veya non-existent tasks
+    //  - Empty search results
+    //  - Large dataset pagination
+    //  - Concurrent task modifications
+    //  - Invalid date ranges
+    //
+    //  YAN ETKİLER:
+    //  - Task completion triggers sub-task updates
+    //  - Progress updates affect parent task completion
+    //  - Task deletion cascades to sub-tasks
+    //  - Statistics are calculated in real-time
+    //  - Search operations may be resource-intensive
+    //
+    //  PERFORMANS:
+    //  - Pagination for large datasets
+    //  - Efficient database queries with includes
+    //  - Caching for frequently accessed data
+    //  - Optimized search algorithms
+    //
+    //  SÜRDÜRÜLEBİLİRLİK:
+    //  - Service layer pattern
+    //  - Dependency injection
+    //  - Comprehensive documentation
+    //  - Extensible architecture
+    // ****************************************************************************************************
     /// <summary>
     /// TodoTask yönetimi için API Controller
     /// Task CRUD operations, filtering, completion tracking ve hierarchy management

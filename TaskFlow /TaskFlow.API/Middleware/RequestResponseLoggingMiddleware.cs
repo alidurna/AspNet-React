@@ -6,7 +6,90 @@ namespace TaskFlow.API.Middleware
 {
     /// <summary>
     /// Request/Response Logging Middleware
-    /// HTTP request/response detaylarını loglar ve performance monitoring sağlar
+    /// 
+    /// Bu dosya, TaskFlow API'sinin HTTP request/response işlemlerini
+    /// detaylı şekilde loglayan ve performance monitoring sağlayan
+    /// middleware'i içerir. Debugging, audit trail ve performance
+    /// analizi için kullanılır.
+    /// 
+    /// Ana Özellikler:
+    /// - Comprehensive request/response logging
+    /// - Performance monitoring (response time)
+    /// - Correlation ID tracking
+    /// - Sensitive data filtering
+    /// - Configurable log levels
+    /// - Path-based exclusions
+    /// 
+    /// Logging Kapsamı:
+    /// - HTTP method ve path
+    /// - Request/response headers
+    /// - Request/response body
+    /// - Query parameters
+    /// - User agent bilgisi
+    /// - IP address
+    /// - User ID (authenticated)
+    /// - Response time
+    /// - Status codes
+    /// 
+    /// Security Features:
+    /// - Sensitive data filtering
+    /// - Password field masking
+    /// - Token/secret hiding
+    /// - Authorization header filtering
+    /// - API key protection
+    /// 
+    /// Performance Monitoring:
+    /// - Response time tracking
+    /// - Slow request detection
+    /// - Performance metrics
+    /// - Memory usage monitoring
+    /// - Throughput analysis
+    /// 
+    /// Configuration Options:
+    /// - Logging enable/disable
+    /// - Excluded paths
+    /// - Body size limits
+    /// - Slow request threshold
+    /// - Log level configuration
+    /// 
+    /// Data Filtering:
+    /// - Sensitive field detection
+    /// - JSON data sanitization
+    /// - Header filtering
+    /// - Query string filtering
+    /// - Body content filtering
+    /// 
+    /// Correlation Tracking:
+    /// - Request correlation ID
+    /// - Trace identifier
+    /// - Cross-service tracking
+    /// - Debug information
+    /// - Error correlation
+    /// 
+    /// Monitoring ve Analytics:
+    /// - Request patterns
+    /// - Error rates
+    /// - Performance trends
+    /// - Usage statistics
+    /// - Health metrics
+    /// 
+    /// Error Handling:
+    /// - Graceful failures
+    /// - Fallback logging
+    /// - Error recovery
+    /// - Exception handling
+    /// - Debug information
+    /// 
+    /// Sürdürülebilirlik:
+    /// - Modüler yapı
+    /// - Açık ve anlaşılır kod
+    /// - Comprehensive documentation
+    /// - Test coverage
+    /// - Performance optimization
+    /// 
+    /// @author TaskFlow Development Team
+    /// @version 1.0.0
+    /// @since 2024
     /// </summary>
     /// <remarks>
     /// Bu middleware tüm HTTP isteklerini ve yanıtlarını detaylı şekilde loglar.

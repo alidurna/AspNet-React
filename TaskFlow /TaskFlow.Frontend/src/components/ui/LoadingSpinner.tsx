@@ -1,6 +1,91 @@
 /**
  * Loading Spinner Component
- * Reusable loading indicator for lazy loading and async operations
+ *
+ * Bu dosya, TaskFlow uygulaması için özelleştirilmiş yeniden kullanılabilir
+ * yükleme göstergesi component'ini içerir. Lazy loading ve async operasyonlar
+ * için kullanıcı dostu loading state'leri sağlar.
+ *
+ * Ana Özellikler:
+ * - 4 farklı boyut (sm, md, lg, xl)
+ * - 6 farklı renk seçeneği
+ * - Opsiyonel metin gösterimi
+ * - Fullscreen modu
+ * - Accessibility desteği
+ * - Predefined variants
+ *
+ * Boyut Seçenekleri:
+ * - sm: 16px (küçük butonlar için)
+ * - md: 32px (component loading) - varsayılan
+ * - lg: 48px (sayfa loading)
+ * - xl: 64px (büyük loading)
+ *
+ * Renk Seçenekleri:
+ * - primary: Ana tema rengi
+ * - secondary: İkincil tema rengi
+ * - success: Yeşil (başarı)
+ * - blue: Mavi (varsayılan)
+ * - gray: Gri
+ * - white: Beyaz (koyu arka plan için)
+ *
+ * Predefined Variants:
+ * - PageLoadingSpinner: Tam sayfa loading
+ * - ComponentLoadingSpinner: Component loading
+ * - ButtonLoadingSpinner: Buton içi loading
+ *
+ * Kullanım Alanları:
+ * - Sayfa yükleme
+ * - Form submit
+ * - API çağrıları
+ * - Data fetching
+ * - File upload
+ * - Authentication
+ *
+ * Accessibility:
+ * - ARIA labels
+ * - Screen reader support
+ * - Role attributes
+ * - Test ID'ler
+ *
+ * Performance:
+ * - Optimized animations
+ * - Efficient rendering
+ * - Minimal bundle size
+ * - Memory efficient
+ *
+ * Styling:
+ * - Tailwind CSS tabanlı
+ * - Smooth animations
+ * - Consistent design
+ * - Responsive behavior
+ *
+ * Props Interface:
+ * - size: Spinner boyutu
+ * - color: Spinner rengi
+ * - text: Loading metni
+ * - fullScreen: Tam ekran modu
+ * - className: Ek CSS sınıfları
+ *
+ * Animation:
+ * - CSS-based spinning
+ * - Smooth transitions
+ * - Performance optimized
+ * - Cross-browser compatible
+ *
+ * Error Handling:
+ * - Graceful fallbacks
+ * - Loading state management
+ * - Timeout handling
+ * - Error boundaries
+ *
+ * Sürdürülebilirlik:
+ * - TypeScript tip güvenliği
+ * - Modüler component yapısı
+ * - Açık ve anlaşılır kod
+ * - Comprehensive documentation
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
  */
 
 import React from "react";

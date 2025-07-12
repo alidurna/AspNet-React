@@ -1,254 +1,96 @@
+// ****************************************************************************************************
+//  TODOTASKDTO.CS
+//  --------------------------------------------------------------------------------------------------
+//  Bu dosya, TaskFlow uygulamasının görev yönetimi sisteminin ana DTO (Data Transfer Object) dosyasıdır.
+//  Görev oluşturma, güncelleme, filtreleme ve tamamlama işlemleri için gerekli tüm DTO'ları içerir.
+//  Validation attribute'ları ile input kontrolü ve business rule enforcement sağlar.
+//
+//  ANA BAŞLIKLAR:
+//  - TodoTaskDto (Ana görev veri modeli)
+//  - CreateTodoTaskDto (Görev oluşturma)
+//  - UpdateTodoTaskDto (Görev güncelleme)
+//  - TodoTaskFilterDto (Görev filtreleme)
+//  - CompleteTaskDto (Görev tamamlama)
+//  - Validation ve Business Rules
+//
+//  GÜVENLİK:
+//  - Input validation ve sanitization
+//  - Business rule enforcement
+//  - Data type validation
+//  - Range checking
+//  - String length limits
+//
+//  HATA YÖNETİMİ:
+//  - Comprehensive validation attributes
+//  - Custom validation methods
+//  - Business rule validation
+//  - Error message localization
+//  - Graceful validation failures
+//
+//  EDGE-CASE'LER:
+//  - Null or empty required fields
+//  - Invalid date ranges
+//  - Circular parent-child relationships
+//  - Large text inputs
+//  - Invalid priority values
+//  - Past due dates
+//  - Unicode characters
+//
+//  YAN ETKİLER:
+//  - Validation affects user experience
+//  - Business rules enforce data integrity
+//  - Filtering impacts performance
+//  - Date validation prevents invalid states
+//  - String limits prevent overflow
+//
+//  PERFORMANS:
+//  - Efficient validation
+//  - Optimized filtering
+//  - Minimal memory usage
+//  - Fast serialization
+//  - Efficient database queries
+//
+//  SÜRDÜRÜLEBİLİRLİK:
+//  - Clear separation of concerns
+//  - Comprehensive documentation
+//  - Extensible validation system
+//  - Backward compatibility
+//  - Configuration-based rules
+// ****************************************************************************************************
 using System.ComponentModel.DataAnnotations;
 using TaskFlow.API.Models;
 
 namespace TaskFlow.API.DTOs
 {
-    /// <summary>
-    /// TodoTask bilgilerini client'a güvenli şekilde döndürmek için kullanılan DTO
-    /// Database entity'sinden farklı olarak sadece gerekli bilgileri içerir
-    /// </summary>
-    /// <remarks>
-    /// Bu DTO, task listelerinde ve detay sayfalarında kullanılır.
-    /// Navigation property'ler dahil edilmiş ve computed property'ler hesaplanmıştır.
-    /// Client-side'da task management UI'ı için optimize edilmiştir.
-    /// </remarks>
     public class TodoTaskDto
     {
-        /// <summary>
-        /// Task'in benzersiz ID'si
-        /// Database'deki primary key
-        /// </summary>
         public int Id { get; set; }
-
-        /// <summary>
-        /// Task'in ait olduğu kullanıcının ID'si
-        /// Authorization kontrolü için kullanılır
-        /// </summary>
-        public int UserId { get; set; }
-
-        /// <summary>
-        /// Task'in ait olduğu kategorinin ID'si
-        /// Kategori bazlı filtreleme için kullanılır
-        /// </summary>
-        public int CategoryId { get; set; }
-
-        /// <summary>
-        /// Üst task'in ID'si (hierarchical tasks için)
-        /// Null ise ana task, değer varsa alt task
-        /// </summary>
-        public int? ParentTaskId { get; set; }
-
-        /// <summary>
-        /// Task'in başlığı
-        /// Kısa ve öz açıklama
-        /// </summary>
-        /// <example>API dokümantasyonu yaz</example>
         public string Title { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Task'in detaylı açıklaması
-        /// İsteğe bağlı ek bilgiler
-        /// </summary>
-        /// <example>Swagger ve Postman collection'ı hazırla</example>
         public string? Description { get; set; }
-
-        /// <summary>
-        /// Task'in öncelik seviyesi
-        /// Enum değeri string olarak döndürülür
-        /// </summary>
-        /// <example>High</example>
-        public string Priority { get; set; } = "Normal";
-
-        /// <summary>
-        /// Task'in tamamlanma yüzdesi
-        /// 0-100 arası değer
-        /// </summary>
-        /// <example>75</example>
-        public int CompletionPercentage { get; set; } = 0;
-
-        /// <summary>
-        /// Task'in bitiş tarihi
-        /// İsteğe bağlı deadline
-        /// </summary>
-        public DateTime? DueDate { get; set; }
-
-        /// <summary>
-        /// Task için hatırlatma tarihi
-        /// İsteğe bağlı notification zamanı
-        /// </summary>
-        public DateTime? ReminderDate { get; set; }
-
-        /// <summary>
-        /// Task'in başlangıç tarihi
-        /// İsteğe bağlı planlama için
-        /// </summary>
-        public DateTime? StartDate { get; set; }
-
-        /// <summary>
-        /// Task'in tamamlanıp tamamlanmadığı
-        /// Boolean flag
-        /// </summary>
-        public bool IsCompleted { get; set; } = false;
-
-        /// <summary>
-        /// Task'in tamamlanma tarihi
-        /// IsCompleted true ise otomatik set edilir
-        /// </summary>
-        public DateTime? CompletedAt { get; set; }
-
-        /// <summary>
-        /// Task'in aktif olup olmadığı
-        /// Soft delete için kullanılır
-        /// </summary>
-        public bool IsActive { get; set; } = true;
-
-        /// <summary>
-        /// Task ile ilgili etiketler
-        /// Comma-separated string
-        /// </summary>
-        /// <example>urgent,frontend,api</example>
-        public string? Tags { get; set; }
-
-        /// <summary>
-        /// Task ile ilgili ek notlar
-        /// Uzun açıklamalar için
-        /// </summary>
-        public string? Notes { get; set; }
-
-        /// <summary>
-        /// Task'in oluşturulma tarihi
-        /// Audit trail için
-        /// </summary>
+        public bool IsCompleted { get; set; }
+        public int Progress { get; set; }
         public DateTime CreatedAt { get; set; }
-
-        /// <summary>
-        /// Task'in son güncellenme tarihi
-        /// Audit trail için
-        /// </summary>
+        public DateTime? CompletedAt { get; set; }
+        public DateTime? DueDate { get; set; }
+        public DateTime? ReminderDate { get; set; }
+        public DateTime? StartDate { get; set; }
         public DateTime UpdatedAt { get; set; }
-
-        // ===== AUTOMAPPER COMPUTED PROPERTIES =====
-
-        /// <summary>
-        /// Kategori adı (AutoMapper tarafından hesaplanır)
-        /// Category navigation property'sinden alınır
-        /// </summary>
-        public string CategoryName { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Kategori rengi (AutoMapper tarafından hesaplanır)
-        /// Category navigation property'sinden alınır
-        /// </summary>
-        public string CategoryColor { get; set; } = "#6B7280";
-
-        /// <summary>
-        /// Kullanıcı adı (AutoMapper tarafından hesaplanır)
-        /// User navigation property'sinden alınır
-        /// </summary>
+        public Priority Priority { get; set; }
+        public string? Tags { get; set; }
+        public string? Notes { get; set; }
+        public int UserId { get; set; }
         public string UserName { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Bitiş tarihine kalan gün sayısı (AutoMapper tarafından hesaplanır)
-        /// Due date'e göre hesaplanır
-        /// </summary>
+        public int? CategoryId { get; set; }
+        public string CategoryName { get; set; } = string.Empty;
+        public string CategoryColor { get; set; } = string.Empty;
+        public bool IsOverdue { get; set; }
         public int? DaysUntilDue { get; set; }
-
-        // ===== NAVIGATION PROPERTIES =====
-
-        /// <summary>
-        /// Task'in ait olduğu kategori bilgileri
-        /// Nested object olarak döndürülür
-        /// </summary>
-        public CategoryDto? Category { get; set; }
-
-        /// <summary>
-        /// Üst task bilgileri (eğer alt task ise)
-        /// Hierarchy navigation için
-        /// </summary>
-        public TodoTaskDto? ParentTask { get; set; }
-
-        /// <summary>
-        /// Alt task'ların listesi
-        /// Hierarchy expansion için
-        /// </summary>
-        public List<TodoTaskDto>? SubTasks { get; set; }
-
-        // ===== COMPUTED PROPERTIES =====
-
-        /// <summary>
-        /// Task'in gecikip gecikmediği
-        /// DueDate ile şu anki tarih karşılaştırması
-        /// </summary>
-        public bool IsOverdue => DueDate.HasValue && DueDate.Value < DateTime.UtcNow && !IsCompleted;
-
-        /// <summary>
-        /// Task'in tamamlanmasına kalan gün sayısı
-        /// Negatif değer gecikmeyi gösterir
-        /// </summary>
-        public int? DaysRemaining => DueDate?.Subtract(DateTime.UtcNow).Days;
-
-        /// <summary>
-        /// Task'in kalan zamanını human-readable format
-        /// </summary>
-        /// <example>3 gün kaldı, 2 gün geçti</example>
-        public string TimeRemainingText
-        {
-            get
-            {
-                if (!DueDate.HasValue) return "Tarih belirlenmemiş";
-                if (IsCompleted) return "Tamamlandı";
-
-                var days = DaysRemaining ?? 0;
-                if (days > 0) return $"{days} gün kaldı";
-                if (days == 0) return "Bugün bitiyor";
-                return $"{Math.Abs(days)} gün geçti";
-            }
-        }
-
-        /// <summary>
-        /// Alt task sayısı
-        /// Hierarchy için istatistik
-        /// </summary>
-        public int SubTaskCount => SubTasks?.Count ?? 0;
-
-        /// <summary>
-        /// Tamamlanan alt task sayısı
-        /// Progress tracking için
-        /// </summary>
-        public int CompletedSubTaskCount => SubTasks?.Count(st => st.IsCompleted) ?? 0;
-
-        /// <summary>
-        /// Tag'leri array olarak döndürür
-        /// Frontend'de kolay kullanım için
-        /// </summary>
-        public string[] TagArray => string.IsNullOrWhiteSpace(Tags) 
-            ? Array.Empty<string>() 
-            : Tags.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                  .Select(tag => tag.Trim())
-                  .ToArray();
-
-        /// <summary>
-        /// Task'in priority'sine göre renk kodu
-        /// UI'da kullanım için
-        /// </summary>
-        public string PriorityColor => Priority switch
-        {
-            "Low" => "#28a745",      // Green
-            "Normal" => "#007bff",   // Blue  
-            "High" => "#fd7e14",     // Orange
-            "Critical" => "#dc3545", // Red
-            _ => "#6c757d"           // Gray (default)
-        };
-
-        /// <summary>
-        /// Task'in status'una göre renk kodu
-        /// UI'da kullanım için
-        /// </summary>
-        public string StatusColor => IsCompleted 
-            ? "#28a745"              // Green (completed)
-            : IsOverdue 
-                ? "#dc3545"          // Red (overdue)
-                : "#007bff";         // Blue (active)
+        public int CompletionPercentage { get; set; }
+        public bool IsActive { get; set; } = true;
+        public virtual CategoryDto? Category { get; set; }
+        public int? ParentTaskId { get; set; }
+        public virtual TodoTaskDto? ParentTask { get; set; }
+        public virtual ICollection<TodoTaskDto> SubTasks { get; set; } = new List<TodoTaskDto>();
     }
 
     /// <summary>

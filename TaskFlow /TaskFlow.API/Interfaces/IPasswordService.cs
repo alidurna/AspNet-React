@@ -1,3 +1,103 @@
+/**
+ * IPasswordService Interface
+ * 
+ * Bu dosya, TaskFlow API'sinde şifre yönetimi işlemlerini tanımlayan
+ * interface'i içerir. Şifre hash'leme, doğrulama, güvenlik kontrolü
+ * ve güvenli şifre üretimi işlemlerini kapsar.
+ * 
+ * Ana İşlevler:
+ * - Şifre hash'leme (BCrypt)
+ * - Şifre doğrulama
+ * - Şifre güvenlik kontrolü
+ * - Güvenli şifre üretimi
+ * - Password reset token üretimi
+ * 
+ * Password Hashing:
+ * - HashPassword: Plain text'i hash'e çevirme
+ * - VerifyPassword: Hash ile karşılaştırma
+ * - BCrypt algoritması
+ * - Salt otomatik ekleme
+ * - Work factor ayarlanabilir
+ * 
+ * Password Validation:
+ * - ValidatePassword: Güç kontrolü
+ * - ValidatePasswordConfirmation: Eşleşme kontrolü
+ * - Strength scoring (0-100)
+ * - Detailed error messages
+ * - Improvement suggestions
+ * 
+ * Security Rules:
+ * - CheckPasswordSecurity: Güvenlik kontrolü
+ * - IsCommonPassword: Yaygın şifre kontrolü
+ * - Minimum length requirements
+ * - Character type requirements
+ * - Complexity validation
+ * 
+ * Password Generation:
+ * - GenerateSecurePassword: Güvenli şifre üretimi
+ * - GeneratePasswordResetToken: Reset token
+ * - Configurable parameters
+ * - Cryptographically secure
+ * - Customizable requirements
+ * 
+ * Güvenlik Özellikleri:
+ * - BCrypt hashing
+ * - Salt generation
+ * - Work factor optimization
+ * - Timing attack protection
+ * - Rainbow table resistance
+ * 
+ * Validation Rules:
+ * - Minimum 8 karakter
+ * - En az 1 büyük harf
+ * - En az 1 küçük harf
+ * - En az 1 rakam
+ * - En az 1 özel karakter
+ * - Yaygın şifre kontrolü
+ * 
+ * Password Strength Levels:
+ * - VeryWeak: 0-20 puan
+ * - Weak: 21-40 puan
+ * - Medium: 41-60 puan
+ * - Strong: 61-80 puan
+ * - VeryStrong: 81-100 puan
+ * 
+ * Performance:
+ * - Optimized hashing
+ * - Efficient validation
+ * - Memory management
+ * - CPU usage optimization
+ * 
+ * Security Best Practices:
+ * - Never store plain text
+ * - Use strong algorithms
+ * - Regular security audits
+ * - Rate limiting
+ * - Brute force protection
+ * 
+ * Error Handling:
+ * - Validation errors
+ * - Hashing failures
+ * - Security violations
+ * - Graceful degradation
+ * 
+ * Monitoring:
+ * - Password strength metrics
+ * - Security violation tracking
+ * - Performance monitoring
+ * - Usage analytics
+ * 
+ * Sürdürülebilirlik:
+ * - SOLID principles
+ * - Dependency injection ready
+ * - Testable design
+ * - Clear separation of concerns
+ * 
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
+ */
+
 namespace TaskFlow.API.Interfaces
 {
     /// <summary>

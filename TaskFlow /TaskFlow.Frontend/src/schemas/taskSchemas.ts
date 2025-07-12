@@ -1,8 +1,83 @@
 /**
- * Task Validation Schemas - TaskFlow
+ * Task Validation Schemas
  *
- * Zod kullanarak görev formları için validation schemas.
- * Create, update, search ve filter formları için type-safe validation.
+ * Bu dosya, TaskFlow uygulamasının görev yönetimi işlemleri için
+ * Zod tabanlı validation şemalarını içerir. Görev oluşturma, güncelleme,
+ * arama ve filtreleme işlemleri için type-safe validation sağlar.
+ *
+ * Ana Özellikler:
+ * - Görev oluşturma validation
+ * - Görev güncelleme validation
+ * - Görev filtreleme validation
+ * - Hızlı görev oluşturma
+ * - İlerleme takibi validation
+ * - Yorum sistemi validation
+ * - Toplu işlem validation
+ *
+ * Validation Şemaları:
+ * - createTaskSchema: Yeni görev oluşturma
+ * - updateTaskSchema: Görev güncelleme
+ * - quickTaskSchema: Hızlı görev oluşturma
+ * - taskFilterSchema: Görev filtreleme
+ * - taskProgressSchema: İlerleme güncelleme
+ * - taskCompletionSchema: Tamamlama işlemi
+ * - taskCommentSchema: Yorum ekleme
+ * - bulkTaskOperationSchema: Toplu işlemler
+ * - taskSearchSchema: Gelişmiş arama
+ * - timeTrackingSchema: Zaman takibi
+ *
+ * Öncelik Seviyeleri:
+ * - Low: Düşük öncelik
+ * - Normal: Normal öncelik
+ * - High: Yüksek öncelik
+ * - Critical: Kritik öncelik
+ *
+ * Tarih Validasyonları:
+ * - Bitiş tarihi gelecekte olmalı
+ * - Hatırlatma tarihi bitiş tarihinden önce
+ * - Başlangıç tarihi bitiş tarihinden önce
+ * - Filtre tarih aralıkları mantıklı olmalı
+ *
+ * İş Kuralları:
+ * - Görev başlığı 3-200 karakter
+ * - Açıklama maksimum 2000 karakter
+ * - Etiketler maksimum 500 karakter
+ * - Tahmini süre 1 dakika - 1 hafta
+ * - Tamamlanma yüzdesi 0-100 arası
+ *
+ * Güvenlik:
+ * - Input sanitization
+ * - XSS koruması
+ * - SQL injection koruması
+ * - Data validation
+ *
+ * TypeScript Integration:
+ * - Type inference
+ * - Type-safe forms
+ * - IntelliSense support
+ * - Compile-time checking
+ *
+ * Error Handling:
+ * - Turkish error messages
+ * - Contextual validation
+ * - Field-specific errors
+ * - Cross-field validation
+ *
+ * Performans:
+ * - Efficient validation
+ * - Optimized regex patterns
+ * - Minimal bundle size
+ * - Lazy validation
+ *
+ * Sürdürülebilirlik:
+ * - Centralized validation
+ * - Reusable schemas
+ * - Easy maintenance
+ * - Clear documentation
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
  */
 
 import { z } from "zod";

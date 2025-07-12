@@ -1,3 +1,96 @@
+/**
+ * IFileUploadService Interface
+ * 
+ * Bu dosya, TaskFlow API'sinde dosya yükleme işlemlerini tanımlayan
+ * interface'i içerir. Avatar, task attachment ve genel dosya upload
+ * işlemlerini güvenli ve verimli şekilde yönetir.
+ * 
+ * Ana İşlevler:
+ * - Avatar upload ve resize
+ * - Task attachment upload
+ * - Genel dosya upload
+ * - Dosya validation
+ * - Dosya silme işlemleri
+ * - Güvenli dosya adı oluşturma
+ * 
+ * Upload Tipleri:
+ * - AvatarUploadAsync: Kullanıcı profil fotoğrafı
+ * - AttachmentUploadAsync: Görev ekleri
+ * - UploadFileAsync: Genel dosya upload
+ * - Batch upload desteği
+ * 
+ * Dosya İşlemleri:
+ * - ValidateFileAsync: Dosya doğrulama
+ * - DeleteFileAsync: Dosya silme
+ * - DeleteUserAvatarsAsync: Eski avatar silme
+ * - DeleteTaskAttachmentsAsync: Görev eklerini silme
+ * 
+ * Güvenlik:
+ * - Dosya tipi kontrolü
+ * - Boyut limitleri
+ * - Güvenli dosya adları
+ * - Path traversal koruması
+ * - Malware scanning
+ * 
+ * Validation Rules:
+ * - MIME type kontrolü
+ * - Dosya boyutu limitleri
+ * - Dosya uzantısı kontrolü
+ * - İçerik doğrulama
+ * - Virus tarama
+ * 
+ * Image Processing:
+ * - Avatar resize
+ * - Thumbnail generation
+ * - Format conversion
+ * - Quality optimization
+ * - Metadata handling
+ * 
+ * Storage Management:
+ * - Disk space monitoring
+ * - File organization
+ * - Cleanup procedures
+ * - Backup strategies
+ * 
+ * Performance:
+ * - Async upload
+ * - Progress tracking
+ * - Chunked upload
+ * - Compression
+ * - CDN integration
+ * 
+ * Error Handling:
+ * - Upload failures
+ * - Validation errors
+ * - Storage errors
+ * - Network timeouts
+ * - Graceful fallbacks
+ * 
+ * File Categories:
+ * - Images (avatar, thumbnails)
+ * - Documents (PDF, DOC, XLS)
+ * - Archives (ZIP, RAR)
+ * - Media (video, audio)
+ * - Other (generic files)
+ * 
+ * Monitoring:
+ * - Upload metrics
+ * - Storage usage
+ * - Error tracking
+ * - Performance monitoring
+ * - Usage analytics
+ * 
+ * Sürdürülebilirlik:
+ * - SOLID principles
+ * - Dependency injection ready
+ * - Testable design
+ * - Clear separation of concerns
+ * 
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
+ */
+
 using TaskFlow.API.DTOs;
 
 namespace TaskFlow.API.Interfaces;

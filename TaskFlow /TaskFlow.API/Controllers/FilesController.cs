@@ -6,6 +6,65 @@ using TaskFlow.API.Interfaces;
 
 namespace TaskFlow.API.Controllers;
 
+// ****************************************************************************************************
+//  FILESCONTROLLER.CS
+//  --------------------------------------------------------------------------------------------------
+//  Bu dosya, TaskFlow uygulamasının dosya yükleme ve yönetimi sisteminin ana API controller'ıdır.
+//  Kullanıcı avatar'ları ve görev eklerinin (attachment) yüklenmesi, silinmesi ve yönetimi işlemlerini
+//  yönetir. Dosya güvenliği, boyut kontrolü ve tip validasyonu sağlar.
+//
+//  ANA BAŞLIKLAR:
+//  - Avatar Upload ve Management
+//  - Task Attachment Upload ve Management
+//  - File Security ve Validation
+//  - Upload Limits ve Restrictions
+//  - File Deletion Operations
+//  - File Metadata Management
+//
+//  GÜVENLİK:
+//  - JWT tabanlı authentication (avatar ve attachment işlemleri için)
+//  - File type validation (MIME type kontrolü)
+//  - File size limits (5MB avatar, 10MB attachment)
+//  - Safe filename generation
+//  - User-specific file access control
+//  - Malicious file upload protection
+//
+//  HATA YÖNETİMİ:
+//  - Comprehensive try-catch blocks
+//  - File validation errors
+//  - Upload failure handling
+//  - Storage system errors
+//  - Detailed logging for debugging
+//
+//  EDGE-CASE'LER:
+//  - Large file uploads
+//  - Invalid file types
+//  - Duplicate filenames
+//  - Storage space limitations
+//  - Network timeout during upload
+//  - Corrupted file uploads
+//  - Concurrent file operations
+//
+//  YAN ETKİLER:
+//  - File uploads consume storage space
+//  - Avatar changes affect user profile display
+//  - Attachment deletions affect task data
+//  - File operations may impact system performance
+//  - Storage cleanup operations
+//
+//  PERFORMANS:
+//  - File size validation before upload
+//  - Efficient file storage management
+//  - Optimized file deletion operations
+//  - Metadata caching for file information
+//
+//  SÜRDÜRÜLEBİLİRLİK:
+//  - Service layer pattern
+//  - Dependency injection
+//  - Comprehensive documentation
+//  - Extensible file management architecture
+//  - Upload limits configuration
+// ****************************************************************************************************
 /// <summary>
 /// File upload controller'ı
 /// Avatar ve attachment upload işlemleri

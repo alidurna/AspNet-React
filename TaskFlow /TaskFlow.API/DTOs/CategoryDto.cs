@@ -1,22 +1,62 @@
-/*
- * CategoryDto.cs - Category Data Transfer Objects
- * ==============================================
- * 
- * DTO (Data Transfer Object) Pattern:
- * - API'den dönen verinin formatını kontrol eder
- * - Internal model'ları dış dünyadan gizler
- * - Version compatibility sağlar
- * - Security (sensitive field'ları gizleme)
- * - Validation rules (input validation)
- * 
- * NEDEN DTO KULLANIYORUZ:
- * ======================
- * 1. Separation of Concerns: API contract vs Database model
- * 2. Security: Password hash gibi alanları gizleyebiliriz
- * 3. Performance: Sadece gerekli alanları döneriz
- * 4. Versioning: API versiyonları arasında compatibility
- * 5. Validation: Input validation rules
- */
+// ****************************************************************************************************
+//  CATEGORYDTO.CS
+//  --------------------------------------------------------------------------------------------------
+//  Bu dosya, TaskFlow uygulamasının kategori yönetimi sisteminin ana DTO (Data Transfer Object) dosyasıdır.
+//  Kategori oluşturma, güncelleme, filtreleme ve istatistik işlemleri için gerekli tüm DTO'ları içerir.
+//  Validation attribute'ları ile input kontrolü ve computed properties ile UI entegrasyonu sağlar.
+//
+//  ANA BAŞLIKLAR:
+//  - CategoryDto (Ana kategori veri modeli)
+//  - CreateCategoryDto (Kategori oluşturma)
+//  - UpdateCategoryDto (Kategori güncelleme)
+//  - CategoryFilterDto (Kategori filtreleme)
+//  - Category Statistics ve Analytics
+//  - Validation ve Business Rules
+//
+//  GÜVENLİK:
+//  - Input validation ve sanitization
+//  - Color code format validation
+//  - String length limits
+//  - Business rule enforcement
+//  - Data type validation
+//
+//  HATA YÖNETİMİ:
+//  - Comprehensive validation attributes
+//  - Custom validation methods
+//  - Business rule validation
+//  - Error message localization
+//  - Graceful validation failures
+//
+//  EDGE-CASE'LER:
+//  - Null or empty required fields
+//  - Invalid color codes
+//  - Duplicate category names
+//  - Default category conflicts
+//  - Large text inputs
+//  - Unicode characters
+//  - Special characters in names
+//
+//  YAN ETKİLER:
+//  - Validation affects user experience
+//  - Business rules enforce data integrity
+//  - Filtering impacts performance
+//  - Default category changes affect user preferences
+//  - Color changes affect UI appearance
+//
+//  PERFORMANS:
+//  - Efficient validation
+//  - Optimized filtering
+//  - Minimal memory usage
+//  - Fast serialization
+//  - Efficient database queries
+//
+//  SÜRDÜRÜLEBİLİRLİK:
+//  - Clear separation of concerns
+//  - Comprehensive documentation
+//  - Extensible validation system
+//  - Backward compatibility
+//  - Configuration-based rules
+// ****************************************************************************************************
 
 using System.ComponentModel.DataAnnotations;
 

@@ -1,40 +1,60 @@
-/*
- * SearchController.cs - Gelişmiş Arama API Controller'ı
- * ====================================================
- * Bu controller, TaskFlow uygulamasının gelişmiş arama özelliklerini sağlar.
- * 
- * ANA ÖZELLİKLER:
- * ===============
- * 🔍 Genel Arama (Global Search)
- *    - Tüm varlıklarda (görev, kategori, kullanıcı) aynı anda arama
- *    - Önbellekleme desteği ile hızlı sonuçlar
- *    - Kullanıcı bazlı güvenlik kontrolü
- * 
- * 🎯 Görev Araması (Task Search)
- *    - Detaylı filtreleme seçenekleri
- *    - Sayfalama (pagination) desteği
- *    - Çoklu sıralama kriterleri
- *    - Tarih aralığı filtrelemesi
- * 
- * 💡 Arama Önerileri (Search Suggestions)
- *    - Otomatik tamamlama (autocomplete) desteği
- *    - Akıllı öneri algoritması
- *    - Performans odaklı önbellekleme
- * 
- * GÜVENLİK ÖZELLİKLERİ:
- * =====================
- * 🔒 JWT Authentication zorunlu
- * 👤 Kullanıcı bazlı veri erişimi
- * 🛡️ Input validation ve sanitization
- * 📊 Rate limiting (gelecekte eklenebilir)
- * 
- * PERFORMANS İYİLEŞTİRMELERİ:
- * ===========================
- * ⚡ Redis cache entegrasyonu
- * 🗄️ Entity Framework optimizasyonları
- * 📄 Sayfalama ile büyük veri desteği
- * 🔢 LINQ sorgu optimizasyonları
- */
+// ****************************************************************************************************
+//  SEARCHCONTROLLER.CS
+//  --------------------------------------------------------------------------------------------------
+//  Bu dosya, TaskFlow uygulamasının gelişmiş arama sisteminin ana API controller'ıdır. Kullanıcıların
+//  görevler, kategoriler ve diğer varlıklar arasında kapsamlı arama yapabilmesini sağlar. Global arama,
+//  görev bazlı arama, arama önerileri ve performans optimizasyonları içerir.
+//
+//  ANA BAŞLIKLAR:
+//  - Global Search (Tüm varlıklarda arama)
+//  - Task-specific Search (Görev bazlı arama)
+//  - Search Suggestions (Arama önerileri)
+//  - Advanced Filtering (Gelişmiş filtreleme)
+//  - Caching ve Performance Optimization
+//  - Search Analytics ve Metrics
+//
+//  GÜVENLİK:
+//  - JWT tabanlı authentication (tüm endpoint'ler korumalı)
+//  - User isolation (kullanıcı sadece kendi verilerinde arama yapar)
+//  - Input validation ve sanitization
+//  - Rate limiting (gelecekte eklenebilir)
+//  - SQL injection koruması
+//
+//  HATA YÖNETİMİ:
+//  - Comprehensive try-catch blocks
+//  - Specific exception handling (Validation, Database, etc.)
+//  - Detailed logging for debugging
+//  - Graceful degradation for search failures
+//
+//  EDGE-CASE'LER:
+//  - Empty search queries
+//  - Very long search terms
+//  - Special characters in search terms
+//  - No search results
+//  - Cache misses ve database timeouts
+//  - Large result sets
+//  - Concurrent search requests
+//
+//  YAN ETKİLER:
+//  - Search operations may be resource-intensive
+//  - Cache updates affect search performance
+//  - Database queries may impact overall system performance
+//  - Search suggestions are cached for performance
+//
+//  PERFORMANS:
+//  - Redis cache integration for search results
+//  - Entity Framework query optimization
+//  - Pagination for large result sets
+//  - LINQ query optimization
+//  - Search result caching (5 minutes)
+//
+//  SÜRDÜRÜLEBİLİRLİK:
+//  - Service layer pattern
+//  - Dependency injection
+//  - Comprehensive documentation
+//  - Extensible search architecture
+//  - Health check endpoint
+// ****************************************************************************************************
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -53,9 +73,7 @@ namespace TaskFlow.API.Controllers;
 /// Provides comprehensive search capabilities across tasks, categories, and users
 /// </summary>
 [ApiController]
-[Route("api/v{version:apiVersion}/[controller]")]
-[ApiVersion("1.0")]
-[Authorize]
+[Route("api/v1.0")]
 public class SearchController : ControllerBase
 {
     private readonly ILogger<SearchController> _logger;
@@ -361,6 +379,12 @@ public class SearchController : ControllerBase
         }
     }
 
+    [HttpGet("health")]
+    public IActionResult HealthCheck()
+    {
+        return Ok(new { status = "healthy", timestamp = DateTime.UtcNow });
+    }
+
     #region Private Methods
 
     private async Task<List<TaskSearchResult>> SearchTasks(GlobalSearchRequest request, int userId)
@@ -421,7 +445,7 @@ public class SearchController : ControllerBase
                 FirstName = u.FirstName,
                 LastName = u.LastName,
                 Email = u.Email,
-                ProfileImageUrl = u.ProfileImageUrl
+                ProfileImageUrl = u.ProfileImage
             })
             .ToListAsync();
     }

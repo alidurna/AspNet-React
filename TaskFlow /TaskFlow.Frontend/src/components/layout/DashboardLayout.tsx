@@ -1,26 +1,75 @@
 /**
- * Dashboard Layout Component - TaskFlow
+ * Dashboard Layout Component
  *
- * Bu component, dashboard sayfalarının ana layout yapısını oluşturur.
- * Sidebar, Header ve Main content area'yı bir araya getirir.
+ * Bu dosya, TaskFlow uygulamasının dashboard sayfaları için ana layout
+ * yapısını oluşturan component'i içerir. Sidebar, Header ve ana içerik
+ * alanını bir araya getirerek tutarlı bir kullanıcı deneyimi sağlar.
  *
- * Özellikler:
- * - Responsive layout (mobile/desktop)
- * - Sidebar state management
- * - Header integration
- * - Main content area
+ * Ana Özellikler:
+ * - Responsive layout (mobile/desktop uyumlu)
+ * - Sidebar state yönetimi
+ * - Header entegrasyonu
+ * - Ana içerik alanı
  * - Protected route wrapper
- * - Loading states
+ * - Loading state yönetimi
+ * - Authentication kontrolü
  *
- * Props:
- * - children: Page content
- * - title: Page title
- * - breadcrumbs: Breadcrumb navigation items
+ * Layout Yapısı:
+ * - Sidebar: Sol tarafta navigasyon menüsü
+ * - Header: Üst kısımda başlık ve breadcrumb
+ * - Main Content: Ana sayfa içeriği
+ * - Responsive breakpoints
  *
- * Usage:
- * <DashboardLayout title="Dashboard" breadcrumbs={breadcrumbs}>
- *   <YourPageContent />
- * </DashboardLayout>
+ * Authentication:
+ * - Otomatik login kontrolü
+ * - Unauthorized redirect
+ * - Loading state handling
+ * - Session management
+ *
+ * Responsive Design:
+ * - Mobile-first approach
+ * - Sidebar toggle functionality
+ * - Breakpoint-based behavior
+ * - Touch-friendly interface
+ *
+ * Props Interface:
+ * - children: Sayfa içeriği
+ * - title: Sayfa başlığı
+ * - breadcrumbs: Breadcrumb navigasyon öğeleri
+ *
+ * State Management:
+ * - Sidebar open/close state
+ * - Loading state
+ * - Authentication state
+ * - Responsive state
+ *
+ * Performance:
+ * - Lazy loading support
+ * - Optimized re-renders
+ * - Efficient state updates
+ * - Memory leak koruması
+ *
+ * Accessibility:
+ * - Keyboard navigation
+ * - Screen reader support
+ * - Focus management
+ * - ARIA labels
+ *
+ * Error Handling:
+ * - Authentication errors
+ * - Loading errors
+ * - Navigation errors
+ * - Fallback UI
+ *
+ * Sürdürülebilirlik:
+ * - TypeScript tip güvenliği
+ * - Modüler component yapısı
+ * - Açık ve anlaşılır kod
+ * - Comprehensive documentation
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
  */
 
 import React, { useState, useEffect } from "react";

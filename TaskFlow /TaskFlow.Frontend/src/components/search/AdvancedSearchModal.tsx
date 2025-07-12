@@ -1,6 +1,98 @@
 /**
  * Advanced Search Modal Component
- * Multi-criteria search and filtering for tasks
+ *
+ * Bu dosya, TaskFlow uygulamasının gelişmiş arama ve filtreleme
+ * modal'ını içerir. Çoklu kriterlere göre görev arama, filtreleme
+ * ve kayıtlı arama yönetimi sağlar.
+ *
+ * Ana Özellikler:
+ * - Çoklu kriter arama
+ * - Gelişmiş filtreleme
+ * - Kayıtlı arama yönetimi
+ * - Real-time form validation
+ * - Responsive modal tasarım
+ * - Search history tracking
+ *
+ * Arama Modları:
+ * - Temel Arama: Basit metin arama
+ * - Gelişmiş Arama: Detaylı filtreleme
+ * - Kayıtlı Aramalar: Önceden kaydedilen aramalar
+ *
+ * Filtreleme Kriterleri:
+ * - Metin arama (başlık, açıklama)
+ * - Öncelik seviyesi
+ * - Kategori seçimi
+ * - Tamamlanma durumu
+ * - Tarih aralığı
+ * - Parent task filtresi
+ *
+ * Form Validation:
+ * - Zod schema validation
+ * - Real-time error display
+ * - Field-specific validation
+ * - Cross-field validation
+ * - Custom error messages
+ *
+ * Props Interface:
+ * - isOpen: Modal açık/kapalı durumu
+ * - onClose: Kapatma callback'i
+ * - onSearch: Arama callback'i
+ * - initialFilters: Başlangıç filtreleri
+ *
+ * State Management:
+ * - Search mode state
+ * - Form state
+ * - Saved searches state
+ * - Validation state
+ *
+ * Saved Searches:
+ * - Arama kaydetme
+ * - Kayıtlı arama yükleme
+ * - Arama adlandırma
+ * - Arama silme
+ * - Arama düzenleme
+ *
+ * Styling:
+ * - Tailwind CSS tabanlı
+ * - Gradient header
+ * - Modern modal design
+ * - Smooth animations
+ * - Responsive layout
+ *
+ * Accessibility:
+ * - Keyboard navigation
+ * - Screen reader support
+ * - Focus management
+ * - ARIA labels
+ * - Escape key handling
+ *
+ * Performance:
+ * - Optimized re-renders
+ * - Efficient form handling
+ * - Debounced search
+ * - Memory management
+ *
+ * Error Handling:
+ * - Validation errors
+ * - API errors
+ * - Form submission errors
+ * - Graceful fallbacks
+ *
+ * Integration:
+ * - React Hook Form
+ * - Zod validation
+ * - Redux store
+ * - API integration
+ *
+ * Sürdürülebilirlik:
+ * - TypeScript tip güvenliği
+ * - Modüler component yapısı
+ * - Açık ve anlaşılır kod
+ * - Comprehensive documentation
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
  */
 
 import React, { useState } from "react";

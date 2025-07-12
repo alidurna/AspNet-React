@@ -1,24 +1,14 @@
 /**
- * API Service - TaskFlow Frontend
+ * api.ts
  *
- * Bu dosya, backend API ile iletişim kurmak için kullanılan
- * merkezi API service'ini içerir.
- *
- * Özellikler:
- * - Axios HTTP client konfigürasyonu
+ * Tüm backend API iletişimini yöneten merkezi servis dosyasıdır.
+ * - Axios ile HTTP istekleri
  * - JWT token yönetimi
  * - Request/Response interceptor'ları
- * - Error handling
- * - API endpoint'leri
+ * - Hata yönetimi
+ * - Auth, kullanıcı, görev, kategori gibi endpoint fonksiyonları
  *
- * Backend API Base URL: https://localhost:7047/api
- *
- * Endpoint'ler:
- * - POST /auth/login - Kullanıcı girişi
- * - POST /auth/register - Kullanıcı kaydı
- * - GET /users/profile - Kullanıcı profili
- * - GET/POST/PUT/DELETE /tasks - Görev işlemleri
- * - GET/POST/PUT/DELETE /categories - Kategori işlemleri
+ * Tüm frontend uygulamasında API çağrıları bu dosya üzerinden yapılır.
  */
 
 import axios from "axios";
@@ -31,11 +21,15 @@ import type {
 
 /**
  * API Base Configuration
+ *
+ * Tüm istekler bu base URL üzerinden yönlendirilir.
  */
-const API_BASE_URL = "https://localhost:7172/api/v1.0";
+const API_BASE_URL = "/api";
 
 /**
  * Axios Instance Oluşturma
+ *
+ * API isteklerinde kullanılacak global axios instance'ı.
  */
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -48,42 +42,25 @@ const apiClient = axios.create({
 
 /**
  * Token Yönetimi Utility'leri
+ *
+ * JWT token'ı localStorage'da saklama, okuma ve silme işlemleri.
  */
 export const tokenManager = {
-  /**
-   * Token'ı localStorage'a kaydet
-   */
   setToken: (token: string): void => {
     localStorage.setItem("taskflow_token", token);
   },
-
-  /**
-   * Token'ı localStorage'dan al
-   */
   getToken: (): string | null => {
     return localStorage.getItem("taskflow_token");
   },
-
-  /**
-   * Token'ı localStorage'dan sil
-   */
   removeToken: (): void => {
     localStorage.removeItem("taskflow_token");
   },
-
-  /**
-   * Token'ın geçerli olup olmadığını kontrol et
-   */
   isTokenValid: (): boolean => {
     const token = tokenManager.getToken();
     if (!token) return false;
-
     try {
-      // JWT token'ın payload kısmını decode et
       const payload = JSON.parse(atob(token.split(".")[1]));
       const currentTime = Date.now() / 1000;
-
-      // Token'ın süresi dolmuş mu?
       return payload.exp > currentTime;
     } catch {
       return false;
@@ -94,19 +71,14 @@ export const tokenManager = {
 /**
  * Request Interceptor
  *
- * Her API isteğinden önce çalışır.
- * JWT token'ı otomatik olarak header'a ekler.
+ * Her API isteğinden önce JWT token'ı header'a ekler ve istekleri loglar.
  */
 apiClient.interceptors.request.use(
   (config) => {
     const token = tokenManager.getToken();
-
     if (token && tokenManager.isTokenValid()) {
-      // Authorization header'ına JWT token ekle
       config.headers.Authorization = `Bearer ${token}`;
     }
-
-    // Request'i console'a log et (development için)
     if (process.env.NODE_ENV === "development") {
       console.log("🚀 API Request:", {
         method: config.method?.toUpperCase(),
@@ -114,7 +86,6 @@ apiClient.interceptors.request.use(
         data: config.data,
       });
     }
-
     return config;
   },
   (error) => {
@@ -126,12 +97,10 @@ apiClient.interceptors.request.use(
 /**
  * Response Interceptor
  *
- * Her API yanıtından sonra çalışır.
- * Error handling ve token yenileme işlemleri.
+ * Her API yanıtından sonra hata yönetimi ve token geçersizliğini kontrol eder.
  */
 apiClient.interceptors.response.use(
   (response) => {
-    // Response'u console'a log et (development için)
     if (process.env.NODE_ENV === "development") {
       console.log("✅ API Response:", {
         status: response.status,
@@ -139,29 +108,20 @@ apiClient.interceptors.response.use(
         data: response.data,
       });
     }
-
     return response;
   },
   (error) => {
     console.error("❌ Response Error:", error);
-
-    // 401 Unauthorized - Token geçersiz
     if (error.response?.status === 401) {
       tokenManager.removeToken();
-      // Login sayfasına yönlendir
       window.location.href = "/login";
     }
-
-    // 403 Forbidden - Yetkisiz erişim
     if (error.response?.status === 403) {
       console.error("Access denied");
     }
-
-    // 500 Server Error
     if (error.response?.status >= 500) {
       console.error("Server error occurred");
     }
-
     return Promise.reject(error);
   }
 );
@@ -169,11 +129,13 @@ apiClient.interceptors.response.use(
 /**
  * Authentication API Service
  *
- * Kullanıcı girişi, kaydı ve profil işlemleri
+ * Kullanıcı girişi, kaydı, çıkışı ve profil işlemleri için fonksiyonlar.
  */
 export const authAPI = {
   /**
    * Kullanıcı Girişi
+   * @param credentials LoginRequest
+   * @returns AuthResponse
    */
   login: async (credentials: LoginRequest): Promise<AuthResponse> => {
     try {
@@ -181,12 +143,9 @@ export const authAPI = {
         "/users/login",
         credentials
       );
-
-      // Başarılı giriş sonrası token'ı kaydet
       if (response.data.success && response.data.data?.token) {
         tokenManager.setToken(response.data.data.token);
       }
-
       return response.data;
     } catch (error) {
       const message =
@@ -194,9 +153,10 @@ export const authAPI = {
       throw new Error(message);
     }
   },
-
   /**
    * Kullanıcı Kaydı
+   * @param userData RegisterRequest
+   * @returns AuthResponse
    */
   register: async (userData: RegisterRequest): Promise<AuthResponse> => {
     try {
@@ -204,12 +164,9 @@ export const authAPI = {
         "/users/register",
         userData
       );
-
-      // Başarılı kayıt sonrası token'ı kaydet
       if (response.data.success && response.data.data?.token) {
         tokenManager.setToken(response.data.data.token);
       }
-
       return response.data;
     } catch (error) {
       const message =
@@ -217,24 +174,21 @@ export const authAPI = {
       throw new Error(message);
     }
   },
-
   /**
    * Kullanıcı Çıkışı
    */
   logout: async (): Promise<void> => {
     try {
-      // Backend'e logout isteği gönder (opsiyonel)
       await apiClient.post("/auth/logout");
     } catch (error) {
       console.error("Logout API error:", error);
     } finally {
-      // Token'ı her durumda sil
       tokenManager.removeToken();
     }
   },
-
   /**
    * Kullanıcı Profili Al
+   * @returns User
    */
   getProfile: async (): Promise<User> => {
     try {
@@ -248,20 +202,113 @@ export const authAPI = {
       throw new Error(message);
     }
   },
+};
 
-  /**
-   * Kullanıcı Profili Güncelle
-   */
-  updateProfile: async (userData: Partial<User>): Promise<User> => {
+// API Response Type
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+  errors?: string[];
+}
+
+// Profile Types
+export interface UserProfile {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  profileImage?: string;
+  createdAt: string;
+  lastLoginAt?: string;
+  stats: {
+    totalTasks: number;
+    completedTasks: number;
+    pendingTasks: number;
+    completionRate: number;
+  };
+}
+
+export interface UpdateProfileRequest {
+  firstName: string;
+  lastName: string;
+  profileImage?: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+// Profile API
+export const profileAPI = {
+  getProfile: async (): Promise<ApiResponse<UserProfile>> => {
     try {
-      const response = await apiClient.put<{ success: boolean; data: User }>(
-        "/users/profile",
-        userData
+      const response = await apiClient.get<ApiResponse<UserProfile>>(
+        "/users/profile"
       );
-      return response.data.data;
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Profil bilgileri alınamadı";
+      throw new Error(message);
+    }
+  },
+
+  updateProfile: async (
+    data: UpdateProfileRequest
+  ): Promise<ApiResponse<UserProfile>> => {
+    try {
+      const response = await apiClient.put<ApiResponse<UserProfile>>(
+        "/users/profile",
+        data
+      );
+      return response.data;
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Profil güncellenemedi";
+      throw new Error(message);
+    }
+  },
+
+  changePassword: async (
+    data: ChangePasswordRequest
+  ): Promise<ApiResponse<void>> => {
+    try {
+      const response = await apiClient.post<ApiResponse<void>>(
+        "/users/change-password",
+        data
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Şifre değiştirilemedi";
+      throw new Error(message);
+    }
+  },
+
+  uploadProfileImage: async (
+    file: File
+  ): Promise<ApiResponse<{ imageUrl: string }>> => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await apiClient.post<ApiResponse<{ imageUrl: string }>>(
+        "/users/profile/image",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Profil fotoğrafı yüklenemedi";
       throw new Error(message);
     }
   },

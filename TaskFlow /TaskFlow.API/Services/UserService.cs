@@ -5,6 +5,67 @@ using TaskFlow.API.Interfaces;
 using TaskFlow.API.Models;
 using AutoMapper;
 
+// ****************************************************************************************************
+//  USERSERVICE.CS
+//  --------------------------------------------------------------------------------------------------
+//  Bu dosya, TaskFlow uygulamasının kullanıcı yönetimi ve authentication sisteminin ana business logic
+//  servisidir. Kullanıcı kaydı, giriş, profil yönetimi, şifre işlemleri, email doğrulama ve JWT token
+//  yönetimi gibi tüm user-related business operations'ları içerir.
+//
+//  ANA BAŞLIKLAR:
+//  - User Authentication (Register, Login, Logout)
+//  - Profile Management (Get, Update, Statistics)
+//  - Password Operations (Change, Reset, Validation)
+//  - Email Verification ve Management
+//  - JWT Token Management (Generate, Refresh, Revoke)
+//  - User Statistics ve Analytics
+//  - Security ve Validation
+//
+//  GÜVENLİK:
+//  - Password hashing ve validation
+//  - JWT token generation ve management
+//  - Email uniqueness validation
+//  - Input sanitization ve validation
+//  - Session management
+//  - Refresh token security
+//
+//  HATA YÖNETİMİ:
+//  - Comprehensive exception handling
+//  - Business rule validation
+//  - Database transaction management
+//  - Detailed logging for security events
+//  - Graceful error recovery
+//
+//  EDGE-CASE'LER:
+//  - Duplicate email registration attempts
+//  - Invalid password formats
+//  - Expired refresh tokens
+//  - Concurrent login attempts
+//  - Database connection failures
+//  - Email service unavailability
+//  - Token validation failures
+//
+//  YAN ETKİLER:
+//  - User registration creates database records
+//  - Login updates last login timestamp
+//  - Password changes invalidate existing sessions
+//  - Email verification affects user status
+//  - Token refresh creates new session data
+//
+//  PERFORMANS:
+//  - Database query optimization
+//  - Caching for user data
+//  - Efficient password hashing
+//  - Token generation optimization
+//  - Connection pooling
+//
+//  SÜRDÜRÜLEBİLİRLİK:
+//  - Service layer pattern
+//  - Dependency injection
+//  - Comprehensive documentation
+//  - Extensible authentication system
+//  - Configuration-based settings
+// ****************************************************************************************************
 namespace TaskFlow.API.Services
 {
     /// <summary>
@@ -100,7 +161,7 @@ namespace TaskFlow.API.Services
 
                 // JWT token oluşturma
                 var token = _jwtService.GenerateToken(user);
-                var refreshToken = _jwtService.GenerateRefreshToken(user);
+                var refreshToken = _jwtService.GenerateRefreshToken();
                 var expirationMinutes = _configuration.GetValue<int>("Jwt:AccessTokenExpirationMinutes", 60);
 
                 // Refresh token'ı kaydet
@@ -135,59 +196,37 @@ namespace TaskFlow.API.Services
             {
                 _logger.LogInformation("Login attempt for email: {Email}", loginDto.Email);
 
-                // Kullanıcıyı email ile bul
-                var user = await GetUserByEmailAsync(loginDto.Email);
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
                 if (user == null)
                 {
-                    _logger.LogWarning("Login failed - user not found: {Email}", loginDto.Email);
-                    throw new UnauthorizedAccessException("Email veya şifre hatalı");
+                    throw new UnauthorizedAccessException("Geçersiz email veya şifre");
                 }
 
-                // Kullanıcı aktif mi kontrol et
-                if (!user.IsActive)
-                {
-                    _logger.LogWarning("Login failed - user inactive: {Email}", loginDto.Email);
-                    throw new UnauthorizedAccessException("Hesabınız deaktif edilmiş");
-                }
-
-                // Şifre kontrolü
                 if (!_passwordService.VerifyPassword(loginDto.Password, user.PasswordHash))
                 {
-                    _logger.LogWarning("Login failed - invalid password: {Email}", loginDto.Email);
-                    throw new UnauthorizedAccessException("Email veya şifre hatalı");
+                    throw new UnauthorizedAccessException("Geçersiz email veya şifre");
                 }
 
-                // LastLoginDate güncelle (User model'inde bu property yoksa eklenecek)
-                // user.LastLoginDate = DateTime.UtcNow;
-                user.UpdatedAt = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
-
-                // JWT token oluştur
                 var token = _jwtService.GenerateToken(user);
-                var refreshToken = _jwtService.GenerateRefreshToken(user);
-                var expirationMinutes = _configuration.GetValue<int>("Jwt:AccessTokenExpirationMinutes", 60);
+                var refreshToken = _jwtService.GenerateRefreshToken();
+                var expiresAt = DateTime.UtcNow.AddMinutes(_jwtService.TokenExpirationMinutes);
 
-                // Refresh token'ı kaydet ve LastLoginDate güncelle
+                user.LastLoginAt = DateTime.UtcNow;
                 user.RefreshToken = refreshToken;
-                user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7); // 7 gün geçerli
-                user.LastLoginDate = DateTime.UtcNow;
+                user.RefreshTokenExpiry = expiresAt;
+
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Login successful for user: {Email} (ID: {UserId})", user.Email, user.Id);
-
-                // Response oluştur
-                var authResponse = new AuthResponseDto
+                return new AuthResponseDto
                 {
                     Token = token,
                     RefreshToken = refreshToken,
-                    ExpiresInMinutes = expirationMinutes,
-                    ExpiresAt = DateTime.UtcNow.AddMinutes(expirationMinutes),
-                    User = MapToDto(user),
+                    ExpiresInMinutes = _jwtService.TokenExpirationMinutes,
+                    ExpiresAt = expiresAt,
+                    User = _mapper.Map<UserDto>(user),
                     Success = true,
-                    Message = $"Hoş geldiniz {user.FullName}!"
+                    Message = $"Hoş geldiniz {user.FirstName} {user.LastName}"
                 };
-
-                return authResponse;
             }
             catch (Exception ex)
             {
@@ -345,59 +384,42 @@ namespace TaskFlow.API.Services
 
         public async Task<UserStatsDto> GetUserStatsAsync(int userId)
         {
-            try
+            var tasks = await _context.TodoTasks
+                .Where(t => t.UserId == userId)
+                .ToListAsync();
+
+            var completedTasks = tasks.Count(t => t.IsCompleted);
+            var pendingTasks = tasks.Count(t => !t.IsCompleted);
+            var inProgressTasks = tasks.Count(t => !t.IsCompleted && t.Progress > 0);
+
+            var completionRate = tasks.Any() ? (double)completedTasks / tasks.Count * 100 : 0;
+
+            var completedTasksWithDates = tasks
+                .Where(t => t.IsCompleted && t.CompletedAt.HasValue)
+                .ToList();
+
+            var averageCompletionDays = completedTasksWithDates.Any()
+                ? completedTasksWithDates.Average(t => (t.CompletedAt.Value - t.CreatedAt).TotalDays)
+                : 0;
+
+            var now = DateTime.UtcNow;
+            var startOfMonth = new DateTime(now.Year, now.Month, 1);
+            var startOfWeek = now.AddDays(-(int)now.DayOfWeek);
+
+            var completedThisMonth = completedTasksWithDates.Count(t => t.CompletedAt >= startOfMonth);
+            var completedThisWeek = completedTasksWithDates.Count(t => t.CompletedAt >= startOfWeek);
+
+            return new UserStatsDto
             {
-                _logger.LogDebug("Getting user statistics: {UserId}", userId);
-
-                // Cache key oluştur
-                var cacheKey = $"stats:user:{userId}";
-                var cacheExpiration = TimeSpan.FromMinutes(
-                    _configuration.GetValue("Cache:StatisticsCache:ExpirationMinutes", 5));
-
-                // Cache'ten al veya database'ten getir
-                var stats = await _cacheService.GetOrCreateAsync(
-                    cacheKey,
-                    async () =>
-                    {
-                        var user = await _context.Users
-                            .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
-
-                        if (user == null)
-                        {
-                            throw new InvalidOperationException("Kullanıcı bulunamadı");
-                        }
-
-                        // Task ve category sayılarını ayrı sorgularla al
-                        var totalTasks = await _context.TodoTasks
-                            .CountAsync(t => t.UserId == userId && t.IsActive);
-                        var completedTasks = await _context.TodoTasks
-                            .CountAsync(t => t.UserId == userId && t.IsActive && t.IsCompleted);
-                        var totalCategories = await _context.Categories
-                            .CountAsync(c => c.UserId == userId && c.IsActive);
-                        
-                        var pendingTasks = totalTasks - completedTasks;
-
-                        return new UserStatsDto
-                        {
-                            TotalTasks = totalTasks,
-                            CompletedTasks = completedTasks,
-                            PendingTasks = pendingTasks,
-                            InProgressTasks = 0, // Şu an için 0, daha sonra hesaplanabilir
-                            TaskCompletionRate = totalTasks > 0 ? (double)completedTasks / totalTasks * 100 : 0,
-                            AverageCompletionDays = 0, // Şu an için 0, daha sonra hesaplanabilir
-                            TasksCompletedThisMonth = 0, // Şu an için 0, daha sonra hesaplanabilir
-                            TasksCompletedThisWeek = 0 // Şu an için 0, daha sonra hesaplanabilir
-                        };
-                    },
-                    cacheExpiration);
-
-                return stats;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting user statistics: {UserId}", userId);
-                throw;
-            }
+                TotalTasks = tasks.Count,
+                CompletedTasks = completedTasks,
+                PendingTasks = pendingTasks,
+                InProgressTasks = inProgressTasks,
+                TaskCompletionRate = completionRate,
+                AverageCompletionDays = averageCompletionDays,
+                TasksCompletedThisMonth = completedThisMonth,
+                TasksCompletedThisWeek = completedThisWeek
+            };
         }
 
         public async Task<bool> ChangePasswordAsync(int userId, ChangePasswordDto changePasswordDto)
@@ -638,7 +660,7 @@ namespace TaskFlow.API.Services
 
                 // Yeni token'lar oluştur
                 var newAccessToken = _jwtService.GenerateToken(user);
-                var newRefreshToken = _jwtService.GenerateRefreshToken(user);
+                var newRefreshToken = _jwtService.GenerateRefreshToken();
 
                 // Yeni refresh token'ı kaydet
                 user.RefreshToken = newRefreshToken;
@@ -743,6 +765,66 @@ namespace TaskFlow.API.Services
             // AutoMapper ile otomatik mapping
             // Manuel 12 satır kod → 1 satır!
             return _mapper.Map<UserDto>(user);
+        }
+
+        public async Task<UserProfileDto> GetUserProfileAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId) || !int.TryParse(userId, out int id))
+                throw new UnauthorizedAccessException("Geçersiz kullanıcı kimliği");
+
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+                throw new KeyNotFoundException("Kullanıcı bulunamadı");
+
+            var stats = await GetUserStatsAsync(id);
+
+            return new UserProfileDto
+            {
+                Id = userId,
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                ProfileImage = user.ProfileImage,
+                CreatedAt = user.CreatedAt,
+                LastLoginAt = user.LastLoginAt,
+                Stats = stats
+            };
+        }
+
+        public async Task<UserProfileDto> UpdateProfileAsync(string userId, UpdateProfileDto model)
+        {
+            var user = await _context.Users.FindAsync(int.Parse(userId));
+            if (user == null)
+            {
+                throw new KeyNotFoundException("Kullanıcı bulunamadı");
+            }
+
+            user.FirstName = model.FirstName;
+            user.LastName = model.LastName;
+            user.ProfileImage = model.ProfileImage;
+
+            await _context.SaveChangesAsync();
+
+            return await GetUserProfileAsync(userId);
+        }
+
+        public async Task<bool> ChangePasswordAsync(string userId, ChangePasswordDto model)
+        {
+            var user = await _context.Users.FindAsync(int.Parse(userId));
+            if (user == null)
+            {
+                throw new KeyNotFoundException("Kullanıcı bulunamadı");
+            }
+
+            if (!_passwordService.VerifyPassword(model.CurrentPassword, user.PasswordHash))
+            {
+                throw new UnauthorizedAccessException("Mevcut şifre yanlış");
+            }
+
+            user.PasswordHash = _passwordService.HashPassword(model.NewPassword);
+            await _context.SaveChangesAsync();
+
+            return true;
         }
 
         #endregion

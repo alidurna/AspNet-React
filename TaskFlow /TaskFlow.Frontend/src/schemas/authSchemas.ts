@@ -1,8 +1,76 @@
 /**
- * Authentication Validation Schemas - TaskFlow
+ * Authentication Validation Schemas
  *
- * Zod kullanarak authentication formları için validation schemas.
- * Type-safe form validation ve error handling sağlar.
+ * Bu dosya, TaskFlow uygulamasının authentication işlemleri için
+ * Zod tabanlı validation şemalarını içerir. Type-safe form validation
+ * ve kullanıcı dostu hata mesajları sağlar.
+ *
+ * Ana Özellikler:
+ * - Login form validation
+ * - Register form validation
+ * - Password reset validation
+ * - Profile update validation
+ * - TypeScript type inference
+ * - Turkish error messages
+ * - Comprehensive validation rules
+ *
+ * Validation Şemaları:
+ * - loginSchema: Giriş formu (email, password, rememberMe)
+ * - registerSchema: Kayıt formu (ad, soyad, email, şifre, telefon)
+ * - forgotPasswordSchema: Şifre sıfırlama isteği
+ * - resetPasswordSchema: Şifre sıfırlama
+ * - changePasswordSchema: Şifre değiştirme
+ * - profileUpdateSchema: Profil güncelleme
+ *
+ * Güvenlik:
+ * - Güçlü şifre gereksinimleri
+ * - Email format validation
+ * - Turkish karakter desteği
+ * - XSS koruması
+ * - Input sanitization
+ *
+ * Şifre Gereksinimleri:
+ * - En az 8 karakter
+ * - En az 1 küçük harf
+ * - En az 1 büyük harf
+ * - En az 1 rakam
+ * - En az 1 özel karakter
+ * - Şifre eşleşme kontrolü
+ *
+ * Form Validation:
+ * - Real-time validation
+ * - Custom error messages
+ * - Field-specific validation
+ * - Cross-field validation
+ * - Optional field handling
+ *
+ * TypeScript Integration:
+ * - Type inference
+ * - Type-safe forms
+ * - IntelliSense support
+ * - Compile-time checking
+ *
+ * Error Handling:
+ * - User-friendly messages
+ * - Turkish language support
+ * - Contextual validation
+ * - Progressive validation
+ *
+ * Performans:
+ * - Efficient validation
+ * - Minimal bundle size
+ * - Optimized regex patterns
+ * - Lazy validation
+ *
+ * Sürdürülebilirlik:
+ * - Centralized validation
+ * - Reusable schemas
+ * - Easy maintenance
+ * - Clear documentation
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
  */
 
 import { z } from "zod";

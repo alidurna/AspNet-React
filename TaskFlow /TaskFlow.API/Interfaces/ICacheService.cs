@@ -1,3 +1,82 @@
+/**
+ * ICacheService Interface
+ * 
+ * Bu dosya, TaskFlow API'sinde önbellek yönetimi işlemlerini tanımlayan
+ * interface'i içerir. Hem memory cache hem de distributed cache
+ * senaryolarını destekleyen kapsamlı bir cache servisi sağlar.
+ * 
+ * Ana İşlevler:
+ * - Veri getirme (GetAsync)
+ * - Veri ekleme (SetAsync)
+ * - Veri silme (RemoveAsync)
+ * - Pattern-based silme (RemoveByPatternAsync)
+ * - Cache-aside pattern (GetOrCreateAsync)
+ * - İstatistik toplama (GetStatisticsAsync)
+ * 
+ * Cache Stratejileri:
+ * - Memory Cache: Hızlı erişim için
+ * - Distributed Cache: Ölçeklenebilirlik için
+ * - Cache-aside Pattern: Lazy loading
+ * - Write-through: Anında güncelleme
+ * - Write-behind: Gecikmeli güncelleme
+ * 
+ * Cache Tipleri:
+ * - User data caching
+ * - Task data caching
+ * - Category caching
+ * - Statistics caching
+ * - Session data caching
+ * 
+ * Performance Optimizations:
+ * - Hit rate optimization
+ * - Memory management
+ * - Expiration policies
+ * - Compression support
+ * - Serialization optimization
+ * 
+ * Cache Patterns:
+ * - Cache-aside: Veri yoksa oluştur
+ * - Write-through: Anında cache güncelle
+ * - Write-behind: Gecikmeli cache güncelle
+ * - Cache invalidation: Pattern-based silme
+ * - Cache warming: Önceden yükleme
+ * 
+ * Monitoring:
+ * - Hit rate tracking
+ * - Miss rate analysis
+ * - Memory usage monitoring
+ * - Performance metrics
+ * - Cache statistics
+ * 
+ * Security:
+ * - Cache key validation
+ * - Data encryption
+ * - Access control
+ * - Cache poisoning protection
+ * 
+ * Error Handling:
+ * - Cache failures
+ * - Serialization errors
+ * - Memory pressure handling
+ * - Graceful degradation
+ * 
+ * Configuration:
+ * - Expiration times
+ * - Memory limits
+ * - Compression settings
+ * - Serialization options
+ * 
+ * Sürdürülebilirlik:
+ * - SOLID principles
+ * - Dependency injection ready
+ * - Testable design
+ * - Clear separation of concerns
+ * 
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
+ */
+
 namespace TaskFlow.API.Interfaces;
 
 /// <summary>

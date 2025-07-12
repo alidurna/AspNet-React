@@ -1,22 +1,49 @@
 /**
- * Dashboard Sayfası - TaskFlow
+ * Dashboard Sayfası Component
  *
- * Kullanıcının ana dashboard ekranı. Modern layout ile istatistikler,
- * hızlı işlemler ve genel bakış sunar.
+ * Bu dosya, kullanıcıların TaskFlow uygulamasına giriş yaptıktan sonra
+ * karşılaştığı ana dashboard sayfasını içerir. Kullanıcı deneyimini
+ * optimize etmek için modern UI/UX prensipleri kullanılmıştır.
  *
- * Özellikler:
- * - Modern dashboard layout
- * - İstatistik kartları
- * - Quick actions
- * - Recent activities
- * - Welcome message
- * - Responsive design
+ * Ana Özellikler:
+ * - İstatistik kartları (toplam görev, tamamlanan, devam eden, vadesi geçen)
+ * - Hızlı işlem butonları (yeni görev, görev listesi, kategoriler)
+ * - Son aktiviteler listesi
+ * - Hoş geldin mesajı
+ * - Responsive tasarım
+ * - Modern gradient arka plan
  *
- * TODO: İleride geliştirilecek özellikler:
+ * İstatistik Kartları:
+ * - Toplam Görev: Kullanıcının toplam görev sayısı
+ * - Tamamlanan: Başarıyla tamamlanan görevler
+ * - Devam Ediyor: Aktif olarak çalışılan görevler
+ * - Vadesi Geçen: Süresi dolmuş görevler
+ *
+ * Hızlı İşlemler:
+ * - Yeni Görev: Hızlıca görev oluşturma
+ * - Görev Listesi: Tüm görevleri görüntüleme
+ * - Kategoriler: Kategori yönetimi
+ *
+ * Performans:
+ * - Lazy loading desteği
+ * - Optimized re-renders
+ * - Efficient state management
+ *
+ * Gelecek Geliştirmeler:
  * - Gerçek API verilerinden istatistikler
  * - Chart.js entegrasyonu
  * - Real-time updates
  * - Notification center
+ * - Advanced filtering
+ *
+ * Sürdürülebilirlik:
+ * - TypeScript tip güvenliği
+ * - Modüler component yapısı
+ * - Açık ve anlaşılır kod
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
  */
 
 import React from "react";

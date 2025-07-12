@@ -1,3 +1,47 @@
+/**
+ * Register Sayfası Component
+ *
+ * Bu dosya, yeni kullanıcıların TaskFlow uygulamasına kayıt olabilmesi için
+ * tasarlanmış register sayfasını içerir. Güvenli ve kullanıcı dostu bir
+ * kayıt deneyimi sunar.
+ *
+ * Ana Özellikler:
+ * - Kapsamlı form validation (Zod ile)
+ * - Güçlü şifre gereksinimleri
+ * - Şifre eşleşme kontrolü
+ * - Ad/soyad, email, telefon alanları
+ * - Terms & conditions kabul
+ * - Responsive tasarım
+ * - Loading state yönetimi
+ * - Hata mesajları gösterimi
+ *
+ * Güvenlik:
+ * - Güçlü şifre validation (büyük/küçük harf, rakam)
+ * - Form sanitization
+ * - XSS koruması
+ * - CSRF koruması
+ *
+ * Validation Kuralları:
+ * - Ad/Soyad: En az 2 karakter
+ * - Email: Geçerli email formatı
+ * - Şifre: En az 8 karakter, büyük/küçük harf, rakam
+ * - Şifre tekrarı: Ana şifre ile eşleşmeli
+ *
+ * Performans:
+ * - Optimized form re-renders
+ * - Debounced validation
+ * - Memory efficient state management
+ *
+ * Sürdürülebilirlik:
+ * - TypeScript tip güvenliği
+ * - Modüler component yapısı
+ * - Açık ve anlaşılır kod
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
+ */
+
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";

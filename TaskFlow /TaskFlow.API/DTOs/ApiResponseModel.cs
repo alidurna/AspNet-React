@@ -1,7 +1,61 @@
-/*
- * ApiResponse.cs - Standart API Response Modeli
- * =============================================
- */
+// ****************************************************************************************************
+//  APIRESPONSEMODEL.CS
+//  --------------------------------------------------------------------------------------------------
+//  Bu dosya, TaskFlow uygulamasının API response standardizasyon sisteminin ana DTO'sudur. Tüm API
+//  endpoint'lerinden dönen response'ları tutarlı ve standart bir formatta sağlar. Frontend tarafında
+//  response handling'i kolaylaştırır ve API tutarlılığını garanti eder.
+//
+//  ANA BAŞLIKLAR:
+//  - Standardized API Response Format
+//  - Success ve Error Response Factory Methods
+//  - Validation Error Handling
+//  - HTTP Status Code Mapping
+//  - Response Metadata Management
+//  - Frontend Integration Support
+//
+//  GÜVENLİK:
+//  - Consistent error message format
+//  - No sensitive data exposure
+//  - Standardized response structure
+//  - Input validation support
+//  - Error logging compatibility
+//
+//  HATA YÖNETİMİ:
+//  - Comprehensive error response types
+//  - Validation error handling
+//  - HTTP status code mapping
+//  - Error message localization support
+//  - Debug information inclusion
+//
+//  EDGE-CASE'LER:
+//  - Null data responses
+//  - Empty error lists
+//  - Large response payloads
+//  - Unicode message characters
+//  - Timezone timestamp issues
+//  - Generic type constraints
+//
+//  YAN ETKİLER:
+//  - Consistent API contract
+//  - Improved frontend integration
+//  - Standardized error handling
+//  - Enhanced debugging capabilities
+//  - Reduced API documentation needs
+//
+//  PERFORMANS:
+//  - Lightweight response wrapper
+//  - Efficient serialization
+//  - Minimal memory overhead
+//  - Fast factory method execution
+//  - Optimized for JSON serialization
+//
+//  SÜRDÜRÜLEBİLİRLİK:
+//  - Generic type support
+//  - Factory method pattern
+//  - Comprehensive documentation
+//  - Extensible response system
+//  - Backward compatibility
+// ****************************************************************************************************
 
 namespace TaskFlow.API.DTOs;
 

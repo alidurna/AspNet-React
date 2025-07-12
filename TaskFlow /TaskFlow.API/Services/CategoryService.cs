@@ -4,6 +4,66 @@ using TaskFlow.API.DTOs;
 using TaskFlow.API.Interfaces;
 using TaskFlow.API.Models;
 
+// ****************************************************************************************************
+//  CATEGORYSERVICE.CS
+//  --------------------------------------------------------------------------------------------------
+//  Bu dosya, TaskFlow uygulamasının kategori yönetimi sisteminin ana business logic servisidir. Kullanıcıların
+//  görevlerini organize etmek için kategoriler oluşturma, düzenleme, silme ve listeleme işlemlerini yönetir.
+//  Ayrıca kategori istatistikleri, varsayılan kategoriler ve business rule validation sağlar.
+//
+//  ANA BAŞLIKLAR:
+//  - CRUD Operations (Create, Read, Update, Delete)
+//  - Category Filtering ve Search
+//  - Category Statistics ve Analytics
+//  - Default Category Management
+//  - Business Rules ve Validation
+//  - Category-Task Relationship Management
+//  - Performance Optimization
+//
+//  GÜVENLİK:
+//  - User isolation (kullanıcı sadece kendi kategorilerini yönetir)
+//  - Input validation ve sanitization
+//  - Business rule enforcement (unique names per user)
+//  - Data integrity protection
+//  - Soft delete implementation
+//
+//  HATA YÖNETİMİ:
+//  - Comprehensive exception handling
+//  - Business rule validation
+//  - Database transaction management
+//  - Detailed logging for debugging
+//  - Graceful error recovery
+//
+//  EDGE-CASE'LER:
+//  - Duplicate category names for same user
+//  - Categories with existing tasks (deletion handling)
+//  - Maximum category limit per user
+//  - Default category protection
+//  - Empty category lists
+//  - Invalid category IDs
+//  - Concurrent category modifications
+//
+//  YAN ETKİLER:
+//  - Category creation affects user statistics
+//  - Category deletion affects associated tasks
+//  - Category updates may trigger task re-categorization
+//  - Default categories are created automatically
+//  - Category name changes propagate to related tasks
+//
+//  PERFORMANS:
+//  - Database query optimization
+//  - Efficient filtering algorithms
+//  - Caching for frequently accessed categories
+//  - Optimized relationship loading
+//  - Connection pooling
+//
+//  SÜRDÜRÜLEBİLİRLİK:
+//  - Service layer pattern
+//  - Dependency injection
+//  - Comprehensive documentation
+//  - Extensible category management system
+//  - Configuration-based business rules
+// ****************************************************************************************************
 namespace TaskFlow.API.Services
 {
     /// <summary>
@@ -36,6 +96,13 @@ namespace TaskFlow.API.Services
 
         #region CRUD Operations
 
+        /// <summary>
+        /// Yeni bir kategori oluşturur.
+        /// </summary>
+        /// <param name="userId">Kullanıcı ID'si.</param>
+        /// <param name="createDto">Oluşturulacak kategori bilgileri.</param>
+        /// <returns>Oluşturulan kategori bilgileri.</returns>
+        /// <exception cref="InvalidOperationException">Kategori limiti aşıldığında veya benzersizlik kontrolünde hata oluştuğunda.</exception>
         public async Task<CategoryDto> CreateCategoryAsync(int userId, CreateCategoryDto createDto)
         {
             try
@@ -83,6 +150,13 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Kullanıcının kategorilerini filtrelemek için kullanılır.
+        /// </summary>
+        /// <param name="userId">Kullanıcı ID'si.</param>
+        /// <param name="filter">Filtreleme parametreleri.</param>
+        /// <returns>Filtrelenmiş kategori listesi.</returns>
+        /// <exception cref="Exception">Veritabanı hatası veya diğer hatalar.</exception>
         public async Task<List<CategoryDto>> GetCategoriesAsync(int userId, CategoryFilterDto filter)
         {
             try
@@ -135,6 +209,13 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Belirtilen kategoriyi ID'ye göre getirir.
+        /// </summary>
+        /// <param name="userId">Kullanıcı ID'si.</param>
+        /// <param name="categoryId">Kategori ID'si.</param>
+        /// <returns>Kategori bilgileri veya null.</returns>
+        /// <exception cref="Exception">Veritabanı hatası veya diğer hatalar.</exception>
         public async Task<CategoryDto?> GetCategoryByIdAsync(int userId, int categoryId)
         {
             try
@@ -152,6 +233,14 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Mevcut bir kategoriyi günceller.
+        /// </summary>
+        /// <param name="userId">Kullanıcı ID'si.</param>
+        /// <param name="categoryId">Güncellenecek kategori ID'si.</param>
+        /// <param name="updateDto">Güncellenecek kategori bilgileri.</param>
+        /// <returns>Güncellenmiş kategori bilgileri.</returns>
+        /// <exception cref="InvalidOperationException">Kategori bulunamadığında veya benzersizlik kontrolünde hata oluştuğunda.</exception>
         public async Task<CategoryDto> UpdateCategoryAsync(int userId, int categoryId, UpdateCategoryDto updateDto)
         {
             try
@@ -219,6 +308,13 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Belirtilen kategoriyi siler.
+        /// </summary>
+        /// <param name="userId">Kullanıcı ID'si.</param>
+        /// <param name="categoryId">Silinecek kategori ID'si.</param>
+        /// <returns>Kategori başarıyla silindiğinde true, aksi halde false.</returns>
+        /// <exception cref="InvalidOperationException">Varsayılan kategori silinemeyeceğinde veya diğer hatalar.</exception>
         public async Task<bool> DeleteCategoryAsync(int userId, int categoryId)
         {
             try
@@ -268,6 +364,14 @@ namespace TaskFlow.API.Services
 
         #region Validation & Business Rules
 
+        /// <summary>
+        /// Kullanıcının belirtilen kategori adının benzersiz olup olmadığını kontrol eder.
+        /// </summary>
+        /// <param name="userId">Kullanıcı ID'si.</param>
+        /// <param name="categoryName">Kontrol edilecek kategori adı.</param>
+        /// <param name="excludeCategoryId">Hariç tutulacak kategori ID'si (opsiyonel).</param>
+        /// <returns>Benzersiz ise true, aksi halde false.</returns>
+        /// <exception cref="Exception">Veritabanı hatası veya diğer hatalar.</exception>
         public async Task<bool> IsCategoryNameUniqueAsync(int userId, string categoryName, int? excludeCategoryId = null)
         {
             try
@@ -295,6 +399,12 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Belirtilen kategoriyi silinip silinemeyeceğini kontrol eder.
+        /// </summary>
+        /// <param name="categoryId">Kontrol edilecek kategori ID'si.</param>
+        /// <returns>Silinemezse false, silinebilirse true.</returns>
+        /// <exception cref="Exception">Veritabanı hatası veya diğer hatalar.</exception>
         public async Task<bool> CanCategoryBeDeletedAsync(int categoryId)
         {
             try
@@ -315,6 +425,12 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Kullanıcının kategori limitini kontrol eder.
+        /// </summary>
+        /// <param name="userId">Kullanıcı ID'si.</param>
+        /// <returns>Kategori limiti aşılmamışsa true, aşılmışsa false.</returns>
+        /// <exception cref="Exception">Veritabanı hatası veya diğer hatalar.</exception>
         public async Task<bool> CheckCategoryLimitAsync(int userId)
         {
             try
@@ -336,6 +452,13 @@ namespace TaskFlow.API.Services
 
         #region Category Statistics
 
+        /// <summary>
+        /// Belirtilen kategoriye ait istatistikleri getirir.
+        /// </summary>
+        /// <param name="userId">Kullanıcı ID'si.</param>
+        /// <param name="categoryId">Kategori ID'si.</param>
+        /// <returns>Kategori istatistikleri.</returns>
+        /// <exception cref="InvalidOperationException">Kategori bulunamadığında.</exception>
         public async Task<CategoryStatsDto> GetCategoryStatsAsync(int userId, int categoryId)
         {
             try
@@ -382,6 +505,12 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Kullanıcının kategori özetini getirir.
+        /// </summary>
+        /// <param name="userId">Kullanıcı ID'si.</param>
+        /// <returns>Kategori özetleri listesi.</returns>
+        /// <exception cref="Exception">Veritabanı hatası veya diğer hatalar.</exception>
         public async Task<List<CategorySummaryDto>> GetCategorySummaryAsync(int userId)
         {
             try
@@ -418,6 +547,12 @@ namespace TaskFlow.API.Services
 
         #region Helper Methods
 
+        /// <summary>
+        /// Category modelini CategoryDto'ya dönüştürür.
+        /// </summary>
+        /// <param name="category">Dönüştürülecek Category modeli.</param>
+        /// <returns>Dönüştürülmüş CategoryDto.</returns>
+        /// <exception cref="ArgumentNullException">Category modeli null olan durumda.</exception>
         public CategoryDto MapToDto(Category category)
         {
             if (category == null)
@@ -443,6 +578,12 @@ namespace TaskFlow.API.Services
             };
         }
 
+        /// <summary>
+        /// Kullanıcının varsayılan kategorilerini oluşturur.
+        /// </summary>
+        /// <param name="userId">Kullanıcı ID'si.</param>
+        /// <returns>Oluşturulan varsayılan kategori listesi.</returns>
+        /// <exception cref="Exception">Veritabanı hatası veya diğer hatalar.</exception>
         public async Task<List<CategoryDto>> CreateDefaultCategoriesAsync(int userId)
         {
             try

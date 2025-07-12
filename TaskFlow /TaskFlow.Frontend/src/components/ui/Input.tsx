@@ -1,3 +1,60 @@
+/**
+ * Input Component
+ *
+ * Bu dosya, TaskFlow uygulaması için özelleştirilmiş yeniden kullanılabilir
+ * input component'ini içerir. React Hook Form ile tam uyumlu çalışır ve
+ * modern form handling prensiplerini destekler.
+ *
+ * Ana Özellikler:
+ * - Label desteği (opsiyonel)
+ * - Validation hata mesajları
+ * - Sol taraf ikon desteği
+ * - Şifre göster/gizle toggle butonu
+ * - Focus/blur animasyonları
+ * - Tailwind CSS styling
+ * - Accessibility (ARIA) desteği
+ * - React Hook Form uyumluluğu
+ *
+ * Input Tipleri:
+ * - text, email, password, number, tel, url
+ * - Tüm HTML5 input tipleri desteklenir
+ * - Password type için özel toggle butonu
+ *
+ * Validation:
+ * - Real-time error display
+ * - Visual feedback (kırmızı border)
+ * - Animated error messages
+ * - Form integration ready
+ *
+ * Accessibility:
+ * - Proper label-input association
+ * - Unique ID generation
+ * - Screen reader support
+ * - Keyboard navigation
+ * - Focus indicators
+ *
+ * Styling:
+ * - Consistent design system
+ * - Responsive design
+ * - Dark mode ready
+ * - Customizable via className
+ *
+ * Performans:
+ * - Optimized re-renders
+ * - Efficient state management
+ * - Minimal bundle impact
+ *
+ * Sürdürülebilirlik:
+ * - TypeScript tip güvenliği
+ * - ForwardRef pattern
+ * - Comprehensive prop interface
+ * - Açık ve anlaşılır kod
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
+ */
+
 import React, { forwardRef, useState } from "react";
 
 /**

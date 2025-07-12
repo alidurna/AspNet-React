@@ -1,3 +1,85 @@
+/**
+ * ICategoryService Interface
+ * 
+ * Bu dosya, TaskFlow API'sinde kategori yönetimi işlemlerini tanımlayan
+ * interface'i içerir. Kategori CRUD operasyonları, istatistikler ve
+ * business rule validation'larını kapsayan kapsamlı bir servis sağlar.
+ * 
+ * Ana İşlevler:
+ * - CRUD operasyonları (Create, Read, Update, Delete)
+ * - Kategori istatistikleri
+ * - Business rule validation
+ * - Default kategori oluşturma
+ * - Kategori özet bilgileri
+ * 
+ * CRUD Operations:
+ * - CreateCategoryAsync: Yeni kategori oluşturma
+ * - GetCategoriesAsync: Filtrelenmiş kategori listesi
+ * - GetCategoryByIdAsync: Belirli kategori detayı
+ * - UpdateCategoryAsync: Kategori güncelleme
+ * - DeleteCategoryAsync: Kategori silme (soft delete)
+ * 
+ * Validation & Business Rules:
+ * - IsCategoryNameUniqueAsync: Benzersiz isim kontrolü
+ * - CanCategoryBeDeletedAsync: Silme izni kontrolü
+ * - CheckCategoryLimitAsync: Kategori limit kontrolü
+ * - Default kategori koruması
+ * 
+ * Category Statistics:
+ * - GetCategoryStatsAsync: Detaylı kategori istatistikleri
+ * - GetCategorySummaryAsync: Özet kategori bilgileri
+ * - Task count tracking
+ * - Completion rate calculation
+ * - Priority distribution
+ * 
+ * Helper Methods:
+ * - MapToDto: Entity to DTO mapping
+ * - CreateDefaultCategoriesAsync: Default kategoriler
+ * - Data transformation
+ * - Business logic encapsulation
+ * 
+ * Default Categories:
+ * - İş (Work)
+ * - Kişisel (Personal)
+ * - Sağlık (Health)
+ * - Eğitim (Education)
+ * - Projeler (Projects)
+ * 
+ * Performance:
+ * - Efficient queries
+ * - Caching support
+ * - Pagination
+ * - Optimized filtering
+ * 
+ * Security:
+ * - User-based access control
+ * - Data isolation
+ * - Input validation
+ * - SQL injection protection
+ * 
+ * Error Handling:
+ * - Validation errors
+ * - Business rule violations
+ * - Database errors
+ * - Graceful degradation
+ * 
+ * Monitoring:
+ * - Category usage metrics
+ * - Performance tracking
+ * - Error monitoring
+ * - Usage analytics
+ * 
+ * Sürdürülebilirlik:
+ * - SOLID principles
+ * - Dependency injection ready
+ * - Testable design
+ * - Clear separation of concerns
+ * 
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
+ */
+
 using TaskFlow.API.DTOs;
 using TaskFlow.API.Models;
 

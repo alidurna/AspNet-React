@@ -1,3 +1,53 @@
+/**
+ * Button Component
+ *
+ * Bu dosya, TaskFlow uygulaması için özelleştirilmiş yeniden kullanılabilir
+ * buton component'ini içerir. Modern UI/UX prensipleri ve accessibility
+ * standartları gözetilerek geliştirilmiştir.
+ *
+ * Ana Özellikler:
+ * - 4 farklı varyant (primary, secondary, outline, ghost)
+ * - 3 farklı boyut (sm, md, lg)
+ * - Loading state (spinner animasyonu)
+ * - Sol/sağ ikon desteği
+ * - Accessibility (ARIA) desteği
+ * - Hover/focus animasyonları
+ * - Disabled state yönetimi
+ * - TypeScript tip güvenliği
+ *
+ * Varyantlar:
+ * - Primary: Ana aksiyonlar için mavi buton
+ * - Secondary: İkincil aksiyonlar için gri buton
+ * - Outline: Çerçeveli, şeffaf arka plan
+ * - Ghost: Sadece metin, minimal tasarım
+ *
+ * Boyutlar:
+ * - sm: Küçük butonlar (px-3 py-1.5)
+ * - md: Orta boyut (px-4 py-2) - varsayılan
+ * - lg: Büyük butonlar (px-6 py-3)
+ *
+ * Accessibility:
+ * - Keyboard navigation desteği
+ * - Screen reader uyumluluğu
+ * - Focus indicators
+ * - ARIA labels desteği
+ *
+ * Performans:
+ * - Optimized re-renders
+ * - Efficient CSS classes
+ * - Minimal bundle size
+ *
+ * Sürdürülebilirlik:
+ * - TypeScript ile tip güvenliği
+ * - Modüler CSS yapısı
+ * - Açık ve anlaşılır kod
+ * - Comprehensive prop interface
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
+ */
+
 import React from "react";
 
 /**

@@ -1,3 +1,39 @@
+/**
+ * Login Sayfası Component
+ *
+ * Bu dosya, kullanıcıların TaskFlow uygulamasına giriş yapabilmesi için tasarlanmış
+ * login sayfasını içerir. Modern React best practices kullanılarak geliştirilmiştir.
+ *
+ * Ana Özellikler:
+ * - React Hook Form ile form yönetimi
+ * - Zod ile gerçek zamanlı form validation
+ * - Responsive ve modern UI tasarımı
+ * - Şifre göster/gizle özelliği
+ * - Loading state yönetimi
+ * - Hata mesajları gösterimi
+ * - "Beni hatırla" özelliği
+ * - Register sayfasına yönlendirme
+ *
+ * Güvenlik:
+ * - Form validation ile güvenli veri girişi
+ * - API hata yönetimi
+ * - XSS koruması için sanitized input
+ *
+ * Performans:
+ * - Lazy loading desteği
+ * - Optimized re-renders
+ * - Memory leak koruması
+ *
+ * Sürdürülebilirlik:
+ * - TypeScript ile tip güvenliği
+ * - Modüler component yapısı
+ * - Açık ve anlaşılır kod yapısı
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
+ */
+
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";

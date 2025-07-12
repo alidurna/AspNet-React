@@ -1,32 +1,62 @@
-/*
- * TaskFlowDbContext.cs - Entity Framework DbContext Sınıfı
- * ========================================================
- * 
- * Bu sınıf Entity Framework Core'un kalbidir.
- * Veritabanı ile uygulama arasındaki köprü görevi görür.
- * 
- * DBCONTEXT NE YAPAR:
- * ===================
- * - Model sınıflarını veritabanı tablolarına çevirir
- * - CRUD işlemlerini yönetir (Create, Read, Update, Delete)
- * - Change tracking yapar (hangi entity'ler değişmiş)
- * - Migration'ları destekler
- * - İlişkileri (relationships) yönetir
- * - Database connection'ı sağlar
- * 
- * DBSET'LER:
- * ==========
- * Her DbSet<T> bir veritabanı tablosunu temsil eder
- * LINQ sorguları DbSet'ler üzerinde çalışır
- * 
- * FLUENT API:
- * ===========
- * OnModelCreating method'unda Fluent API ile:
- * - İlişkileri tanımlarız
- * - Constraints ekleriz
- * - Index'leri belirleriz
- * - Naming conventions'ı override ederiz
- */
+// ****************************************************************************************************
+//  TASKFLOWDBCONTEXT.CS
+//  --------------------------------------------------------------------------------------------------
+//  Bu dosya, TaskFlow uygulamasının veritabanı yönetimi sisteminin ana DbContext sınıfıdır. Entity
+//  Framework Core ile veritabanı işlemlerini, entity ilişkilerini, migration'ları ve business
+//  rules'ları yönetir. Veritabanı ile uygulama arasındaki köprü görevi görür.
+//
+//  ANA BAŞLIKLAR:
+//  - Entity Configuration ve Relationships
+//  - Database Operations (CRUD)
+//  - Change Tracking ve Auditing
+//  - Business Rules Enforcement
+//  - Migration Management
+//  - Performance Optimization
+//
+//  GÜVENLİK:
+//  - Data validation constraints
+//  - Foreign key relationships
+//  - Cascade delete rules
+//  - Unique constraints
+//  - Data integrity protection
+//
+//  HATA YÖNETİMİ:
+//  - Entity validation
+//  - Business rule validation
+//  - Database constraint violations
+//  - Transaction management
+//  - Graceful error recovery
+//
+//  EDGE-CASE'LER:
+//  - Circular references
+//  - Orphaned records
+//  - Constraint violations
+//  - Large data sets
+//  - Concurrent modifications
+//  - Database connection failures
+//  - Migration conflicts
+//
+//  YAN ETKİLER:
+//  - Entity changes trigger validation
+//  - Cascade operations affect related data
+//  - Timestamp updates occur automatically
+//  - Business rules affect data integrity
+//  - Performance impacts from relationships
+//
+//  PERFORMANS:
+//  - Efficient query optimization
+//  - Relationship loading strategies
+//  - Change tracking optimization
+//  - Connection pooling
+//  - Index management
+//
+//  SÜRDÜRÜLEBİLİRLİK:
+//  - Clear entity relationships
+//  - Comprehensive documentation
+//  - Extensible model structure
+//  - Migration-friendly design
+//  - Configuration-based settings
+// ****************************************************************************************************
 
 using Microsoft.EntityFrameworkCore;
 using TaskFlow.API.Models;
@@ -101,273 +131,73 @@ public class TaskFlowDbContext : DbContext
     /// <param name="modelBuilder">Model yapılandırma aracı</param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Base method'u çağır (standart konfigürasyonlar için)
-        base.OnModelCreating(modelBuilder);
-
-        // ===== USER ENTITY KONFIGÜRASYONU =====
-        ConfigureUser(modelBuilder);
-
-        // ===== CATEGORY ENTITY KONFIGÜRASYONU =====
-        ConfigureCategory(modelBuilder);
-
-        // ===== TODOTASK ENTITY KONFIGÜRASYONU =====
-        ConfigureTodoTask(modelBuilder);
-
-        // ===== SEED DATA (VARSAYILAN VERİLER) =====
-        SeedData(modelBuilder);
-    }
-
-    /// <summary>
-    /// User entity konfigürasyonu
-    /// Unique constraints, indexes ve property ayarları
-    /// </summary>
-    /// <param name="modelBuilder">Model builder instance</param>
-    private static void ConfigureUser(ModelBuilder modelBuilder)
-    {
-        // User tablosu konfigürasyonu
+        // User entity configuration
         modelBuilder.Entity<User>(entity =>
         {
-            // ===== TABLE NAME =====
-            // Tablo adını açıkça belirle (convention: "Users")
-            entity.ToTable("Users");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Email).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.LastName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.PasswordHash).IsRequired();
+            entity.Property(e => e.ProfileImage).HasMaxLength(500);
+            entity.Property(e => e.PhoneNumber).HasMaxLength(20);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.LastLoginAt);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.IsEmailVerified).HasDefaultValue(false);
+            entity.Property(e => e.EmailVerificationToken).HasMaxLength(500);
+            entity.Property(e => e.PasswordResetToken).HasMaxLength(500);
+            entity.Property(e => e.RefreshToken).HasMaxLength(500);
 
-            // ===== PRIMARY KEY =====
-            // Primary key zaten convention'la belirlendi (Id property)
-            entity.HasKey(u => u.Id);
-
-            // ===== UNIQUE CONSTRAINTS =====
-            // Email adresi unique olmalı (aynı email ile iki kullanıcı olamaz)
-            entity.HasIndex(u => u.Email)
-                  .IsUnique()
-                  .HasDatabaseName("IX_Users_Email_Unique");
-
-            // ===== PROPERTY CONFIGURATIONS =====
-            // Email property için ek konfigürasyonlar
-            entity.Property(u => u.Email)
-                  .IsRequired()           // NOT NULL
-                  .HasMaxLength(256);     // VARCHAR(256)
-
-            // FirstName konfigürasyonu
-            entity.Property(u => u.FirstName)
-                  .IsRequired()
-                  .HasMaxLength(100);
-
-            // LastName konfigürasyonu
-            entity.Property(u => u.LastName)
-                  .IsRequired()
-                  .HasMaxLength(100);
-
-            // PasswordHash konfigürasyonu
-            entity.Property(u => u.PasswordHash)
-                  .IsRequired()
-                  .HasMaxLength(256);
-
-            // Optional fields (nullable)
-            entity.Property(u => u.ProfileImageUrl)
-                  .HasMaxLength(500);
-
-            entity.Property(u => u.Bio)
-                  .HasMaxLength(1000);
-
-            // ===== DATETIME CONFIGURATIONS =====
-            // DateTime fields için timezone ve default value ayarları
-            entity.Property(u => u.CreatedAt)
-                  .IsRequired()
-                  .HasDefaultValueSql("CURRENT_TIMESTAMP"); // SQLite için
-
-            entity.Property(u => u.UpdatedAt)
-                  .IsRequired();
-
-            // ===== COMPUTED PROPERTIES IGNORE =====
-            // NotMapped properties'i ignore et (veritabanına map edilmesin)
-            entity.Ignore(u => u.FullName);
-            entity.Ignore(u => u.TotalTaskCount);
-            entity.Ignore(u => u.CompletedTaskCount);
+            entity.HasIndex(e => e.Email).IsUnique();
         });
-    }
 
-    /// <summary>
-    /// Category entity konfigürasyonu
-    /// Foreign key ilişkileri ve business rules
-    /// </summary>
-    /// <param name="modelBuilder">Model builder instance</param>
-    private static void ConfigureCategory(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<Category>(entity =>
-        {
-            // ===== TABLE NAME =====
-            entity.ToTable("Categories");
-
-            // ===== PRIMARY KEY =====
-            entity.HasKey(c => c.Id);
-
-            // ===== FOREIGN KEY RELATIONSHIPS =====
-            // Category -> User ilişkisi (Many-to-One)
-            entity.HasOne(c => c.User)                    // Her kategorinin bir User'ı var
-                  .WithMany(u => u.Categories)            // Her User'ın birden fazla Category'si var
-                  .HasForeignKey(c => c.UserId)           // Foreign key: UserId
-                  .OnDelete(DeleteBehavior.Cascade);      // User silinirse categoriler de silinir
-
-            // ===== UNIQUE CONSTRAINTS =====
-            // Kategori adı kullanıcı bazında unique olmalı
-            // Aynı kullanıcının iki aynı isimli kategorisi olamaz
-            entity.HasIndex(c => new { c.UserId, c.Name })
-                  .IsUnique()
-                  .HasDatabaseName("IX_Categories_UserId_Name_Unique");
-
-            // ===== PROPERTY CONFIGURATIONS =====
-            entity.Property(c => c.Name)
-                  .IsRequired()
-                  .HasMaxLength(100);
-
-            entity.Property(c => c.Description)
-                  .HasMaxLength(500);
-
-            // Color code validation - HEX format
-            entity.Property(c => c.ColorCode)
-                  .IsRequired()
-                  .HasMaxLength(7)
-                  .HasDefaultValue("#3498DB");  // Default blue
-
-            entity.Property(c => c.Icon)
-                  .HasMaxLength(50);
-
-            // ===== DATETIME CONFIGURATIONS =====
-            entity.Property(c => c.CreatedAt)
-                  .IsRequired()
-                  .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-            entity.Property(c => c.UpdatedAt)
-                  .IsRequired();
-
-            // ===== COMPUTED PROPERTIES IGNORE =====
-            entity.Ignore(c => c.TotalTaskCount);
-            entity.Ignore(c => c.CompletedTaskCount);
-            entity.Ignore(c => c.PendingTaskCount);
-            entity.Ignore(c => c.CompletionPercentage);
-        });
-    }
-
-    /// <summary>
-    /// TodoTask entity konfigürasyonu
-    /// En karmaşık entity - multiple foreign keys ve self-reference
-    /// </summary>
-    /// <param name="modelBuilder">Model builder instance</param>
-    private static void ConfigureTodoTask(ModelBuilder modelBuilder)
-    {
+        // TodoTask entity configuration
         modelBuilder.Entity<TodoTask>(entity =>
         {
-            // ===== TABLE NAME =====
-            entity.ToTable("TodoTasks");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(2000);
+            entity.Property(e => e.Tags).HasMaxLength(500);
+            entity.Property(e => e.Notes).HasMaxLength(1000);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Progress).HasDefaultValue(0);
+            entity.Property(e => e.IsCompleted).HasDefaultValue(false);
 
-            // ===== PRIMARY KEY =====
-            entity.HasKey(t => t.Id);
+            entity.HasOne(e => e.User)
+                .WithMany(e => e.Tasks)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            // ===== FOREIGN KEY RELATIONSHIPS =====
-            
-            // TodoTask -> User ilişkisi (Many-to-One)
-            entity.HasOne(t => t.User)
-                  .WithMany(u => u.Tasks)
-                  .HasForeignKey(t => t.UserId)
-                  .OnDelete(DeleteBehavior.Cascade);      // User silinirse task'lar da silinir
+            entity.HasOne(e => e.Category)
+                .WithMany(e => e.Tasks)
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.SetNull);
 
-            // TodoTask -> Category ilişkisi (Many-to-One)
-            entity.HasOne(t => t.Category)
-                  .WithMany(c => c.Tasks)
-                  .HasForeignKey(t => t.CategoryId)
-                  .OnDelete(DeleteBehavior.Restrict);     // Category silinmeye çalışılırsa hata ver
-                                                          // Önce task'lar başka kategoriye taşınmalı
+            entity.HasOne(e => e.ParentTask)
+                .WithMany(e => e.SubTasks)
+                .HasForeignKey(e => e.ParentTaskId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
 
-            // ===== SELF-REFERENCE RELATIONSHIP =====
-            // TodoTask -> ParentTask ilişkisi (Self-Reference)
-            // Ana görev -> Alt görevler hiyerarşisi
-            entity.HasOne(t => t.ParentTask)              // Her task'ın bir parent'ı olabilir
-                  .WithMany(t => t.SubTasks)              // Her task'ın birden fazla child'ı olabilir
-                  .HasForeignKey(t => t.ParentTaskId)     // Foreign key: ParentTaskId
-                  .OnDelete(DeleteBehavior.SetNull);      // Parent silinirse child'lar independent olur
+        // Category entity configuration
+        modelBuilder.Entity<Category>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.ColorCode).HasMaxLength(10);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-            // ===== PROPERTY CONFIGURATIONS =====
-            
-            // Core task properties
-            entity.Property(t => t.Title)
-                  .IsRequired()
-                  .HasMaxLength(200);
-
-            entity.Property(t => t.Description)
-                  .HasMaxLength(2000);
-
-            // Priority enum - integer olarak saklanır
-            entity.Property(t => t.Priority)
-                  .IsRequired()
-                  .HasConversion<int>();        // Enum'u int'e çevir
-
-            // Optional datetime fields
-            entity.Property(t => t.DueDate)
-                  .IsRequired(false);           // Nullable
-
-            entity.Property(t => t.ReminderDate)
-                  .IsRequired(false);
-
-            entity.Property(t => t.StartDate)
-                  .IsRequired(false);
-
-            entity.Property(t => t.CompletedAt)
-                  .IsRequired(false);
-
-            // Additional features
-            entity.Property(t => t.Tags)
-                  .HasMaxLength(500);
-
-            entity.Property(t => t.Notes)
-                  .HasMaxLength(1000);
-
-            // ===== DATETIME CONFIGURATIONS =====
-            entity.Property(t => t.CreatedAt)
-                  .IsRequired()
-                  .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-            entity.Property(t => t.UpdatedAt)
-                  .IsRequired();
-
-            // ===== INDEXES FOR PERFORMANCE =====
-            // Sık kullanılan sorgular için index'ler
-
-            // User'ın task'larını getirmek için
-            entity.HasIndex(t => t.UserId)
-                  .HasDatabaseName("IX_TodoTasks_UserId");
-
-            // Category'nin task'larını getirmek için
-            entity.HasIndex(t => t.CategoryId)
-                  .HasDatabaseName("IX_TodoTasks_CategoryId");
-
-            // Tamamlanmamış task'ları bulmak için
-            entity.HasIndex(t => t.IsCompleted)
-                  .HasDatabaseName("IX_TodoTasks_IsCompleted");
-
-            // Due date'e göre sıralama için
-            entity.HasIndex(t => t.DueDate)
-                  .HasDatabaseName("IX_TodoTasks_DueDate");
-
-            // Priority'ye göre sıralama için
-            entity.HasIndex(t => t.Priority)
-                  .HasDatabaseName("IX_TodoTasks_Priority");
-
-            // Parent-child ilişkisi için
-            entity.HasIndex(t => t.ParentTaskId)
-                  .HasDatabaseName("IX_TodoTasks_ParentTaskId");
-
-            // ===== COMPUTED PROPERTIES IGNORE =====
-            entity.Ignore(t => t.IsOverdue);
-            entity.Ignore(t => t.DaysSinceCreated);
-            entity.Ignore(t => t.TimeRemaining);
-            entity.Ignore(t => t.SubTaskCount);
-            entity.Ignore(t => t.CompletedSubTaskCount);
-            entity.Ignore(t => t.ActualCompletionPercentage);
-            entity.Ignore(t => t.TagList);
+            entity.HasOne(e => e.User)
+                .WithMany(e => e.Categories)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 
-        /// <summary>
+    /// <summary>
     /// Varsayılan veri ekleme (Seed Data)
     /// Şimdilik boş - register ile test kullanıcısı oluşturacağız
     /// </summary>

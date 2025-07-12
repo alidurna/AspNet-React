@@ -1,28 +1,94 @@
 /**
- * Header Component - TaskFlow Dashboard
+ * Header Component
  *
- * Bu component, dashboard'un üst kısmındaki header'ı oluşturur.
- * Mobile hamburger menu, breadcrumb navigation, search ve kullanıcı bilgilerini içerir.
+ * Bu dosya, TaskFlow uygulamasının dashboard'unun üst kısmındaki
+ * header component'ini içerir. Navigasyon, arama, kullanıcı menüsü
+ * ve breadcrumb'ları yöneten kapsamlı bir header sağlar.
  *
- * Özellikler:
+ * Ana Özellikler:
  * - Mobile hamburger menu button
  * - Breadcrumb navigation
- * - Search functionality
+ * - Global search functionality
  * - User profile dropdown
- * - Notifications
- * - Quick actions
+ * - Notifications center
+ * - Quick actions menu
+ * - Responsive design
  *
- * Props:
- * - onSidebarToggle: Sidebar toggle function
- * - title: Page title
- * - breadcrumbs: Breadcrumb items array
+ * Header Bölümleri:
+ * - Sol: Sidebar toggle, başlık, breadcrumb
+ * - Orta: Arama çubuğu (desktop)
+ * - Sağ: Kullanıcı menüsü, bildirimler
  *
- * Usage:
- * <Header
- *   onSidebarToggle={toggleSidebar}
- *   title="Dashboard"
- *   breadcrumbs={[{name: 'Ana Sayfa', href: '/'}]}
- * />
+ * Arama Özellikleri:
+ * - Global arama çubuğu
+ * - Gelişmiş arama modal'ı
+ * - Real-time search
+ * - Search history
+ * - Filter options
+ *
+ * Kullanıcı Menüsü:
+ * - Profil bilgileri
+ * - Ayarlar
+ * - Çıkış yapma
+ * - Tema değiştirme
+ * - Dil seçenekleri
+ *
+ * Responsive Design:
+ * - Mobile-first approach
+ * - Adaptive layout
+ * - Touch-friendly interface
+ * - Breakpoint-based behavior
+ *
+ * Props Interface:
+ * - onSidebarToggle: Sidebar toggle fonksiyonu
+ * - title: Sayfa başlığı
+ * - breadcrumbs: Breadcrumb öğeleri dizisi
+ *
+ * State Management:
+ * - Search focus state
+ * - User menu state
+ * - Search query
+ * - Modal states
+ *
+ * Navigation:
+ * - Breadcrumb navigation
+ * - Route handling
+ * - History management
+ * - Deep linking
+ *
+ * Accessibility:
+ * - Keyboard navigation
+ * - Screen reader support
+ * - Focus management
+ * - ARIA labels
+ *
+ * Performance:
+ * - Optimized re-renders
+ * - Efficient state updates
+ * - Debounced search
+ * - Lazy loading
+ *
+ * Styling:
+ * - Tailwind CSS tabanlı
+ * - Consistent design system
+ * - Modern UI/UX
+ * - Smooth animations
+ *
+ * Error Handling:
+ * - Search errors
+ * - Navigation errors
+ * - User menu errors
+ * - Graceful fallbacks
+ *
+ * Sürdürülebilirlik:
+ * - TypeScript tip güvenliği
+ * - Modüler component yapısı
+ * - Açık ve anlaşılır kod
+ * - Comprehensive documentation
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
  */
 
 import React, { useState } from "react";

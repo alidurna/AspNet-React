@@ -1,8 +1,95 @@
 /**
- * Toast Demo Component - TaskFlow
+ * Toast Demo Component
  *
- * Toast sistemini test etmek için basit demo component.
- * Geliştirme ve test amaçlı kullanılır.
+ * Bu dosya, TaskFlow uygulamasının toast bildirim sistemini
+ * test etmek ve demo etmek için oluşturulmuş component'i içerir.
+ * Geliştirme, test ve kullanıcı eğitimi amaçlı kullanılır.
+ *
+ * Ana Özellikler:
+ * - Toast tipi testleri
+ * - Redux store entegrasyonu
+ * - Manuel toast kontrolü
+ * - Toast temizleme
+ * - Responsive tasarım
+ *
+ * Toast Tipleri:
+ * - Success: Başarı bildirimleri
+ * - Error: Hata bildirimleri
+ * - Warning: Uyarı bildirimleri
+ * - Info: Bilgi bildirimleri
+ *
+ * Test Fonksiyonları:
+ * - handleSuccessToast: Başarı toast'ı
+ * - handleErrorToast: Hata toast'ı
+ * - handleWarningToast: Uyarı toast'ı
+ * - handleInfoToast: Bilgi toast'ı
+ * - handleClearAll: Tüm toast'ları temizleme
+ *
+ * Kullanım Alanları:
+ * - Geliştirme testleri
+ * - Kullanıcı eğitimi
+ * - Sistem demo'ları
+ * - QA testleri
+ * - Debug işlemleri
+ *
+ * Toast Özellikleri:
+ * - Redux store entegrasyonu
+ * - Otomatik kapanma
+ * - Manuel kapatma
+ * - 4 farklı tip
+ * - Responsive tasarım
+ *
+ * Props Interface:
+ * - Bu component props almaz
+ * - Self-contained demo
+ * - Standalone functionality
+ *
+ * State Management:
+ * - useToast hook kullanımı
+ * - Redux store integration
+ * - Toast state management
+ * - Clear functionality
+ *
+ * Styling:
+ * - Tailwind CSS tabanlı
+ * - Card layout
+ * - Button variants
+ * - Responsive design
+ * - Clean UI
+ *
+ * Accessibility:
+ * - Keyboard navigation
+ * - Screen reader support
+ * - Focus management
+ * - ARIA labels
+ *
+ * Performance:
+ * - Lightweight component
+ * - Efficient rendering
+ * - Minimal re-renders
+ * - Memory efficient
+ *
+ * Error Handling:
+ * - Toast error handling
+ * - Graceful fallbacks
+ * - User feedback
+ * - Error recovery
+ *
+ * Development Features:
+ * - Console logging
+ * - Debug information
+ * - Test utilities
+ * - Development tools
+ *
+ * Sürdürülebilirlik:
+ * - TypeScript tip güvenliği
+ * - Modüler component yapısı
+ * - Açık ve anlaşılır kod
+ * - Comprehensive documentation
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
  */
 
 import React from "react";

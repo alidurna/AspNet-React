@@ -1,3 +1,90 @@
+/**
+ * TaskFlow SignalR Hub
+ * 
+ * Bu dosya, TaskFlow uygulamasının real-time iletişim merkezini içerir.
+ * SignalR kullanarak kullanıcılar arası canlı güncellemeler, bildirimler
+ * ve görev değişikliklerini yönetir.
+ * 
+ * Ana İşlevler:
+ * - Real-time task updates
+ * - User notifications
+ * - Online user tracking
+ * - Achievement notifications
+ * - Typing indicators
+ * - Connection management
+ * 
+ * Hub Metodları:
+ * - OnConnectedAsync: Kullanıcı bağlantısı
+ * - OnDisconnectedAsync: Kullanıcı ayrılması
+ * - TaskCreated: Görev oluşturma bildirimi
+ * - TaskUpdated: Görev güncelleme bildirimi
+ * - TaskDeleted: Görev silme bildirimi
+ * - SendNotification: Kullanıcıya bildirim
+ * - BroadcastNotification: Genel bildirim
+ * - UserTyping: Yazma göstergesi
+ * 
+ * Real-time Özellikler:
+ * - Live task updates
+ * - Instant notifications
+ * - Online user list
+ * - Achievement tracking
+ * - Progress updates
+ * - Collaboration features
+ * 
+ * Güvenlik:
+ * - JWT authentication
+ * - User authorization
+ * - Connection validation
+ * - Rate limiting
+ * - Input sanitization
+ * 
+ * Performance:
+ * - Efficient connection management
+ * - Optimized message delivery
+ * - Memory efficient tracking
+ * - Scalable architecture
+ * 
+ * Connection Management:
+ * - User connection tracking
+ * - Group management
+ * - Connection state handling
+ * - Reconnection support
+ * 
+ * Notification System:
+ * - Task-based notifications
+ * - Achievement notifications
+ * - System notifications
+ * - User-to-user messages
+ * 
+ * Caching:
+ * - Pending notifications
+ * - User connection info
+ * - Online user list
+ * - Performance optimization
+ * 
+ * Error Handling:
+ * - Connection error recovery
+ * - Message delivery failure
+ * - Authentication errors
+ * - Graceful degradation
+ * 
+ * Monitoring:
+ * - Connection metrics
+ * - Message delivery stats
+ * - User activity tracking
+ * - Performance monitoring
+ * 
+ * Sürdürülebilirlik:
+ * - Clean architecture
+ * - Comprehensive logging
+ * - Testable design
+ * - Clear documentation
+ * 
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
+ */
+
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;

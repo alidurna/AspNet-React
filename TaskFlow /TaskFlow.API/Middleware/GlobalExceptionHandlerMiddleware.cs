@@ -1,3 +1,69 @@
+/**
+ * GlobalExceptionHandlerMiddleware
+ * 
+ * Bu dosya, TaskFlow API'sinde oluşan tüm yakalanmamış exception'ları
+ * merkezi olarak yöneten middleware'i içerir. Güvenli ve tutarlı
+ * hata yanıtları sağlar.
+ * 
+ * Ana İşlevler:
+ * - Merkezi exception handling
+ * - Yapılandırılmış logging
+ * - Ortam bazlı hata detayları (Development/Production)
+ * - Standart hata yanıtları
+ * - Request correlation tracking
+ * - Güvenli hata mesajları
+ * 
+ * Exception Tipleri:
+ * - UnauthorizedAccessException: 401 Unauthorized
+ * - KeyNotFoundException: 404 Not Found
+ * - ArgumentException: 400 Bad Request
+ * - InvalidOperationException: 400 Bad Request
+ * - NotImplementedException: 501 Not Implemented
+ * - TimeoutException: 408 Request Timeout
+ * - Diğerleri: 500 Internal Server Error
+ * 
+ * Güvenlik:
+ * - Production'da detaylı hata bilgileri gizlenir
+ * - Hassas bilgiler loglanmaz
+ * - Correlation ID ile request takibi
+ * - User-friendly hata mesajları
+ * 
+ * Logging:
+ * - Structured logging (Serilog)
+ * - Exception tipine göre log seviyesi
+ * - Request bilgileri (method, path, user agent)
+ * - Correlation ID ile trace
+ * - Performance monitoring
+ * 
+ * Response Format:
+ * - Standart ApiResponseModel formatı
+ * - JSON serialization
+ * - Camel case property naming
+ * - Development'da indented JSON
+ * 
+ * Performance:
+ * - Minimal overhead
+ * - Efficient exception handling
+ * - Async/await pattern
+ * - Memory efficient logging
+ * 
+ * Monitoring:
+ * - Request correlation tracking
+ * - Exception metrics
+ * - Performance counters
+ * - Health check integration
+ * 
+ * Sürdürülebilirlik:
+ * - Comprehensive documentation
+ * - Testable design
+ * - Configurable behavior
+ * - Clear separation of concerns
+ * 
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
+ */
+
 using System.Net;
 using System.Text.Json;
 using TaskFlow.API.DTOs;

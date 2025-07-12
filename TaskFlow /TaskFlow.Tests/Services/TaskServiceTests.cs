@@ -146,14 +146,14 @@ public class TaskServiceTests : IDisposable
     {
         // Arrange
         var userId = 1;
-        var filter = new TodoTaskFilterDto { Priority = "High" };
+        var filter = new TodoTaskFilterDto { Priority = Priority.High.ToString() };
 
         // Act
         var (tasks, _) = await _taskService.GetTasksAsync(userId, filter);
 
         // Assert
         Assert.NotNull(tasks);
-        Assert.All(tasks, t => Assert.Equal("High", t.Priority));
+        Assert.All(tasks, t => Assert.Equal(Priority.High, t.Priority));
     }
 
     [Fact]
@@ -235,7 +235,7 @@ public class TaskServiceTests : IDisposable
             Title = "Yeni Test Görevi",
             Description = "Test açıklaması",
             CategoryId = 1,
-            Priority = "Normal",
+            Priority = Priority.Normal.ToString(),
             DueDate = DateTime.UtcNow.AddDays(7)
         };
 
@@ -247,7 +247,7 @@ public class TaskServiceTests : IDisposable
         Assert.Equal(createDto.Title, result.Title);
         Assert.Equal(createDto.Description, result.Description);
         Assert.Equal(createDto.CategoryId, result.CategoryId);
-        Assert.Equal(createDto.Priority, result.Priority);
+        Assert.Equal(createDto.Priority, result.Priority.ToString());
         Assert.False(result.IsCompleted);
         Assert.True(result.IsActive);
 
@@ -268,7 +268,7 @@ public class TaskServiceTests : IDisposable
             Title = "Alt Görev",
             Description = "Ana görevin alt görevi",
             CategoryId = 1,
-            Priority = "Low",
+            Priority = Priority.Low.ToString(),
             ParentTaskId = parentTaskId
         };
 
@@ -289,7 +289,7 @@ public class TaskServiceTests : IDisposable
         {
             Title = "Test Görevi",
             CategoryId = 999, // Geçersiz kategori
-            Priority = "Normal"
+            Priority = Priority.Normal.ToString()
         };
 
         // Act & Assert
@@ -316,7 +316,7 @@ public class TaskServiceTests : IDisposable
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal("Normal", result.Priority); // Default priority
+        Assert.Equal(Priority.Normal.ToString(), result.Priority.ToString()); // Default priority
     }
 
     [Fact]
@@ -328,7 +328,7 @@ public class TaskServiceTests : IDisposable
         {
             Title = "  Test Görevi  ",
             CategoryId = 1,
-            Priority = "Normal"
+            Priority = Priority.Normal.ToString()
         };
 
         // Act
@@ -353,7 +353,7 @@ public class TaskServiceTests : IDisposable
         {
             Title = "Güncellenmiş API Dokümantasyonu",
             Description = "Güncellenmiş açıklama",
-            Priority = "Critical",
+            Priority = Priority.Critical.ToString(),
             CompletionPercentage = 90
         };
 
@@ -364,7 +364,7 @@ public class TaskServiceTests : IDisposable
         Assert.NotNull(result);
         Assert.Equal(updateDto.Title, result.Title);
         Assert.Equal(updateDto.Description, result.Description);
-        Assert.Equal(updateDto.Priority, result.Priority);
+        Assert.Equal(updateDto.Priority, result.Priority.ToString());
         Assert.Equal(updateDto.CompletionPercentage, result.CompletionPercentage);
 
         // Database'de de güncellenmiş mi kontrol et

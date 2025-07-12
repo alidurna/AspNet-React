@@ -1,24 +1,62 @@
-/*
- * Category.cs - Kategori Model Sınıfı
- * ===================================
- * 
- * Bu sınıf TaskFlow uygulamasındaki görev kategorilerini temsil eder.
- * Kullanıcılar görevlerini kategorilere ayırarak daha düzenli çalışabilir.
- * 
- * ÖRNEK KATEGORİLER:
- * ==================
- * - 🏠 Kişisel (Personal)
- * - 💼 İş (Work) 
- * - 🛒 Alışveriş (Shopping)
- * - 💊 Sağlık (Health)
- * - 📚 Eğitim (Education)
- * - 🎯 Hedefler (Goals)
- * 
- * İLİŞKİLER:
- * ==========
- * - User (1) -> Category (N): Bir kullanıcının birçok kategorisi olabilir
- * - Category (1) -> TodoTask (N): Bir kategorinin birçok görevi olabilir
- */
+// ****************************************************************************************************
+//  CATEGORY.CS
+//  --------------------------------------------------------------------------------------------------
+//  Bu dosya, TaskFlow uygulamasının kategori yönetimi sisteminin ana entity modelidir. Kategori
+//  bilgileri, görsel özellikler, kullanıcı ilişkileri ve görev organizasyonu için gerekli tüm
+//  property'leri içerir. Entity Framework Core ile veritabanı mapping'i ve computed properties sağlar.
+//
+//  ANA BAŞLIKLAR:
+//  - Category Identity ve Basic Information
+//  - Visual Properties (Color, Icon)
+//  - Category Settings (Active, Default)
+//  - User ve Task Relationships
+//  - Audit Fields (Created, Updated)
+//  - Computed Properties ve Business Logic
+//
+//  GÜVENLİK:
+//  - User isolation (UserId foreign key)
+//  - Data validation constraints
+//  - Soft delete pattern (IsActive)
+//  - Relationship integrity
+//  - Access control through relationships
+//
+//  HATA YÖNETİMİ:
+//  - Required field validation
+//  - String length constraints
+//  - Color code format validation
+//  - Relationship integrity
+//  - Business rule enforcement
+//
+//  EDGE-CASE'LER:
+//  - Null or empty required fields
+//  - Invalid color codes
+//  - Duplicate category names per user
+//  - Large text inputs
+//  - Unicode characters in names
+//  - Empty categories
+//  - Default category conflicts
+//
+//  YAN ETKİLER:
+//  - Category creation affects user organization
+//  - Default category changes affect new tasks
+//  - Category deactivation affects task visibility
+//  - Color changes affect UI appearance
+//  - Icon changes affect visual representation
+//
+//  PERFORMANS:
+//  - Efficient database queries
+//  - Optimized relationship loading
+//  - Computed property caching
+//  - Indexed field optimization
+//  - Lazy loading support
+//
+//  SÜRDÜRÜLEBİLİRLİK:
+//  - Clear entity design
+//  - Comprehensive documentation
+//  - Extensible model structure
+//  - Backward compatibility
+//  - Migration-friendly design
+// ****************************************************************************************************
 
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;

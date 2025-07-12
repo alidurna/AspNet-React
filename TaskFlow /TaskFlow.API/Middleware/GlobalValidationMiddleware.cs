@@ -5,8 +5,72 @@ using TaskFlow.API.DTOs;
 namespace TaskFlow.API.Middleware
 {
     /// <summary>
-    /// Global Validation Action Filter
-    /// Model validation'ı centralize eder ve controller'larda tekrarlanan validation kodunu kaldırır
+    /// Global Validation Middleware ve Action Filter
+    /// 
+    /// Bu dosya, TaskFlow API'sinin global validation işlemlerini
+    /// yöneten middleware ve action filter'ları içerir. Model
+    /// validation'ı centralize eder ve controller'larda tekrarlanan
+    /// validation kodunu kaldırır.
+    /// 
+    /// Ana Özellikler:
+    /// - Centralized model validation
+    /// - Standart error response formatı
+    /// - Correlation ID tracking
+    /// - Comprehensive logging
+    /// - Error handling
+    /// 
+    /// Validation Süreci:
+    /// 1. HTTP request controller'a gelir
+    /// 2. Model binding ve validation yapılır
+    /// 3. OnActionExecuting çalışır ve ModelState kontrol edilir
+    /// 4. Validation hatası varsa BadRequest response döndürülür
+    /// 5. Validation başarılıysa controller action çalışır
+    /// 
+    /// Error Response Formatı:
+    /// - Standardized API response
+    /// - Validation error details
+    /// - Correlation ID
+    /// - Timestamp
+    /// - Error codes
+    /// 
+    /// Logging:
+    /// - Validation failures
+    /// - Error details
+    /// - Correlation tracking
+    /// - Performance metrics
+    /// - Debug information
+    /// 
+    /// Security:
+    /// - Input validation
+    /// - XSS prevention
+    /// - SQL injection protection
+    /// - Data sanitization
+    /// - Rate limiting support
+    /// 
+    /// Performance:
+    /// - Early validation
+    /// - Efficient error extraction
+    /// - Minimal overhead
+    /// - Caching support
+    /// - Memory optimization
+    /// 
+    /// Monitoring:
+    /// - Validation metrics
+    /// - Error rates
+    /// - Response times
+    /// - Success rates
+    /// - Performance tracking
+    /// 
+    /// Sürdürülebilirlik:
+    /// - Modüler yapı
+    /// - Açık ve anlaşılır kod
+    /// - Comprehensive documentation
+    /// - Test coverage
+    /// - Error recovery
+    /// 
+    /// @author TaskFlow Development Team
+    /// @version 1.0.0
+    /// @since 2024
     /// </summary>
     /// <remarks>
     /// Bu filter controller action'larından önce çalışır ve ModelState validation yapar.

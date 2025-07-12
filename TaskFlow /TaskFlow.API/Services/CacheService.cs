@@ -6,6 +6,66 @@ using TaskFlow.API.Interfaces;
 
 namespace TaskFlow.API.Services;
 
+// ****************************************************************************************************
+//  CACHESERVICE.CS
+//  --------------------------------------------------------------------------------------------------
+//  Bu dosya, TaskFlow uygulamasının önbellek yönetimi sisteminin ana servisidir. Hem memory cache hem de
+//  distributed cache (Redis) desteği sağlar. Performans optimizasyonu, veri tekrar kullanımı ve sistem
+//  yanıt sürelerini iyileştirme işlemlerini yönetir.
+//
+//  ANA BAŞLIKLAR:
+//  - Memory Cache Management
+//  - Distributed Cache (Redis) Integration
+//  - Cache-aside Pattern Implementation
+//  - Cache Statistics ve Monitoring
+//  - Cache Eviction ve Cleanup
+//  - Performance Optimization
+//
+//  GÜVENLİK:
+//  - Cache key normalization
+//  - Data serialization security
+//  - Memory usage limits
+//  - Cache expiration management
+//  - Thread-safe operations
+//  - Error handling ve recovery
+//
+//  HATA YÖNETİMİ:
+//  - Comprehensive exception handling
+//  - Cache miss handling
+//  - Serialization errors
+//  - Distributed cache failures
+//  - Graceful degradation
+//
+//  EDGE-CASE'LER:
+//  - Cache key collisions
+//  - Memory cache full
+//  - Distributed cache unavailable
+//  - Large data serialization
+//  - Concurrent cache access
+//  - Cache expiration during access
+//  - Network timeouts
+//
+//  YAN ETKİLER:
+//  - Memory usage increase
+//  - Network traffic (distributed cache)
+//  - CPU usage for serialization
+//  - Cache statistics tracking
+//  - Background cleanup operations
+//
+//  PERFORMANS:
+//  - Two-tier caching strategy
+//  - Efficient serialization
+//  - Memory cache optimization
+//  - Distributed cache batching
+//  - Statistics tracking
+//
+//  SÜRDÜRÜLEBİLİRLİK:
+//  - Service layer pattern
+//  - Dependency injection
+//  - Comprehensive documentation
+//  - Extensible cache system
+//  - Configuration-based settings
+// ****************************************************************************************************
 /// <summary>
 /// Cache servis implementasyonu
 /// Hem memory cache hem de distributed cache destekler

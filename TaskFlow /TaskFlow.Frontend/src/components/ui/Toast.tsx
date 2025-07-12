@@ -1,8 +1,91 @@
 /**
- * Toast Notification Component - TaskFlow
+ * Toast Notification Component
  *
- * React Hot Toast ile entegre çalışan custom toast component.
- * Different types (success, error, warning, info) destekler.
+ * Bu dosya, TaskFlow uygulaması için özelleştirilmiş toast bildirim
+ * sistemini içerir. React Hot Toast ile entegre çalışarak kullanıcı
+ * dostu bildirimler sağlar.
+ *
+ * Ana Özellikler:
+ * - 4 farklı toast tipi (success, error, warning, info)
+ * - Redux store entegrasyonu
+ * - Otomatik kapanma
+ * - Persistent toast desteği
+ * - Custom styling
+ * - Accessibility desteği
+ *
+ * Toast Tipleri:
+ * - success: Başarı bildirimleri (yeşil)
+ * - error: Hata bildirimleri (kırmızı)
+ * - warning: Uyarı bildirimleri (sarı)
+ * - info: Bilgi bildirimleri (mavi)
+ *
+ * Redux Entegrasyonu:
+ * - Store'dan toast okuma
+ * - Toast ekleme/çıkarma
+ * - State management
+ * - Persistence handling
+ *
+ * Kullanım Alanları:
+ * - Form submit sonuçları
+ * - API hata mesajları
+ * - Başarı bildirimleri
+ * - Sistem uyarıları
+ * - Kullanıcı geri bildirimleri
+ *
+ * Styling:
+ * - Tailwind CSS tabanlı
+ * - Consistent design system
+ * - Color-coded types
+ * - Responsive design
+ * - Custom icons
+ *
+ * Accessibility:
+ * - ARIA labels
+ * - Screen reader support
+ * - Keyboard navigation
+ * - Focus management
+ * - Close button
+ *
+ * Performance:
+ * - Efficient rendering
+ * - Memory management
+ * - Auto-cleanup
+ * - Optimized animations
+ *
+ * Configuration:
+ * - Position: top-right
+ * - Duration: 4-6 saniye
+ * - Gutter: 8px
+ * - Reverse order: false
+ *
+ * Props Interface:
+ * - message: Toast mesajı
+ * - type: Toast tipi
+ * - onClose: Kapatma fonksiyonu
+ * - persistent: Kalıcı toast
+ * - duration: Görünme süresi
+ *
+ * Animation:
+ * - Smooth slide-in
+ * - Fade effects
+ * - Exit animations
+ * - Performance optimized
+ *
+ * Error Handling:
+ * - Graceful fallbacks
+ * - Error boundaries
+ * - Timeout handling
+ * - State recovery
+ *
+ * Sürdürülebilirlik:
+ * - TypeScript tip güvenliği
+ * - Modüler component yapısı
+ * - Açık ve anlaşılır kod
+ * - Comprehensive documentation
+ *
+ * @author TaskFlow Development Team
+ * @version 1.0.0
+ * @since 2024
  */
 
 import React, { useEffect } from "react";

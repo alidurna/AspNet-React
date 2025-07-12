@@ -1,28 +1,56 @@
-/*
- * CategoriesController.cs - Categories API Controller
- * ===================================================
- * 
- * Bu controller Categories entity'si için CRUD operations sağlar.
- * RESTful API design patterns kullanır.
- * Service Layer pattern ile business logic ayrıştırılmıştır.
- * 
- * HTTP METHODS & ENDPOINTS:
- * ========================
- * GET    /api/categories        -> Kullanıcının kategorilerini listele
- * GET    /api/categories/{id}   -> Belirli bir kategoriyi getir
- * POST   /api/categories        -> Yeni kategori oluştur
- * PUT    /api/categories/{id}   -> Kategoriyi tamamen güncelle
- * DELETE /api/categories/{id}   -> Kategoriyi sil (soft delete)
- * 
- * CONTROLLER PATTERN:
- * ==================
- * - Dependency Injection (DbContext)
- * - Model Binding & Validation
- * - HTTP Status Codes
- * - Error Handling
- * - Async/Await pattern
- * - Standardized API responses
- */
+// ****************************************************************************************************
+//  CATEGORIESCONTROLLER.CS
+//  --------------------------------------------------------------------------------------------------
+//  Bu dosya, TaskFlow uygulamasının kategori yönetimi sisteminin ana API controller'ıdır. Kullanıcıların
+//  görevlerini organize etmek için kategoriler oluşturma, düzenleme, silme ve listeleme işlemlerini yönetir.
+//  Ayrıca kategori bazlı istatistikler ve filtreleme özelliklerini sağlar.
+//
+//  ANA BAŞLIKLAR:
+//  - CRUD Operations (Create, Read, Update, Delete)
+//  - Category-based Filtering ve Search
+//  - Category Statistics ve Analytics
+//  - User-specific Category Management
+//  - Soft Delete Implementation
+//  - Category-Task Relationship Management
+//
+//  GÜVENLİK:
+//  - JWT tabanlı authentication (tüm endpoint'ler korumalı)
+//  - User isolation (kullanıcı sadece kendi kategorilerini görür)
+//  - Input validation ve sanitization
+//  - Business rule enforcement (unique names per user)
+//
+//  HATA YÖNETİMİ:
+//  - Comprehensive try-catch blocks
+//  - Specific exception handling (NotFound, Validation, etc.)
+//  - Detailed logging for debugging
+//  - Consistent error response format
+//
+//  EDGE-CASE'LER:
+//  - Duplicate category names for same user
+//  - Categories with existing tasks (deletion handling)
+//  - Empty category lists
+//  - Invalid category IDs
+//  - Categories with special characters in names
+//  - Maximum category limit per user
+//
+//  YAN ETKİLER:
+//  - Category deletion affects associated tasks
+//  - Category updates may trigger task re-categorization
+//  - Statistics are calculated in real-time
+//  - Category name changes propagate to related tasks
+//
+//  PERFORMANS:
+//  - Efficient database queries with includes
+//  - Caching for frequently accessed categories
+//  - Optimized filtering algorithms
+//  - Pagination for large category lists
+//
+//  SÜRDÜRÜLEBİLİRLİK:
+//  - Service layer pattern
+//  - Dependency injection
+//  - Comprehensive documentation
+//  - Extensible architecture
+// ****************************************************************************************************
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

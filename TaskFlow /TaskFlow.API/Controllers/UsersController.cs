@@ -7,6 +7,46 @@ using Asp.Versioning;
 
 namespace TaskFlow.API.Controllers
 {
+    // ****************************************************************************************************
+    //  USERSCONTROLLER.CS
+    //  --------------------------------------------------------------------------------------------------
+    //  Bu dosya, TaskFlow uygulamasının kullanıcı yönetimi ve authentication işlemlerini yöneten ana API
+    //  controller'ıdır. Kullanıcı kaydı, giriş, profil yönetimi, şifre ve email işlemleri, JWT token
+    //  yönetimi gibi tüm user-related endpoint'leri içerir.
+    //
+    //  ANA BAŞLIKLAR:
+    //  - Kullanıcı Kaydı ve Girişi (Register, Login)
+    //  - Profil Bilgileri ve Güncelleme
+    //  - Şifre Değişikliği ve Sıfırlama
+    //  - Email Doğrulama ve Yeniden Gönderme
+    //  - JWT Token Yenileme ve Oturum Yönetimi
+    //
+    //  GÜVENLİK:
+    //  - JWT tabanlı authentication (Authorize attribute ile endpoint koruması)
+    //  - Sensitive işlemler için ek kontrol ve logging
+    //  - Hatalı veya kötüye kullanımda detaylı loglama
+    //
+    //  HATA YÖNETİMİ:
+    //  - Tüm endpoint'lerde try-catch ile hata yakalama
+    //  - Business rule violation ve beklenmeyen hatalar ayrıştırılır
+    //  - Swagger/OpenAPI ile response tipleri ve hata kodları açıkça belirtilir
+    //
+    //  EDGE-CASE'LER:
+    //  - Aynı email ile tekrar kayıt olma
+    //  - Token süresi dolmuş veya geçersiz
+    //  - Profil güncellemede eksik/yanlış veri
+    //  - Şifre sıfırlama ve email doğrulama işlemlerinde token validasyonu
+    //
+    //  YAN ETKİLER:
+    //  - Başarılı işlemlerde loglama
+    //  - Hatalı işlemlerde uyarı ve hata loglama
+    //  - Bazı endpoint'ler (ör. şifre sıfırlama) email gönderimi tetikler
+    //
+    //  SÜRDÜRÜLEBİLİRLİK:
+    //  - Dependency Injection ile servis kullanımı
+    //  - Açık ve detaylı XML/summary açıklamaları
+    //  - Genişletilebilir endpoint yapısı
+    // ****************************************************************************************************
     /// <summary>
     /// Kullanıcı yönetimi ve authentication işlemleri için API Controller
     /// Register, Login, Profile management gibi temel user operations sağlar
@@ -174,36 +214,28 @@ namespace TaskFlow.API.Controllers
         /// <response code="404">Kullanıcı bulunamadı</response>
         [HttpGet("profile")]
         [Authorize] // JWT token gerekli
-        [ProducesResponseType(typeof(ApiResponseModel<UserDto>), 200)]
-        [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
-        [ProducesResponseType(typeof(ApiResponseModel<object>), 404)]
-        public async Task<ActionResult<ApiResponseModel<UserDto>>> GetProfile()
+        public async Task<ActionResult<ApiResponseModel<UserProfileDto>>> GetProfile()
         {
             try
             {
-                // JWT token'dan user ID'yi al
-                var userId = GetCurrentUserId();
-                if (!userId.HasValue)
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
                 {
                     return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
                 }
 
-                // UserService ile kullanıcı bilgilerini getir
-                var userDto = await _userService.GetUserByIdAsync(userId.Value);
-
-                if (userDto == null)
+                var profile = await _userService.GetUserProfileAsync(userId);
+                
+                return Ok(new ApiResponseModel<UserProfileDto>
                 {
-                    return NotFound(ApiResponseModel<object>.ErrorResponse("Kullanıcı bulunamadı"));
-                }
-
-                return Ok(ApiResponseModel<UserDto>.SuccessResponse(
-                    "Profil bilgileri getirildi",
-                    userDto
-                ));
+                    Success = true,
+                    Data = profile,
+                    Message = "Profil bilgileri başarıyla getirildi"
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting profile for user");
+                _logger.LogError(ex, "Error getting user profile");
                 return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
                     "Profil bilgileri getirilirken bir hata oluştu"));
             }
@@ -248,32 +280,35 @@ namespace TaskFlow.API.Controllers
         /// </summary>
         /// <param name="updateDto">Güncelleme bilgileri</param>
         /// <returns>Güncellenmiş kullanıcı bilgileri</returns>
+        /// <response code="200">Profil başarıyla güncellendi</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
+        /// <response code="400">Geçersiz veri</response>
+        /// <response code="500">Sunucu hatası</response>
         [HttpPut("profile")]
-        [ProducesResponseType(typeof(ApiResponseModel<UserDto>), 200)]
-        [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
-        [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
-        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
-        public async Task<ActionResult<ApiResponseModel<UserDto>>> UpdateProfile([FromBody] UpdateProfileDto updateDto)
+        [Authorize]
+        public async Task<ActionResult<ApiResponseModel<UserProfileDto>>> UpdateProfile([FromBody] UpdateProfileDto model)
         {
             try
             {
-                var userId = GetCurrentUserId();
-                if (!userId.HasValue)
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
                 {
                     return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
                 }
 
-                var user = await _userService.UpdateUserProfileAsync(userId.Value, updateDto);
-
-                return Ok(ApiResponseModel<UserDto>.SuccessResponse(
-                    "Profil başarıyla güncellendi",
-                    user
-                ));
+                var updatedProfile = await _userService.UpdateProfileAsync(userId, model);
+                
+                return Ok(new ApiResponseModel<UserProfileDto>
+                {
+                    Success = true,
+                    Data = updatedProfile,
+                    Message = "Profil başarıyla güncellendi"
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating user profile");
-                return StatusCode(500, ApiResponseModel<UserDto>.ErrorResponse(
+                return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
                     "Profil güncellenirken bir hata oluştu"));
             }
         }
@@ -319,31 +354,30 @@ namespace TaskFlow.API.Controllers
         /// </summary>
         /// <param name="changePasswordDto">Şifre değiştirme bilgileri</param>
         /// <returns>İşlem sonucu</returns>
-        [HttpPost("change-password")]
-        [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
-        [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
-        [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
-        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
-        public async Task<ActionResult<ApiResponseModel<object>>> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
+        /// <response code="200">Şifre başarıyla değiştirildi</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
+        /// <response code="400">Geçersiz veri</response>
+        /// <response code="500">Sunucu hatası</response>
+        [HttpPut("change-password")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponseModel<bool>>> ChangePassword([FromBody] ChangePasswordDto model)
         {
             try
             {
-                var userId = GetCurrentUserId();
-                if (!userId.HasValue)
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
                 {
                     return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
                 }
 
-                await _userService.ChangePasswordAsync(userId.Value, changePasswordDto);
-
-                return Ok(ApiResponseModel<object>.SuccessResponse(
-                    "Şifreniz başarıyla değiştirildi",
-                    null
-                ));
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ApiResponseModel<object>.ErrorResponse(ex.Message));
+                await _userService.ChangePasswordAsync(userId, model);
+                
+                return Ok(new ApiResponseModel<bool>
+                {
+                    Success = true,
+                    Data = true,
+                    Message = "Şifre başarıyla değiştirildi"
+                });
             }
             catch (Exception ex)
             {
@@ -358,6 +392,9 @@ namespace TaskFlow.API.Controllers
         /// </summary>
         /// <param name="passwordResetRequestDto">Şifre sıfırlama istek bilgileri</param>
         /// <returns>İşlem sonucu</returns>
+        /// <response code="200">Şifre sıfırlama bağlantısı email adresinize gönderildi</response>
+        /// <response code="400">Geçersiz veri</response>
+        /// <response code="500">Sunucu hatası</response>
         [HttpPost("password-reset-request")]
         [AllowAnonymous]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
@@ -387,6 +424,9 @@ namespace TaskFlow.API.Controllers
         /// </summary>
         /// <param name="passwordResetDto">Şifre sıfırlama bilgileri</param>
         /// <returns>İşlem sonucu</returns>
+        /// <response code="200">Şifreniz başarıyla sıfırlandı</response>
+        /// <response code="400">Geçersiz veri</response>
+        /// <response code="500">Sunucu hatası</response>
         [HttpPost("password-reset")]
         [AllowAnonymous]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
@@ -420,6 +460,9 @@ namespace TaskFlow.API.Controllers
         /// </summary>
         /// <param name="emailVerificationRequestDto">E-posta doğrulama istek bilgileri</param>
         /// <returns>İşlem sonucu</returns>
+        /// <response code="200">E-posta doğrulama bağlantısı email adresinize gönderildi</response>
+        /// <response code="400">Geçersiz veri</response>
+        /// <response code="500">Sunucu hatası</response>
         [HttpPost("email-verification-request")]
         [AllowAnonymous]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
@@ -453,6 +496,9 @@ namespace TaskFlow.API.Controllers
         /// </summary>
         /// <param name="emailVerificationDto">E-posta doğrulama bilgileri</param>
         /// <returns>İşlem sonucu</returns>
+        /// <response code="200">E-posta adresiniz başarıyla doğrulandı</response>
+        /// <response code="400">Geçersiz veri</response>
+        /// <response code="500">Sunucu hatası</response>
         [HttpPost("email-verification")]
         [AllowAnonymous]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
@@ -486,6 +532,10 @@ namespace TaskFlow.API.Controllers
         /// </summary>
         /// <param name="tokenRefreshRequestDto">Token yenileme istek bilgileri</param>
         /// <returns>Yeni token bilgileri</returns>
+        /// <response code="200">Token başarıyla yenilendi</response>
+        /// <response code="400">Geçersiz veri</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
+        /// <response code="500">Sunucu hatası</response>
         [HttpPost("refresh-token")]
         [AllowAnonymous]
         [ProducesResponseType(typeof(ApiResponseModel<TokenRefreshResponseDto>), 200)]
@@ -519,6 +569,9 @@ namespace TaskFlow.API.Controllers
         /// Kullanıcının refresh token'ını iptal eder
         /// </summary>
         /// <returns>İşlem sonucu</returns>
+        /// <response code="200">Refresh token başarıyla iptal edildi</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
+        /// <response code="500">Sunucu hatası</response>
         [HttpPost("revoke-refresh-token")]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
@@ -552,6 +605,9 @@ namespace TaskFlow.API.Controllers
         /// Kullanıcının tüm aktif oturumlarını sonlandırır
         /// </summary>
         /// <returns>İşlem sonucu</returns>
+        /// <response code="200">Tüm oturumlar başarıyla sonlandırıldı</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
+        /// <response code="500">Sunucu hatası</response>
         [HttpPost("logout-all-sessions")]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]

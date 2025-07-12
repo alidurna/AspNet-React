@@ -1,3 +1,63 @@
+// ****************************************************************************************************
+//  PROGRAM.CS
+//  --------------------------------------------------------------------------------------------------
+//  Bu dosya, TaskFlow uygulamasının ana başlangıç noktasıdır. ASP.NET Core uygulamasının konfigürasyonu,
+//  dependency injection, middleware pipeline, authentication, database ve caching ayarlarını yönetir.
+//  Modern C# top-level statements kullanarak uygulama yaşam döngüsünü kontrol eder.
+//
+//  ANA BAŞLIKLAR:
+//  - Application Configuration ve Setup
+//  - Dependency Injection Container
+//  - Middleware Pipeline Configuration
+//  - Authentication ve Authorization
+//  - Database ve Caching Setup
+//  - CORS ve Security Configuration
+//  - Service Registration
+//
+//  GÜVENLİK:
+//  - JWT authentication configuration
+//  - CORS policy management
+//  - HTTPS enforcement
+//  - Input validation setup
+//  - Error handling configuration
+//
+//  HATA YÖNETİMİ:
+//  - Global exception handling
+//  - Validation middleware
+//  - Logging configuration
+//  - Error response formatting
+//  - Graceful degradation
+//
+//  EDGE-CASE'LER:
+//  - Database connection failures
+//  - Configuration missing values
+//  - Environment-specific settings
+//  - Service registration conflicts
+//  - Middleware order issues
+//  - CORS policy violations
+//  - Authentication token issues
+//
+//  YAN ETKİLER:
+//  - Service registration affects application startup
+//  - Middleware configuration affects request processing
+//  - Database configuration affects data persistence
+//  - Caching affects performance and memory usage
+//  - Authentication affects user access
+//
+//  PERFORMANS:
+//  - Efficient service registration
+//  - Optimized middleware pipeline
+//  - Database connection pooling
+//  - Caching strategy implementation
+//  - Request processing optimization
+//
+//  SÜRDÜRÜLEBİLİRLİK:
+//  - Clear configuration structure
+//  - Comprehensive documentation
+//  - Environment-specific settings
+//  - Extensible service architecture
+//  - Configuration-based flexibility
+// ****************************************************************************************************
 /*
  * Program.cs - ASP.NET Core Application Entry Point
  * ================================================
@@ -74,9 +134,13 @@ builder.Services.AddCors(options =>
               )
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials();
+              .AllowCredentials()
+              .SetIsOriginAllowed(origin => true); // WebSocket için gerekli
     });
 });
+
+// ===== WEBSOCKET CONFIGURATION =====
+builder.Services.AddSignalR(); // WebSocket desteği için
 
 // ===== API CONTROLLERS =====
 /*
@@ -258,6 +322,7 @@ builder.Services.AddAutoMapper(typeof(Program).Assembly);
  * - Real-time notifications (anlık bildirimler)
  * - Online user tracking (kimler online)
  * - Achievement notifications (başarı bildirimleri)
+ * - Typing indicators
  * 
  * AVANTAJLARI:
  * - Instant user feedback
@@ -447,24 +512,6 @@ builder.Services.AddSwaggerGen(options =>
     {
         options.IncludeXmlComments(xmlPath);
     }
-});
-
-// ===== CORS (CROSS-ORIGIN RESOURCE SHARING) =====
-/*
- * Frontend (React) ile backend (ASP.NET Core) arasında
- * cross-origin requests'lere izin vermek için CORS ayarları.
- * 
- * Bu ayarlar production'da daha kısıtlayıcı olmalı!
- */
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowReactApp", policy =>
-    {
-        policy.WithOrigins("http://localhost:3000", "https://localhost:3000") // React dev server
-              .AllowAnyMethod()          // GET, POST, PUT, DELETE vb.
-              .AllowAnyHeader()          // Content-Type, Authorization vb.
-              .AllowCredentials();       // Cookies ve authentication headers
-    });
 });
 
 // ===== WEB APPLICATION BUILD =====

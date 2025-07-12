@@ -25,10 +25,8 @@ namespace TaskFlow.API.Migrations
 
                     b.Property<string>("ColorCode")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(7)
-                        .HasColumnType("TEXT")
-                        .HasDefaultValue("#3498DB");
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -62,11 +60,9 @@ namespace TaskFlow.API.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId", "Name")
-                        .IsUnique()
-                        .HasDatabaseName("IX_Categories_UserId_Name_Unique");
+                    b.HasIndex("UserId");
 
-                    b.ToTable("Categories", (string)null);
+                    b.ToTable("Categories");
                 });
 
             modelBuilder.Entity("TaskFlow.API.Models.TodoTask", b =>
@@ -75,10 +71,7 @@ namespace TaskFlow.API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int?>("ActualMinutes")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("CategoryId")
+                    b.Property<int?>("CategoryId")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("CompletedAt")
@@ -99,17 +92,13 @@ namespace TaskFlow.API.Migrations
                     b.Property<DateTime?>("DueDate")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("EstimatedMinutes")
-                        .HasColumnType("INTEGER");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsCompleted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsFavorite")
-                        .HasColumnType("INTEGER");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
@@ -120,6 +109,11 @@ namespace TaskFlow.API.Migrations
 
                     b.Property<int>("Priority")
                         .HasColumnType("INTEGER");
+
+                    b.Property<int>("Progress")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
 
                     b.Property<DateTime?>("ReminderDate")
                         .HasColumnType("TEXT");
@@ -144,25 +138,13 @@ namespace TaskFlow.API.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CategoryId")
-                        .HasDatabaseName("IX_TodoTasks_CategoryId");
+                    b.HasIndex("CategoryId");
 
-                    b.HasIndex("DueDate")
-                        .HasDatabaseName("IX_TodoTasks_DueDate");
+                    b.HasIndex("ParentTaskId");
 
-                    b.HasIndex("IsCompleted")
-                        .HasDatabaseName("IX_TodoTasks_IsCompleted");
+                    b.HasIndex("UserId");
 
-                    b.HasIndex("ParentTaskId")
-                        .HasDatabaseName("IX_TodoTasks_ParentTaskId");
-
-                    b.HasIndex("Priority")
-                        .HasDatabaseName("IX_TodoTasks_Priority");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("IX_TodoTasks_UserId");
-
-                    b.ToTable("TodoTasks", (string)null);
+                    b.ToTable("TodoTasks");
                 });
 
             modelBuilder.Entity("TaskFlow.API.Models.User", b =>
@@ -170,10 +152,6 @@ namespace TaskFlow.API.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("Bio")
-                        .HasMaxLength(1000)
-                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -198,12 +176,16 @@ namespace TaskFlow.API.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("INTEGER");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
 
                     b.Property<bool>("IsEmailVerified")
-                        .HasColumnType("INTEGER");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
 
-                    b.Property<DateTime?>("LastLoginDate")
+                    b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastName")
@@ -213,7 +195,6 @@ namespace TaskFlow.API.Migrations
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
-                        .HasMaxLength(256)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PasswordResetToken")
@@ -227,7 +208,7 @@ namespace TaskFlow.API.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("ProfileImageUrl")
+                    b.Property<string>("ProfileImage")
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
@@ -239,15 +220,16 @@ namespace TaskFlow.API.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
-                        .IsUnique()
-                        .HasDatabaseName("IX_Users_Email_Unique");
+                        .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("TaskFlow.API.Models.Category", b =>
@@ -266,8 +248,7 @@ namespace TaskFlow.API.Migrations
                     b.HasOne("TaskFlow.API.Models.Category", "Category")
                         .WithMany("Tasks")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("TaskFlow.API.Models.TodoTask", "ParentTask")
                         .WithMany("SubTasks")

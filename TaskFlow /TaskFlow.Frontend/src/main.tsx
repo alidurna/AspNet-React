@@ -1,40 +1,89 @@
+// ****************************************************************************************************
+//  MAIN.TSX
+//  --------------------------------------------------------------------------------------------------
+//  Bu dosya, TaskFlow uygulamasının React giriş noktasıdır. Uygulamanın kökünü oluşturur ve
+//  global provider'ları (QueryClientProvider, StrictMode) ile App component'ini sarmalar.
+//  React 18 createRoot API kullanarak modern React uygulaması başlatma işlemini yönetir.
+//
+//  ANA BAŞLIKLAR:
+//  - React Application Bootstrap
+//  - Global Provider Setup
+//  - QueryClient Configuration
+//  - StrictMode Implementation
+//  - CSS Import ve Styling
+//  - Error Boundary Setup
+//
+//  GÜVENLİK:
+//  - StrictMode development checks
+//  - QueryClient security
+//  - Provider isolation
+//  - Error boundary protection
+//  - Memory leak prevention
+//
+//  HATA YÖNETİMİ:
+//  - React error boundaries
+//  - Query error handling
+//  - Provider initialization errors
+//  - DOM mounting failures
+//  - Graceful error recovery
+//
+//  EDGE-CASE'LER:
+//  - DOM element not found
+//  - Provider initialization failures
+//  - QueryClient configuration errors
+//  - StrictMode double rendering
+//  - Memory leak scenarios
+//  - Browser compatibility issues
+//  - Network connectivity problems
+//
+//  YAN ETKİLER:
+//  - Provider setup affects global state
+//  - QueryClient affects data fetching
+//  - StrictMode affects development experience
+//  - CSS import affects styling
+//  - Error boundaries affect error handling
+//
+//  PERFORMANS:
+//  - Efficient provider initialization
+//  - Optimized query caching
+//  - Minimal bundle size
+//  - Fast application startup
+//  - Memory management optimization
+//
+//  SÜRDÜRÜLEBİLİRLİK:
+//  - Clear bootstrap structure
+//  - Comprehensive documentation
+//  - Extensible provider system
+//  - Modular architecture
+//  - Configuration-based flexibility
+// ****************************************************************************************************
+/**
+ * main.tsx
+ *
+ * React uygulamasının giriş noktasıdır. Uygulamanın kökünü oluşturur ve
+ * global sağlayıcıları (QueryClientProvider, StrictMode) ile App component'ini sarmalar.
+ *
+ * - React 18 createRoot API kullanılır.
+ * - React Query için QueryClientProvider ile global cache yönetimi sağlanır.
+ * - Tüm uygulama StrictMode ile geliştirme modunda ek kontrollerle çalışır.
+ */
+
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
 
-// Performance monitoring
-import "./services/performance";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+const queryClient = new QueryClient();
 
 /**
- * TaskFlow Uygulaması Entry Point (Giriş Noktası)
- *
- * Bu dosya, React uygulamasının başlatıldığı ana dosyadır.
- * Vite tarafından otomatik olarak yüklenir ve uygulamayı DOM'a render eder.
- *
- * İmport Edilen Modüller:
- * - StrictMode: React'in geliştirme modunda ek kontroller yapması için
- * - createRoot: React 18'in yeni root API'si
- * - index.css: Global CSS stilleri (Tailwind CSS dahil)
- * - App: Ana uygulama component'i
- *
- * StrictMode Faydaları:
- * - Deprecated API'lerin kullanımını tespit eder
- * - Side effect'leri kontrol eder
- * - Unsafe lifecycle method'ları uyarır
- * - Development modunda component'leri 2 kez render eder (bug tespiti için)
- *
- * createRoot vs ReactDOM.render:
- * - React 18'de ReactDOM.render deprecated oldu
- * - createRoot, concurrent rendering özelliklerini destekler
- * - Daha iyi performans ve user experience sağlar
+ * Uygulamanın kökünü oluşturur ve App component'ini QueryClientProvider ile sarmalar.
+ * Tüm React ağacı global QueryClient'a erişebilir.
  */
-
-// HTML'deki 'root' element'ini bulup React root'u oluştur
-// '!' operatörü TypeScript'e element'in kesinlikle var olduğunu söyler
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    {/* Ana uygulama component'ini render et */}
-    <App />
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>
   </StrictMode>
 );

@@ -4,6 +4,66 @@ using TaskFlow.API.DTOs;
 using TaskFlow.API.Interfaces;
 using TaskFlow.API.Models;
 
+// ****************************************************************************************************
+//  TASKSERVICE.CS
+//  --------------------------------------------------------------------------------------------------
+//  Bu dosya, TaskFlow uygulamasının görev yönetimi sisteminin ana business logic servisidir. Kullanıcıların
+//  görevlerini oluşturma, güncelleme, silme, tamamlama, filtreleme ve arama işlemlerini yönetir. Ayrıca
+//  görev hiyerarşisi, istatistikler ve performans optimizasyonları sağlar.
+//
+//  ANA BAŞLIKLAR:
+//  - CRUD Operations (Create, Read, Update, Delete)
+//  - Task Completion ve Progress Tracking
+//  - Hierarchical Task Management (Parent-Child)
+//  - Advanced Filtering ve Search
+//  - Task Statistics ve Analytics
+//  - Business Rules ve Validation
+//  - Performance Optimization
+//
+//  GÜVENLİK:
+//  - User isolation (kullanıcı sadece kendi görevlerini yönetir)
+//  - Input validation ve sanitization
+//  - Business rule enforcement
+//  - Data integrity protection
+//  - Hierarchical relationship validation
+//
+//  HATA YÖNETİMİ:
+//  - Comprehensive exception handling
+//  - Business rule validation
+//  - Database transaction management
+//  - Detailed logging for debugging
+//  - Graceful error recovery
+//
+//  EDGE-CASE'LER:
+//  - Circular parent-child relationships
+//  - Maximum task depth limits
+//  - Task limit per user
+//  - Concurrent task modifications
+//  - Large dataset pagination
+//  - Invalid category assignments
+//  - Deleted parent tasks
+//
+//  YAN ETKİLER:
+//  - Task creation affects user statistics
+//  - Task completion triggers sub-task updates
+//  - Task deletion cascades to sub-tasks
+//  - Category changes affect task organization
+//  - Progress updates affect parent completion
+//
+//  PERFORMANS:
+//  - Database query optimization
+//  - Efficient pagination
+//  - Caching for frequently accessed data
+//  - Optimized search algorithms
+//  - Connection pooling
+//
+//  SÜRDÜRÜLEBİLİRLİK:
+//  - Service layer pattern
+//  - Dependency injection
+//  - Comprehensive documentation
+//  - Extensible task management system
+//  - Configuration-based business rules
+// ****************************************************************************************************
 namespace TaskFlow.API.Services
 {
     /// <summary>
@@ -36,6 +96,16 @@ namespace TaskFlow.API.Services
 
         #region CRUD Operations
 
+        /// <summary>
+        /// Yeni bir görev oluşturur.
+        /// </summary>
+        /// <param name="userId">Görevin oluşturulacağı kullanıcının ID'si.</param>
+        /// <param name="createDto">Oluşturulacak görevin detaylarını içeren DTO.</param>
+        /// <returns>Oluşturulan görevin DTO'su.</returns>
+        /// <exception cref="InvalidOperationException">Görev limiti aşıldığında veya geçersiz kategoriye sahip olduğunda.</exception>
+        /// <exception cref="ArgumentException">Tamamlanma yüzdesi 0-100 arasında değilse.</exception>
+        /// <exception cref="ArgumentNullException">createDto null ise.</exception>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<TodoTaskDto> CreateTaskAsync(int userId, CreateTodoTaskDto createDto)
         {
             try
@@ -98,6 +168,13 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Kullanıcının görevlerini filtrelemek için kullanılır.
+        /// </summary>
+        /// <param name="userId">Görevlerin sorgulanacağı kullanıcının ID'si.</param>
+        /// <param name="filter">Filtrelemek için kullanılacak DTO.</param>
+        /// <returns>Filtrelenmiş görevlerin listesi ve sayfalama bilgisi.</returns>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<(List<TodoTaskDto> Tasks, PaginationInfo Pagination)> GetTasksAsync(int userId, TodoTaskFilterDto filter)
         {
             try
@@ -205,6 +282,14 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Belirtilen kullanıcının ve görev ID'sinin görevini getirir.
+        /// </summary>
+        /// <param name="userId">Görevin sahibi olan kullanıcının ID'si.</param>
+        /// <param name="taskId">Getirilecek görevin ID'si.</param>
+        /// <param name="includeSubTasks">Alt görevlerin de dahil edilip edilmeyeceğini belirten bir boolean.</param>
+        /// <returns>Görevin DTO'su veya null.</returns>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<TodoTaskDto?> GetTaskByIdAsync(int userId, int taskId, bool includeSubTasks = false)
         {
             try
@@ -219,6 +304,16 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Belirtilen kullanıcının ve görev ID'sinin görevini günceller.
+        /// </summary>
+        /// <param name="userId">Görevin sahibi olan kullanıcının ID'si.</param>
+        /// <param name="taskId">Güncellenen görevin ID'si.</param>
+        /// <param name="updateDto">Güncellemek için kullanılacak DTO.</param>
+        /// <returns>Güncellenen görevin DTO'su.</returns>
+        /// <exception cref="InvalidOperationException">Görev bulunamadığında.</exception>
+        /// <exception cref="ArgumentException">Tamamlanma yüzdesi 0-100 arasında değilse.</exception>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<TodoTaskDto> UpdateTaskAsync(int userId, int taskId, UpdateTodoTaskDto updateDto)
         {
             try
@@ -316,6 +411,13 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Belirtilen kullanıcının ve görev ID'sinin görevini siler.
+        /// </summary>
+        /// <param name="userId">Görevin sahibi olan kullanıcının ID'si.</param>
+        /// <param name="taskId">Silinecek görevin ID'si.</param>
+        /// <returns>Görevin başarıyla silinip silinmediğini belirten bir boolean.</returns>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<bool> DeleteTaskAsync(int userId, int taskId)
         {
             try
@@ -370,6 +472,15 @@ namespace TaskFlow.API.Services
 
         #region Task Completion Operations
 
+        /// <summary>
+        /// Belirtilen görevin tamamlanma durumunu günceller.
+        /// </summary>
+        /// <param name="userId">Görevin sahibi olan kullanıcının ID'si.</param>
+        /// <param name="taskId">Güncellenen görevin ID'si.</param>
+        /// <param name="completeDto">Tamamlanma durumunu içeren DTO.</param>
+        /// <returns>Güncellenen görevin DTO'su.</returns>
+        /// <exception cref="InvalidOperationException">Görev bulunamadığında.</exception>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<TodoTaskDto> CompleteTaskAsync(int userId, int taskId, CompleteTaskDto completeDto)
         {
             try
@@ -403,6 +514,16 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Belirtilen görevin tamamlanma yüzdesini günceller.
+        /// </summary>
+        /// <param name="userId">Görevin sahibi olan kullanıcının ID'si.</param>
+        /// <param name="taskId">Güncellenen görevin ID'si.</param>
+        /// <param name="completionPercentage">Yeni tamamlanma yüzdesi.</param>
+        /// <returns>Güncellenen görevin DTO'su.</returns>
+        /// <exception cref="InvalidOperationException">Görev bulunamadığında.</exception>
+        /// <exception cref="ArgumentException">Tamamlanma yüzdesi 0-100 arasında değilse.</exception>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<TodoTaskDto> UpdateTaskProgressAsync(int userId, int taskId, int completionPercentage)
         {
             try
@@ -455,6 +576,13 @@ namespace TaskFlow.API.Services
 
         #region Hierarchy Operations
 
+        /// <summary>
+        /// Belirtilen görevin alt görevlerini getirir.
+        /// </summary>
+        /// <param name="userId">Alt görevlerin sahibi olan kullanıcının ID'si.</param>
+        /// <param name="parentTaskId">Üst görevin ID'si.</param>
+        /// <returns>Alt görevlerin DTO'larını içeren bir liste.</returns>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<List<TodoTaskDto>> GetSubTasksAsync(int userId, int parentTaskId)
         {
             try
@@ -480,6 +608,16 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Belirtilen görevin üst görevini ayarlar.
+        /// </summary>
+        /// <param name="userId">Görevin sahibi olan kullanıcının ID'si.</param>
+        /// <param name="taskId">Ayarlanacak üst görevin ID'si.</param>
+        /// <param name="parentTaskId">Yeni üst görevin ID'si.</param>
+        /// <returns>Güncellenen görevin DTO'su.</returns>
+        /// <exception cref="InvalidOperationException">Görev veya parent görev bulunamadığında.</exception>
+        /// <exception cref="InvalidOperationException">Döngüsel referans oluşturulmaya çalışıldığında.</exception>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<TodoTaskDto> SetParentTaskAsync(int userId, int taskId, int parentTaskId)
         {
             try
@@ -516,6 +654,14 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Belirtilen görevin üst görevini kaldırır.
+        /// </summary>
+        /// <param name="userId">Görevin sahibi olan kullanıcının ID'si.</param>
+        /// <param name="taskId">Üst görevin kaldırılacağı görevin ID'si.</param>
+        /// <returns>Güncellenen görevin DTO'su.</returns>
+        /// <exception cref="InvalidOperationException">Görev bulunamadığında.</exception>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<TodoTaskDto> RemoveParentTaskAsync(int userId, int taskId)
         {
             try
@@ -547,6 +693,14 @@ namespace TaskFlow.API.Services
 
         #region Search & Filter Operations
 
+        /// <summary>
+        /// Belirtilen kullanıcının görevlerini arar.
+        /// </summary>
+        /// <param name="userId">Arama yapılacak kullanıcının ID'si.</param>
+        /// <param name="searchText">Arama metni.</param>
+        /// <param name="maxResults">En fazla döndürülecek sonuç sayısı.</param>
+        /// <returns>Aranan görevlerin DTO'larını içeren bir liste.</returns>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<List<TodoTaskDto>> SearchTasksAsync(int userId, string searchText, int maxResults = 50)
         {
             try
@@ -582,6 +736,12 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Belirtilen kullanıcının geç ödemeli görevlerini getirir.
+        /// </summary>
+        /// <param name="userId">Görevlerin sahibi olan kullanıcının ID'si.</param>
+        /// <returns>Geç ödemeli görevlerin DTO'larını içeren bir liste.</returns>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<List<TodoTaskDto>> GetOverdueTasksAsync(int userId)
         {
             try
@@ -611,6 +771,12 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Belirtilen kullanıcının bugün yapılması gereken görevleri getirir.
+        /// </summary>
+        /// <param name="userId">Görevlerin sahibi olan kullanıcının ID'si.</param>
+        /// <returns>Bugün yapılması gereken görevlerin DTO'larını içeren bir liste.</returns>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<List<TodoTaskDto>> GetTasksDueTodayAsync(int userId)
         {
             try
@@ -643,6 +809,12 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Belirtilen kullanıcının bu hafta yapılması gereken görevleri getirir.
+        /// </summary>
+        /// <param name="userId">Görevlerin sahibi olan kullanıcının ID'si.</param>
+        /// <returns>Bu hafta yapılması gereken görevlerin DTO'larını içeren bir liste.</returns>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<List<TodoTaskDto>> GetTasksDueThisWeekAsync(int userId)
         {
             try
@@ -679,6 +851,12 @@ namespace TaskFlow.API.Services
 
         #region Validation & Business Rules
 
+        /// <summary>
+        /// Belirtilen görevin hiyerarşik derinliğini kontrol eder.
+        /// </summary>
+        /// <param name="parentTaskId">Kontrol edilecek üst görevin ID'si.</param>
+        /// <returns>Görev derinliği limitine uygunluğu belirten bir boolean.</returns>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<bool> CheckTaskDepthLimitAsync(int parentTaskId)
         {
             try
@@ -695,6 +873,13 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Döngüsel referansları kontrol eder.
+        /// </summary>
+        /// <param name="taskId">Kontrol edilecek görevin ID'si.</param>
+        /// <param name="newParentId">Yeni üst görevin ID'si.</param>
+        /// <returns>Döngüsel referans olup olmadığını belirten bir boolean.</returns>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<bool> CheckCircularReferenceAsync(int taskId, int newParentId)
         {
             try
@@ -736,6 +921,12 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Belirtilen kullanıcının görev limitini kontrol eder.
+        /// </summary>
+        /// <param name="userId">Kontrol edilecek kullanıcının ID'si.</param>
+        /// <returns>Görev limitine uygunluğu belirten bir boolean.</returns>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<bool> CheckTaskLimitAsync(int userId)
         {
             try
@@ -753,6 +944,12 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Belirtilen görevin silinip silinemeyeceğini kontrol eder.
+        /// </summary>
+        /// <param name="taskId">Kontrol edilecek görevin ID'si.</param>
+        /// <returns>Görevin silinip silinemeyeceğini ve alt görev sayısını içeren bir DTO.</returns>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<TaskDeletionCheckDto> CheckTaskDeletionAsync(int taskId)
         {
             try
@@ -785,6 +982,12 @@ namespace TaskFlow.API.Services
 
         #region Statistics Operations
 
+        /// <summary>
+        /// Belirtilen kullanıcının genel görev istatistiklerini getirir.
+        /// </summary>
+        /// <param name="userId">İstatistiklerin sahibi olan kullanıcının ID'si.</param>
+        /// <returns>Görev istatistiklerini içeren bir DTO.</returns>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<TaskStatsDto> GetTaskStatsAsync(int userId)
         {
             try
@@ -828,6 +1031,13 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Belirtilen kategoriye ait görev istatistiklerini getirir.
+        /// </summary>
+        /// <param name="userId">İstatistiklerin sahibi olan kullanıcının ID'si.</param>
+        /// <param name="categoryId">İstatistiklerin hesaplanacağı kategoriin ID'si.</param>
+        /// <returns>Kategoriye ait görev istatistiklerini içeren bir DTO.</returns>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<TaskStatsDto> GetTaskStatsByCategoryAsync(int userId, int categoryId)
         {
             try
@@ -855,6 +1065,12 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Belirtilen kullanıcının görev öncelik istatistiklerini getirir.
+        /// </summary>
+        /// <param name="userId">İstatistiklerin sahibi olan kullanıcının ID'si.</param>
+        /// <returns>Görev öncelik istatistiklerini içeren bir liste.</returns>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<List<TaskPriorityStatsDto>> GetTaskPriorityStatsAsync(int userId)
         {
             try
@@ -892,6 +1108,13 @@ namespace TaskFlow.API.Services
                 .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId && t.IsActive);
         }
 
+        /// <summary>
+        /// TodoTask entity'sini TodoTaskDto'ya dönüştürür.
+        /// </summary>
+        /// <param name="task">Dönüştürülecek TodoTask entity'si.</param>
+        /// <param name="includeSubTasks">Alt görevlerin de dahil edilip edilmeyeceğini belirten bir boolean.</param>
+        /// <returns>Dönüştürülmüş TodoTaskDto.</returns>
+        /// <exception cref="ArgumentNullException">task null ise.</exception>
         public async Task<TodoTaskDto> MapToDtoAsync(TodoTask task, bool includeSubTasks = false)
         {
             if (task == null)
@@ -900,23 +1123,24 @@ namespace TaskFlow.API.Services
             var dto = new TodoTaskDto
             {
                 Id = task.Id,
-                UserId = task.UserId,
-                CategoryId = task.CategoryId,
-                ParentTaskId = task.ParentTaskId,
                 Title = task.Title,
                 Description = task.Description,
-                Priority = task.Priority.ToString(),
-                CompletionPercentage = task.CompletionPercentage,
+                IsCompleted = task.IsCompleted,
+                Progress = task.CompletionPercentage, // Assuming CompletionPercentage is now Progress
+                CreatedAt = task.CreatedAt,
+                CompletedAt = task.CompletedAt,
                 DueDate = task.DueDate,
-                ReminderDate = task.ReminderDate,
-                StartDate = task.StartDate,
+                Priority = task.Priority,
                 Tags = task.Tags,
                 Notes = task.Notes,
-                IsCompleted = task.IsCompleted,
-                CompletedAt = task.CompletedAt,
-                IsActive = task.IsActive,
-                CreatedAt = task.CreatedAt,
-                UpdatedAt = task.UpdatedAt
+                UserId = task.UserId,
+                UserName = task.User?.FirstName + " " + task.User?.LastName,
+                CategoryId = task.CategoryId,
+                CategoryName = task.Category?.Name ?? string.Empty,
+                CategoryColor = task.Category?.ColorCode ?? string.Empty,
+                IsOverdue = task.DueDate.HasValue && task.DueDate.Value < DateTime.UtcNow && !task.IsCompleted,
+                DaysUntilDue = task.DueDate.HasValue ? (int)(task.DueDate.Value - DateTime.UtcNow).TotalDays : null,
+                CompletionPercentage = task.CompletionPercentage
             };
 
             // Category bilgisini ekle
@@ -944,7 +1168,7 @@ namespace TaskFlow.API.Services
                     UserId = task.ParentTask.UserId,
                     CategoryId = task.ParentTask.CategoryId,
                     Title = task.ParentTask.Title,
-                    Priority = task.ParentTask.Priority.ToString(),
+                    Priority = task.ParentTask.Priority,
                     CompletionPercentage = task.ParentTask.CompletionPercentage,
                     IsCompleted = task.ParentTask.IsCompleted,
                     CreatedAt = task.ParentTask.CreatedAt,
@@ -972,6 +1196,12 @@ namespace TaskFlow.API.Services
             return dto;
         }
 
+        /// <summary>
+        /// Belirtilen görevin hiyerarşik derinliğini hesaplar.
+        /// </summary>
+        /// <param name="taskId">Derinliği hesaplanacak görevin ID'si.</param>
+        /// <returns>Görevin hiyerarşik derinliği.</returns>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
         public async Task<int> CalculateTaskDepthAsync(int taskId)
         {
             try
