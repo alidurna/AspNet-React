@@ -12,177 +12,108 @@
 
 ## 🎯 **Proje Hakkında**
 
-Bu, **TaskFlow API** ile entegre çalışan modern React TypeScript frontend uygulamasıdır. Redux Toolkit ile state management, Zod ile form validation ve Vitest ile comprehensive test coverage sağlar.
+TaskFlow Frontend, **TaskFlow API** ile entegre çalışan modern React TypeScript uygulamasıdır. Redux Toolkit ile state management, Zod ile form validation ve Vitest ile comprehensive test coverage sağlar.
 
 ---
 
-## ✨ **Implemented Features**
+## ✨ **Özellikler**
 
-### ✅ **Tamamlanan Özellikler**
+### ✅ **Tamamlanan**
 
-- ✅ **Redux Toolkit State Management** - Type-safe global state
-- ✅ **Zod Form Validation** - Real-time schema validation
-- ✅ **Toast Notification System** - User feedback
-- ✅ **Unit Testing Framework** - Vitest + Testing Library
-- ✅ **Responsive Design** - Mobile-first approach
-- ✅ **TypeScript Integration** - Full type safety
+- **Redux Toolkit State Management** - Type-safe global state
+- **Zod Form Validation** - Real-time schema validation
+- **Toast Notification System** - User feedback
+- **Unit Testing Framework** - Vitest + Testing Library
+- **Responsive Design** - Mobile-first approach
+- **TypeScript Integration** - Full type safety
 
-### 🎨 **UI Components**
+### 🎨 **UI Bileşenleri**
 
-- ✅ **Authentication Pages** - Login/Register forms
-- ✅ **Dashboard Layout** - Modern sidebar navigation
-- ✅ **Reusable UI Components** - Button, Card, Input, Toast
-- ✅ **Demo Components** - Toast demonstration
-
----
-
-## 🛠️ **Tech Stack**
-
-| Technology          | Version | Purpose                 |
-| ------------------- | ------- | ----------------------- |
-| **React**           | 18.3    | Frontend framework      |
-| **TypeScript**      | 5.6     | Type safety             |
-| **Vite**            | 6.0     | Build tool & dev server |
-| **Redux Toolkit**   | 2.4     | State management        |
-| **React Router**    | 7.0     | Client-side routing     |
-| **Tailwind CSS**    | 3.4     | Styling framework       |
-| **Zod**             | 3.24    | Schema validation       |
-| **React Hot Toast** | 2.4     | Notifications           |
-| **Vitest**          | 2.1     | Unit testing            |
-| **Testing Library** | 16.1    | Component testing       |
+- **Authentication Pages** - Login/Register forms
+- **Dashboard Layout** - Modern sidebar navigation
+- **Reusable UI Components** - Button, Card, Input, Toast
+- **Demo Components** - Toast demonstration
 
 ---
 
-## 🚀 **Quick Start**
+## 🛠️ **Teknoloji Stack**
 
-### **Prerequisites**
+| Teknoloji           | Versiyon | Amaç                    |
+| ------------------- | -------- | ----------------------- |
+| **React**           | 18.3     | Frontend framework      |
+| **TypeScript**      | 5.6      | Type safety             |
+| **Vite**            | 6.0      | Build tool & dev server |
+| **Redux Toolkit**   | 2.4      | State management        |
+| **React Router**    | 7.0      | Client-side routing     |
+| **Tailwind CSS**    | 3.4      | Styling framework       |
+| **Zod**             | 3.24     | Schema validation       |
+| **React Hot Toast** | 2.4      | Notifications           |
+| **Vitest**          | 2.1      | Unit testing            |
+| **Testing Library** | 16.1     | Component testing       |
+
+---
+
+## 🚀 **Hızlı Başlangıç**
+
+### **Gereksinimler**
 
 - Node.js 18+
-- npm or yarn
+- npm veya yarn
 
-### **1. Install Dependencies**
+### **1. Bağımlılıkları Yükle**
 
 ```bash
 npm install
 ```
 
-### **2. Start Development Server**
+### **2. Geliştirme Sunucusunu Başlat**
 
 ```bash
 npm run dev
 ```
 
-### **3. Access Application**
+### **3. Uygulamaya Erişim**
 
 - **Frontend:** http://localhost:3000
-- **Backend Required:** http://localhost:5280 (TaskFlow.API)
+- **Backend Gerekli:** http://localhost:5280 (TaskFlow.API)
 
 ---
 
-## 📁 **Project Structure & File Descriptions**
-
-### **📂 Ana Klasör İçeriği**
+## 📁 **Proje Yapısı**
 
 ```
 TaskFlow.Frontend/
-├── 📄 README.md              ← Bu dosya! Frontend dokümantasyonu
-├── 📄 package.json           ← npm dependencies ve scripts (MUTLAKA OKUYUN)
-├── 📄 package-lock.json      ← Dependency lock dosyası
-├── 📄 vite.config.ts         ← Vite build ve dev server ayarları
-├── 📄 vitest.config.ts       ← Test framework konfigürasyonu ⭐
-├── 📄 tailwind.config.js     ← Tailwind CSS custom ayarları
-├── 📄 tsconfig.json          ← TypeScript compiler ayarları
-├── 📄 tsconfig.app.json      ← App-specific TypeScript ayarları
-├── 📄 tsconfig.node.json     ← Node.js TypeScript ayarları
-├── 📄 eslint.config.js       ← ESLint kod kalitesi ayarları
-├── 📄 postcss.config.js      ← PostCSS processor ayarları
+├── 📄 README.md              ← Frontend dokümantasyonu
+├── 📄 package.json           ← Dependencies ve scripts
+├── 📄 vite.config.ts         ← Vite build ayarları
+├── 📄 vitest.config.ts       ← Test framework konfigürasyonu
+├── 📄 tailwind.config.js     ← Tailwind CSS ayarları
+├── 📄 tsconfig.json          ← TypeScript ayarları
+├── 📄 eslint.config.js       ← ESLint kod kalitesi
 ├── 📄 index.html             ← Ana HTML template
-└── 📁 src/                   ← Kaynak kod ana klasörü
+└── 📁 src/                   ← Kaynak kod
+    ├── 📄 App.tsx           ← Ana React component
+    ├── 📄 main.tsx          ← Entry point
+    ├── 🧩 components/       ← UI Bileşenleri
+    │   ├── 🏗️ layout/       ← Layout components
+    │   ├── 🎮 ui/           ← Reusable UI components
+    │   └── 🎯 demo/         ← Demo components
+    ├── 📄 pages/            ← Sayfa Bileşenleri
+    ├── 🗃️ store/           ← Redux Toolkit State Management
+    ├── 📋 schemas/          ← Zod Validation Schemas
+    ├── 🎣 hooks/            ← Custom React Hooks
+    ├── 🌐 services/         ← API Service Functions
+    ├── 🧪 test/             ← Test Setup
+    ├── 🎭 contexts/         ← React Contexts
+    ├── 🎨 assets/           ← Statik Assets
+    └── 📝 types/            ← TypeScript Type Definitions
 ```
-
-### **🎨 src/ Klasör Detayları**
-
-```
-src/
-├── 📄 App.tsx               ← Ana React component (Routes, Providers)
-├── 📄 main.tsx              ← React uygulaması entry point
-├── 📄 App.css               ← Global CSS styles
-├── 📄 index.css             ← Tailwind CSS imports
-├── 📄 vite-env.d.ts         ← Vite TypeScript type definitions
-│
-├── 🧩 components/           ← UI Bileşenleri
-│   ├── 🔐 auth/             ← Authentication components
-│   ├── 🏗️ layout/           ← Layout components (Header, Sidebar)
-│   ├── 🎮 ui/               ← Reusable UI components ⭐
-│   │   ├── Button.tsx       ← Çok kullanımlı button component
-│   │   ├── Button.test.tsx  ← Button unit testleri ⭐
-│   │   ├── Card.tsx         ← Card container component
-│   │   ├── Input.tsx        ← Form input component
-│   │   ├── StatsCard.tsx    ← Dashboard istatistik kartları
-│   │   └── Toast.tsx        ← Toast notification component ⭐
-│   └── 🎯 demo/             ← Demo/örnek bileşenler
-│       └── ToastDemo.tsx    ← Toast sistemi demo component ⭐
-│
-├── 📄 pages/                ← Sayfa Bileşenleri (Route Components)
-│   ├── Dashboard.tsx        ← Ana dashboard sayfası
-│   ├── Login.tsx           ← Giriş sayfası
-│   └── Register.tsx        ← Kayıt sayfası
-│
-├── 🗃️ store/               ← Redux Toolkit State Management ⭐
-│   ├── index.ts            ← Store configuration ve exports
-│   └── slices/             ← Redux slices (modüler state)
-│       ├── authSlice.ts    ← Authentication state
-│       ├── tasksSlice.ts   ← Tasks state management
-│       ├── categoriesSlice.ts ← Categories state
-│       └── uiSlice.ts      ← UI state (toasts, modals, theme)
-│
-├── 📋 schemas/             ← Zod Validation Schemas ⭐
-│   ├── authSchemas.ts      ← Login, register, profile schemas
-│   └── taskSchemas.ts      ← Task creation, update schemas
-│
-├── 🎣 hooks/               ← Custom React Hooks ⭐
-│   └── useToast.ts         ← Toast notification hook
-│
-├── 🌐 services/           ← API Service Functions
-│   └── api.ts              ← HTTP client ve API calls
-│
-├── 🧪 test/               ← Test Setup ve Utilities ⭐
-│   ├── setup.ts           ← Test environment setup
-│   └── test-utils.tsx     ← Testing utilities ve mocks
-│
-├── 🎭 contexts/           ← React Contexts
-│   └── AuthContext.tsx    ← Authentication context
-│
-├── 🎨 assets/             ← Statik Assets
-│   └── react.svg          ← React logo
-│
-├── 🔧 utils/              ← Utility Functions
-└── 📝 types/              ← TypeScript Type Definitions
-    └── auth.types.ts      ← Authentication type definitions
-```
-
-### **📁 public/ Klasörü**
-
-```
-public/
-└── vite.svg               ← Vite logo (favicon olarak kullanılıyor)
-```
-
-**🚨 ÖNEMLİ DOSYALAR:**
-
-- ⭐ **Yeni eklenen özellikler** (Redux, Zod, Tests, Toast)
-- 📄 **package.json** - Dependencies ve scripts
-- 📄 **vite.config.ts** - Build configuration
-- 📄 **vitest.config.ts** - Test configuration
-- 🗃️ **store/** - Redux Toolkit state management
-- 📋 **schemas/** - Form validation schemas
-- 🧪 **test/** - Test utilities ve setup
 
 ---
 
-## 🧪 **Testing**
+## 🧪 **Test**
 
-### **Run Tests**
+### **Test Çalıştırma**
 
 ```bash
 # Unit tests
@@ -198,7 +129,7 @@ npm run test:ui
 npm run test:run
 ```
 
-### **Test Results**
+### **Test Sonuçları**
 
 ```
 ✓ 12/12 tests passed
@@ -209,92 +140,92 @@ npm run test:run
 
 ---
 
-## 🎯 **Development Roadmap**
-
-### **✅ Completed**
-
-- ✅ **Core Setup** - React + TypeScript + Vite
-- ✅ **State Management** - Redux Toolkit implementation
-- ✅ **Form Validation** - Zod schemas & real-time validation
-- ✅ **UI Framework** - Tailwind CSS styling
-- ✅ **Testing Setup** - Vitest + Testing Library
-- ✅ **Toast System** - User feedback notifications
-
-### **🔄 In Progress**
-
-- ⏳ **Task Management UI** - Complete CRUD interface
-- ⏳ **Dashboard Analytics** - Charts and statistics
-- ⏳ **Advanced Search** - Multi-criteria filtering
-- ⏳ **Real-time Updates** - SignalR integration
-
-### **📅 Planned**
-
-- ⏳ **PWA Features** - Offline support
-- ⏳ **Dark Theme** - Complete theme system
-- ⏳ **Mobile Optimization** - Enhanced mobile UX
-- ⏳ **Accessibility** - WCAG 2.1 compliance
-
----
-
-## 📊 **Available Scripts**
+## 📊 **Kullanılabilir Scripts**
 
 ```bash
 # Development
-npm run dev              # Start dev server
+npm run dev              # Dev server başlat
 npm run build            # Production build
-npm run preview          # Preview production build
+npm run preview          # Production build önizleme
 
 # Testing
-npm run test             # Run tests in watch mode
-npm run test:run         # Run tests once
-npm run test:coverage    # Generate coverage report
-npm run test:ui          # Open test UI
+npm run test             # Test çalıştır (watch mode)
+npm run test:run         # Test çalıştır (once)
+npm run test:coverage    # Coverage report
+npm run test:ui          # Test UI aç
 
 # Code Quality
-npm run lint             # Run ESLint
-npm run lint:fix         # Fix ESLint issues
+npm run lint             # ESLint çalıştır
+npm run lint:fix         # ESLint düzelt
 ```
 
 ---
 
-## 🔧 **Development Notes**
+## 🎯 **Geliştirme Yol Haritası**
+
+### **✅ Tamamlanan**
+
+- ✅ **Core Setup** - React + TypeScript + Vite
+- ✅ **State Management** - Redux Toolkit
+- ✅ **Form Validation** - Zod schemas
+- ✅ **UI Framework** - Tailwind CSS
+- ✅ **Testing Setup** - Vitest + Testing Library
+- ✅ **Toast System** - User feedback
+
+### **🔄 Devam Eden**
+
+- ⏳ **Task Management UI** - CRUD interface
+- ⏳ **Dashboard Analytics** - Charts ve istatistikler
+- ⏳ **Advanced Search** - Multi-criteria filtering
+- ⏳ **Real-time Updates** - SignalR integration
+
+### **📅 Planlanan**
+
+- ⏳ **PWA Features** - Offline support
+- ⏳ **Dark Theme** - Theme system
+- ⏳ **Mobile Optimization** - Mobile UX
+- ⏳ **Accessibility** - WCAG 2.1 compliance
+
+---
+
+## 🔧 **Geliştirme Notları**
 
 ### **State Management**
 
-- **Redux Toolkit** for complex state
-- **React Context** for theme/auth
-- **Local State** for component-specific data
+- **Redux Toolkit** - Complex state için
+- **React Context** - Theme/auth için
+- **Local State** - Component-specific data için
 
 ### **Form Handling**
 
-- **Zod schemas** for validation
-- **React Hook Form** integration planned
-- **Real-time validation** feedback
+- **Zod schemas** - Validation için
+- **React Hook Form** - Planlanan entegrasyon
+- **Real-time validation** - Anlık feedback
 
 ### **API Integration**
 
-- **Axios** for HTTP requests
-- **Redux Toolkit Query** planned
-- **Error handling** with toast notifications
+- **Axios** - HTTP requests
+- **Redux Toolkit Query** - Planlanan
+- **Error handling** - Toast notifications ile
 
 ---
 
-## 🤝 **Contributing**
+## 🤝 **Katkıda Bulunma**
 
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/new-feature`)
-3. Make changes and add tests
-4. Run tests (`npm run test`)
-5. Commit changes (`git commit -m 'feat: add new feature'`)
-6. Push branch (`git push origin feature/new-feature`)
-7. Open Pull Request
+1. Repository'yi fork edin
+2. Feature branch oluşturun (`git checkout -b feature/new-feature`)
+3. Değişiklikleri yapın ve test ekleyin
+4. Testleri çalıştırın (`npm run test`)
+5. Commit yapın (`git commit -m 'feat: add new feature'`)
+6. Branch'i push edin (`git push origin feature/new-feature`)
+7. Pull Request açın
 
 ---
 
-## 📞 **Support**
+## 📞 **Destek**
 
 - **Issues:** [GitHub Issues](https://github.com/alidurna/TaskFlow/issues)
-- **Documentation:** Check `src/` folder README files
+- **Documentation:** `src/` klasör README dosyaları
 - **API Docs:** http://localhost:5280/swagger
 
 ---
