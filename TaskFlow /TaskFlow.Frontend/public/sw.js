@@ -94,7 +94,7 @@ self.addEventListener("activate", (event) => {
         console.log("✅ Service Worker activated successfully");
 
         // Notification permission iste
-        if ("Notification" in window && Notification.permission === "default") {
+        if ("Notification" in self && Notification.permission === "default") {
           Notification.requestPermission().then((permission) => {
             console.log("📢 Notification permission:", permission);
           });
@@ -356,7 +356,7 @@ self.addEventListener("notificationclick", (event) => {
 
 // Utility Functions
 async function showOfflineNotification() {
-  if ("Notification" in window && Notification.permission === "granted") {
+  if ("Notification" in self && Notification.permission === "granted") {
     new Notification("TaskFlow - Offline", {
       body: "İnternet bağlantınız kesildi. Veriler senkronize edilecek.",
       icon: "/icons/icon-192x192.png",
@@ -365,7 +365,7 @@ async function showOfflineNotification() {
 }
 
 async function showSyncSuccessNotification() {
-  if ("Notification" in window && Notification.permission === "granted") {
+  if ("Notification" in self && Notification.permission === "granted") {
     new Notification("TaskFlow - Senkronize Edildi", {
       body: "Offline verileriniz başarıyla senkronize edildi.",
       icon: "/icons/icon-192x192.png",

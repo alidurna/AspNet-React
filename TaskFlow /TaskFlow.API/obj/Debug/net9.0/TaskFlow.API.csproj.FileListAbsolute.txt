@@ -160,12 +160,6 @@
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.genruntimeconfig.cache
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/ref/TaskFlow.API.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/System.Text.Json.dll
-/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets/msbuild.TaskFlow.API.Microsoft.AspNetCore.StaticWebAssets.props
-/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets/msbuild.TaskFlow.API.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
-/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets/msbuild.build.TaskFlow.API.props
-/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets/msbuild.buildMultiTargeting.TaskFlow.API.props
-/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets/msbuild.buildTransitive.TaskFlow.API.props
-/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets.pack.json
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Asp.Versioning.Abstractions.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Asp.Versioning.Http.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Asp.Versioning.Mvc.dll
@@ -185,3 +179,4 @@
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/SixLabors.ImageSharp.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/SixLabors.ImageSharp.Web.dll
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/StackExchange.Redis.dll
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/staticwebassets.build.json.cache

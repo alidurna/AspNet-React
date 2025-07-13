@@ -249,13 +249,9 @@ const Header: React.FC<HeaderProps> = ({
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full"
               >
-                <img
-                  className="w-8 h-8 rounded-full object-cover"
-                  src={
-                    user?.profileImageUrl || "https://via.placeholder.com/150"
-                  }
-                  alt="User Avatar"
-                />
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-medium">
+                  {user?.firstName?.charAt(0) || user?.email?.charAt(0) || "U"}
+                </div>
                 <span className="font-medium text-gray-700 dark:text-gray-300 hidden md:inline">
                   {user?.firstName || "Misafir"}
                 </span>
@@ -313,7 +309,7 @@ const Header: React.FC<HeaderProps> = ({
 
       <ConfirmModal
         isOpen={isConfirmModalOpen}
-        onClose={handleCancelLogout}
+        onCancel={handleCancelLogout}
         onConfirm={handleConfirmLogout}
         title="Çıkış Onayı"
         message="Gerçekten çıkış yapmak istiyor musunuz?"

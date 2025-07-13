@@ -18,7 +18,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
-import { authAPI, tokenManager } from "../services/api";
+import { authAPI, tokenManager, profileAPI } from "../services/api";
 import type {
   AuthContextType,
   LoginRequest,
@@ -161,17 +161,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const updateUser = async (userData: Partial<User>): Promise<void> => {
     try {
       setIsLoading(true);
-
       // Backend'e update isteği gönder
-      const updatedUser = await authAPI.updateProfile(userData);
-
-      // Local state'i güncelle
-      setUser(updatedUser);
-
+      // authAPI.updateProfile yerine profileAPI.updateProfile kullan
+      const response = await profileAPI.updateProfile(userData as any);
+      if (response.success && response.data) {
+        setUser({
+          id: response.data.id,
+          firstName: response.data.firstName,
+          lastName: response.data.lastName,
+          email: response.data.email,
+          phoneNumber: undefined,
+          createdAt: response.data.createdAt,
+          updatedAt: response.data.lastLoginAt || response.data.createdAt,
+        });
+      }
       console.log("✅ Profile updated successfully");
     } catch (error) {
       console.error("❌ Profile update error:", error);
-      throw error; // Component'e hata fırlat
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -189,34 +196,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const checkAuthStatus = async () => {
       try {
         setIsLoading(true);
-
-        // Token var mı ve geçerli mi?
         const token = tokenManager.getToken();
-
         if (!token || !tokenManager.isTokenValid()) {
-          // Token yok veya geçersiz - giriş yapılmamış state
           setUser(null);
           tokenManager.removeToken();
           return;
         }
-
-        // Token geçerli - kullanıcı bilgilerini al
-        const userProfile = await authAPI.getProfile();
-        setUser(userProfile);
-
-        console.log("✅ Auto-login successful:", userProfile.email);
+        // Yeni: profileAPI.getProfile ile kullanıcı bilgisi al
+        const response = await profileAPI.getProfile();
+        if (response.success && response.data) {
+          setUser({
+            id: response.data.id,
+            firstName: response.data.firstName,
+            lastName: response.data.lastName,
+            email: response.data.email,
+            phoneNumber: undefined,
+            createdAt: response.data.createdAt,
+            updatedAt: response.data.lastLoginAt || response.data.createdAt,
+          });
+        } else {
+          setUser(null);
+          tokenManager.removeToken();
+        }
       } catch (error) {
-        console.error("❌ Auto-login failed:", error);
-        // Hata durumunda token'ı temizle
         setUser(null);
         tokenManager.removeToken();
       } finally {
         setIsLoading(false);
       }
     };
-
     checkAuthStatus();
-  }, []); // Component mount'ta bir kez çalış
+  }, []);
 
   // ===== CONTEXT VALUE =====
 
