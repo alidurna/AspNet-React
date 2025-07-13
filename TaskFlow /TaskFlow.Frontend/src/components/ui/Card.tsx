@@ -134,13 +134,13 @@ const Card: React.FC<CardProps> = ({
 
   // Hover efekti sınıfları
   const hoverClasses = hover
-    ? "hover:shadow-md transition-shadow duration-200"
+    ? "hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
     : "";
 
   return (
     <div
       className={`
-        bg-white rounded-xl border border-gray-200 
+        bg-white rounded-lg border border-gray-200 
         ${paddingClasses[padding]} // Seçilen padding boyutu
         ${shadowClasses[shadow]} // Seçilen gölge boyutu
         ${hoverClasses} // Hover efekti (varsa)

@@ -102,7 +102,7 @@ const Button: React.FC<ButtonProps> = ({
     primary:
       "bg-primary-600 hover:bg-primary-700 text-white focus:ring-primary-500", // Mavi primary buton
     secondary:
-      "bg-secondary-100 hover:bg-secondary-200 text-secondary-700 focus:ring-secondary-500", // Gri secondary buton
+      "bg-gray-100 hover:bg-gray-200 text-gray-700 focus:ring-secondary-500", // Gri secondary buton
     outline:
       "border border-primary-600 text-primary-600 hover:bg-primary-50 focus:ring-primary-500", // Çerçeveli buton
     ghost: "text-primary-600 hover:bg-primary-50 focus:ring-primary-500", // Sadece metin buton

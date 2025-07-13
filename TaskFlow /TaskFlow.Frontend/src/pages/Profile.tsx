@@ -58,6 +58,8 @@ import {
   type UpdateProfileRequest,
   type ChangePasswordRequest,
   type ApiResponse,
+  userAuthAPI,
+  fileUploadAPI, // fileUploadAPI'yi import et
 } from "../services/api";
 import { useToast } from "../hooks/useToast";
 import DashboardLayout from "../components/layout/DashboardLayout";
@@ -84,7 +86,8 @@ const Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  // isUploadingImage state'i kaldırılıyor
+  // const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   /**
    * Profil güncelleme formunun state'i.
@@ -164,7 +167,7 @@ const Profile: React.FC = () => {
    * @sideeffect API'ye PUT isteği atar.
    */
   const changePasswordMutation = useMutation({
-    mutationFn: profileAPI.changePassword,
+    mutationFn: userAuthAPI.changePassword, // profileAPI yerine userAuthAPI kullan
     onSuccess: () => {
       toast.showSuccess("Şifreniz başarıyla değiştirildi");
       setIsChangingPassword(false);
@@ -188,16 +191,18 @@ const Profile: React.FC = () => {
    * @sideeffect API'ye POST isteği atar, cache invalidation ile profil verisini günceller.
    */
   const uploadImageMutation = useMutation({
-    mutationFn: (file: File) => profileAPI.uploadProfileImage(file),
+    mutationFn: (file: File) => fileUploadAPI.uploadAvatar(file), // fileUploadAPI.uploadAvatar kullan
     onSuccess: (response) => {
       toast.showSuccess("Profil fotoğrafı başarıyla güncellendi");
-      setIsUploadingImage(false);
+      // setIsUploadingImage(false); // Kaldırıldı
       // Profil verilerini yeniden çek
       queryClient.invalidateQueries({ queryKey: ["profile"] });
+      // Eğer backend'den yeni bir profil resmi URL'i dönüyorsa, doğrudan state'i güncelleyebiliriz.
+      // Şu anki backend yanıtında fileName, originalName vb. dönüyor. Frontend'in avatar URL'ini alması için backend'in revize edilmesi gerekebilir.
     },
     onError: () => {
       toast.showError("Profil fotoğrafı yüklenirken bir hata oluştu");
-      setIsUploadingImage(false);
+      // setIsUploadingImage(false); // Kaldırıldı
     },
   });
 
@@ -254,7 +259,7 @@ const Profile: React.FC = () => {
       return;
     }
 
-    setIsUploadingImage(true);
+    // setIsUploadingImage(true); // Kaldırıldı
     uploadImageMutation.mutate(file);
   };
 
@@ -313,7 +318,7 @@ const Profile: React.FC = () => {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   className="absolute bottom-0 right-0 bg-primary text-white p-2 rounded-full hover:bg-primary-dark transition-colors"
-                  disabled={isUploadingImage}
+                  // disabled={isUploadingImage} // Kaldırıldı
                 >
                   <FaCamera className="w-4 h-4" />
                 </button>

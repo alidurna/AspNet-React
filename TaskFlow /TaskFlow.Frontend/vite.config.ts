@@ -7,13 +7,13 @@ export default defineConfig({
     port: 3000,
     proxy: {
       "/api": {
-        target: "https://localhost:7173",
+        target: "http://localhost:5281",
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, "/api/v1.0"),
       },
       "/hub": {
-        target: "https://localhost:7173",
+        target: "http://localhost:5281",
         changeOrigin: true,
         secure: false,
       },

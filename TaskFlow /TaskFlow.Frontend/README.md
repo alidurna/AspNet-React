@@ -14,7 +14,7 @@
 
 TaskFlow Frontend, **TaskFlow API** ile entegre çalışan modern React TypeScript uygulamasıdır. Redux Toolkit ile state management, Zod ile form validation ve Vitest ile comprehensive test coverage sağlar.
 
----
+---1
 
 ## ✨ **Özellikler**
 

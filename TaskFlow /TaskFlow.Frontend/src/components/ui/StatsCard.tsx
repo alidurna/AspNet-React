@@ -122,35 +122,35 @@ const StatsCard: React.FC<StatsCardProps> = ({
   // Color configurations
   const colorConfig = {
     blue: {
-      bg: "bg-blue-50",
+      bg: "bg-white",
       iconBg: "bg-blue-600",
       text: "text-blue-700",
       progressBg: "bg-blue-600",
       border: "border-blue-200",
     },
     purple: {
-      bg: "bg-purple-50",
+      bg: "bg-white",
       iconBg: "bg-purple-600",
       text: "text-purple-700",
       progressBg: "bg-purple-600",
       border: "border-purple-200",
     },
     green: {
-      bg: "bg-green-50",
+      bg: "bg-white",
       iconBg: "bg-green-600",
       text: "text-green-700",
       progressBg: "bg-green-600",
       border: "border-green-200",
     },
     yellow: {
-      bg: "bg-yellow-50",
+      bg: "bg-white",
       iconBg: "bg-yellow-600",
       text: "text-yellow-700",
       progressBg: "bg-yellow-600",
       border: "border-yellow-200",
     },
     red: {
-      bg: "bg-red-50",
+      bg: "bg-white",
       iconBg: "bg-red-600",
       text: "text-red-700",
       progressBg: "bg-red-600",

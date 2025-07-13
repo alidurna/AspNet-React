@@ -96,9 +96,11 @@
  * @since 2024
  */
 
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { useToast } from "../../hooks/useToast";
+import ConfirmModal from "../ui/ConfirmModal"; // ConfirmModal'ı import et
 
 // Navigation menu items configuration
 const navigationItems = [
@@ -196,15 +198,30 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { showSuccess, showError } = useToast();
+
+  // State
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false); // Yeni state
 
   // Logout handler
-  const handleLogout = async () => {
+  const handleLogout = () => {
+    setIsConfirmModalOpen(true); // Modalı aç
+  };
+
+  const handleConfirmLogout = async () => {
+    setIsConfirmModalOpen(false); // Modalı kapat
     try {
       await logout();
+      showSuccess("Başarıyla çıkış yapıldı!");
       navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
+      showError("Çıkış yaparken bir hata oluştu.");
     }
+  };
+
+  const handleCancelLogout = () => {
+    setIsConfirmModalOpen(false); // Modalı kapat
   };
 
   // Check if current route is active
@@ -225,9 +242,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       {/* Sidebar */}
       <div
         className={`
-        fixed top-0 left-0 z-50 h-screen w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col
-        lg:translate-x-0
-        ${isOpen ? "translate-x-0" : "-translate-x-full"}
+        fixed top-0 left-0 z-50 h-screen bg-white shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col
+        ${
+          isOpen
+            ? "w-64 translate-x-0"
+            : "w-0 -translate-x-full overflow-hidden"
+        }
       `}
       >
         {/* Sidebar Header */}
@@ -285,7 +305,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
                   flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200
                   ${
                     isActive
-                      ? "bg-blue-100 text-blue-700 border-r-2 border-blue-600"
+                      ? "bg-gray-100 text-gray-900 font-semibold border-r-4 border-blue-600"
                       : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                   }
                 `}
@@ -299,9 +319,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           })}
         </nav>
 
-        {/* User Profile Section */}
-        <div className="border-t border-gray-200 p-4">
-          {/* User Info */}
+        {/* User Profile Section (Moved to Header User Menu) */}
+        {/* <div className="border-t border-gray-200 py-3 px-4">
+          
           <div className="flex items-center space-x-3 mb-4">
             <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
               <span className="text-white font-semibold text-sm">
@@ -317,12 +337,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
             </div>
           </div>
 
-          {/* Action Buttons */}
+          
           <div className="space-y-2">
-            {/* Profile Settings */}
+            
             <Link
               to="/profile"
-              className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+              className="flex items-center space-x-3 px-3 py-1.5 rounded-md text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900"
             >
               <svg
                 className="w-4 h-4"
@@ -340,10 +360,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
               <span>Profil</span>
             </Link>
 
-            {/* Settings */}
+            
             <Link
               to="/settings"
-              className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+              className="flex items-center space-x-3 px-3 py-1.5 rounded-md text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900"
             >
               <svg
                 className="w-4 h-4"
@@ -367,10 +387,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
               <span>Ayarlar</span>
             </Link>
 
-            {/* Logout */}
+            
             <button
               onClick={handleLogout}
-              className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm text-red-600 hover:bg-red-50 hover:text-red-700 w-full text-left"
+              className="flex items-center space-x-3 px-3 py-1.5 rounded-md text-sm text-red-600 hover:bg-red-50 hover:text-red-700 w-full text-left"
             >
               <svg
                 className="w-4 h-4"
@@ -388,8 +408,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
               <span>Çıkış Yap</span>
             </button>
           </div>
-        </div>
+        </div> */}
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmModal
+        isOpen={isConfirmModalOpen}
+        onConfirm={handleConfirmLogout}
+        onCancel={handleCancelLogout}
+        title="Çıkış Onayı"
+        message="Uygulamadan çıkış yapmak istediğinize emin misiniz?"
+        confirmButtonText="Evet, Çıkış Yap"
+        cancelButtonText="İptal Et"
+      />
     </>
   );
 };

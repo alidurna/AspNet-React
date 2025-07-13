@@ -107,18 +107,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  // Close sidebar on large screens
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setIsSidebarOpen(false);
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
   // Authentication check
   useEffect(() => {
     if (!authLoading) {
@@ -149,7 +137,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
 
       {/* Main Content Area */}
-      <div className="lg:ml-64">
+      <div
+        className={`flex-1 transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? "ml-64" : "ml-0"
+        }`}
+      >
         {/* Header */}
         <Header
           onSidebarToggle={toggleSidebar}

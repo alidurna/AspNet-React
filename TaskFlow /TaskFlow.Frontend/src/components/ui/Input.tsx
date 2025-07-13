@@ -156,7 +156,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                 error ? "border-red-300 focus:ring-red-500" : ""
               } // Hata durumunda kırmızı border
               ${
-                isFocused ? "ring-2 ring-primary-500 border-transparent" : ""
+                isFocused ? "ring-2 ring-primary-500" : ""
               } // Focus durumunda mavi ring
               ${className} // Dışarıdan gelen ek class'lar
             `}
