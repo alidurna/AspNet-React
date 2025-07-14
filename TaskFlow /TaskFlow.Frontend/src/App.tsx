@@ -80,6 +80,7 @@ import {
 import { Provider } from "react-redux";
 import { store } from "./store";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { ToastProvider } from "./components/ui/Toast";
 import PWAInstallBanner from "./components/ui/PWAInstallBanner";
 import usePWA from "./hooks/usePWA";
@@ -109,84 +110,86 @@ function App() {
     <Provider store={store}>
       <Router>
         <AuthProvider>
-          <ToastProvider />
+          <ThemeProvider>
+            <ToastProvider />
 
-          {/* PWA Update Banner */}
-          {updateAvailable && (
-            <div className="fixed top-0 left-0 right-0 z-50 bg-blue-600 text-white p-2 text-center">
-              <span className="mr-4">Yeni sürüm mevcut!</span>
-              <button
-                onClick={updateServiceWorker}
-                className="bg-white text-blue-600 px-3 py-1 rounded font-medium"
-              >
-                Güncelle
-              </button>
-            </div>
-          )}
+            {/* PWA Update Banner */}
+            {updateAvailable && (
+              <div className="fixed top-0 left-0 right-0 z-50 bg-blue-600 text-white p-2 text-center">
+                <span className="mr-4">Yeni sürüm mevcut!</span>
+                <button
+                  onClick={updateServiceWorker}
+                  className="bg-white text-blue-600 px-3 py-1 rounded font-medium"
+                >
+                  Güncelle
+                </button>
+              </div>
+            )}
 
-          {/* Offline Indicator */}
-          {!isOnline && (
-            <div className="fixed top-0 left-0 right-0 z-40 bg-red-600 text-white p-2 text-center">
-              <span>🔴 Offline - İnternet bağlantınızı kontrol edin</span>
-            </div>
-          )}
+            {/* Offline Indicator */}
+            {!isOnline && (
+              <div className="fixed top-0 left-0 right-0 z-40 bg-red-600 text-white p-2 text-center">
+                <span>🔴 Offline - İnternet bağlantınızı kontrol edin</span>
+              </div>
+            )}
 
-          {/* ===== MAIN ROUTING CONFIGURATION ===== */}
-          <Routes>
-            {/* ===== HOME ROUTE ===== */}
-            {/* Ana sayfa - kullanıcıyı login sayfasına yönlendirir */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            {/* ===== MAIN ROUTING CONFIGURATION ===== */}
+            <Routes>
+              {/* ===== HOME ROUTE ===== */}
+              {/* Ana sayfa - kullanıcıyı login sayfasına yönlendirir */}
+              <Route path="/" element={<Navigate to="/login" replace />} />
 
-            {/* ===== AUTHENTICATION ROUTES ===== */}
-            {/* Login sayfası - kullanıcı girişi için */}
-            <Route path="/login" element={<Login />} />
+              {/* ===== AUTHENTICATION ROUTES ===== */}
+              {/* Login sayfası - kullanıcı girişi için */}
+              <Route path="/login" element={<Login />} />
 
-            {/* Register sayfası - yeni kullanıcı kaydı için */}
-            <Route path="/register" element={<Register />} />
+              {/* Register sayfası - yeni kullanıcı kaydı için */}
+              <Route path="/register" element={<Register />} />
 
-            {/* Dashboard sayfası - ana kontrol paneli */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
+              {/* Dashboard sayfası - ana kontrol paneli */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
 
-            {/* Profile sayfası - kullanıcı profili */}
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            } />
+              {/* Profile sayfası - kullanıcı profili */}
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } />
 
-            {/* Görevler sayfası - kullanıcının görevlerini yönetir */}
-            <Route path="/tasks" element={
-              <ProtectedRoute>
-                <Tasks />
-              </ProtectedRoute>
-            } />
+              {/* Görevler sayfası - kullanıcının görevlerini yönetir */}
+              <Route path="/tasks" element={
+                <ProtectedRoute>
+                  <Tasks />
+                </ProtectedRoute>
+              } />
 
-            {/* Kategoriler sayfası - kullanıcının kategorilerini yönetir */}
-            <Route path="/categories" element={
-              <ProtectedRoute>
-                <Categories />
-              </ProtectedRoute>
-            } />
+              {/* Kategoriler sayfası - kullanıcının kategorilerini yönetir */}
+              <Route path="/categories" element={
+                <ProtectedRoute>
+                  <Categories />
+                </ProtectedRoute>
+              } />
 
-            {/* İstatistikler sayfası - kullanıcının istatistiklerini gösterir */}
-            <Route path="/statistics" element={
-              <ProtectedRoute>
-                <Statistics />
-              </ProtectedRoute>
-            } />
+              {/* İstatistikler sayfası - kullanıcının istatistiklerini gösterir */}
+              <Route path="/statistics" element={
+                <ProtectedRoute>
+                  <Statistics />
+                </ProtectedRoute>
+              } />
 
-            {/* ===== CATCH-ALL ROUTE ===== */}
-            {/* 404 durumları ve geçersiz URL'ler için */}
-            {/* Kullanıcıyı login sayfasına yönlendirir */}
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
+              {/* ===== CATCH-ALL ROUTE ===== */}
+              {/* 404 durumları ve geçersiz URL'ler için */}
+              {/* Kullanıcıyı login sayfasına yönlendirir */}
+              <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
 
-          {/* PWA Install Banner */}
-          <PWAInstallBanner />
+            {/* PWA Install Banner */}
+            <PWAInstallBanner />
+          </ThemeProvider>
         </AuthProvider>
       </Router>
     </Provider>

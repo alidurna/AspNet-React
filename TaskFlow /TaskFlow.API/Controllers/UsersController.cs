@@ -468,11 +468,11 @@ namespace TaskFlow.API.Controllers
         [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
-        public async Task<ActionResult<ApiResponseModel<object>>> RequestEmailVerification([FromBody] EmailVerificationRequest emailVerificationRequest)
+        public async Task<ActionResult<ApiResponseModel<object>>> RequestEmailVerification([FromBody] EmailVerificationRequestDto emailVerificationRequestDto)
         {
             try
             {
-                await _userService.RequestEmailVerificationAsync(emailVerificationRequest);
+                await _userService.RequestEmailVerificationAsync(emailVerificationRequestDto);
 
                 return Ok(ApiResponseModel<object>.SuccessResponse(
                     "E-posta doğrulama bağlantısı email adresinize gönderildi",
@@ -500,11 +500,11 @@ namespace TaskFlow.API.Controllers
         [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
-        public async Task<ActionResult<ApiResponseModel<object>>> VerifyEmail([FromBody] EmailVerification emailVerification)
+        public async Task<ActionResult<ApiResponseModel<object>>> VerifyEmail([FromBody] EmailVerificationDto emailVerificationDto)
         {
             try
             {
-                await _userService.VerifyEmailAsync(emailVerification);
+                await _userService.VerifyEmailAsync(emailVerificationDto);
 
                 return Ok(ApiResponseModel<object>.SuccessResponse(
                     "E-posta adresiniz başarıyla doğrulandı",

@@ -170,8 +170,11 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           {showPasswordToggle && type === "password" && (
             <button
               type="button"
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded p-1"
               onClick={() => setShowPassword(!showPassword)} // Şifre görünürlüğünü toggle et
+              aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
+              aria-pressed={showPassword}
+              aria-describedby={`${inputId}-password-toggle`}
             >
               {showPassword ? (
                 // Şifre görünürken - gizle ikonu (kapalı göz)
@@ -180,6 +183,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -195,6 +199,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -217,7 +222,17 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         {/* ===== ERROR MESSAGE ===== */}
         {/* Validation hata mesajı - varsa göster */}
         {error && (
-          <p className="text-sm text-red-600 animate-slide-up">{error}</p>
+          <p className="text-sm text-red-600 animate-slide-up" role="alert" aria-live="polite">
+            {error}
+          </p>
+        )}
+
+        {/* ===== PASSWORD TOGGLE DESCRIPTION ===== */}
+        {/* Şifre toggle butonu için screen reader açıklaması */}
+        {showPasswordToggle && type === "password" && (
+          <div id={`${inputId}-password-toggle`} className="sr-only">
+            Şifre göster/gizle butonu. Şifrenizi görünür hale getirmek veya gizlemek için kullanın.
+          </div>
         )}
       </div>
     );

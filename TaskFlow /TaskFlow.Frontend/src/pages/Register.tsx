@@ -52,6 +52,7 @@ import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import { useAuth } from "../contexts/AuthContext";
 import type { RegisterRequest } from "../types/auth.types";
+import PasswordStrength from "../components/ui/PasswordStrength";
 
 /**
  * Register formu için Zod validation şeması
@@ -123,6 +124,7 @@ const Register: React.FC = () => {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
+    watch,
   } = useForm<RegisterRequest>({
     resolver: zodResolver(registerSchema),
   });
@@ -311,6 +313,16 @@ const Register: React.FC = () => {
                   </svg>
                 }
               />
+              {/* Şifre gücü göstergesi ve kuralları */}
+              {typeof watch === "function" && watch("password") && watch("password").length > 0 && (
+                <div className="mt-2" data-testid="password-strength">
+                  <PasswordStrength 
+                    password={watch("password")}
+                    showFeedback={true}
+                    className="text-xs"
+                  />
+                </div>
+              )}
             </div>
 
             <div>

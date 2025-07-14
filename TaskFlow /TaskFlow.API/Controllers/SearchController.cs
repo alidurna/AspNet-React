@@ -133,7 +133,7 @@ public class SearchController : ControllerBase
             var categoryResults = await SearchCategories(request, userId);
             
             // Search users (if allowed)
-            var userResults = request.IncludeUsers ? await SearchUsers(request) : new List<UserSearchResult>();
+            var userResults = (request.IncludeUsers ?? false) ? await SearchUsers(request) : new List<UserSearchResult>();
 
             var result = new GlobalSearchResponse
             {
@@ -192,9 +192,9 @@ public class SearchController : ControllerBase
             }
 
             // Priority filter
-            if (request.Priority.HasValue)
+            if (!string.IsNullOrWhiteSpace(request.Priority))
             {
-                query = query.Where(t => t.Priority == request.Priority.Value);
+                query = query.Where(t => t.Priority.ToString() == request.Priority);
             }
 
             // Status filter
@@ -252,7 +252,7 @@ public class SearchController : ControllerBase
                     Id = t.Id,
                     Title = t.Title,
                     Description = t.Description,
-                    Priority = t.Priority,
+                    Priority = t.Priority.ToString(),
                     IsCompleted = t.IsCompleted,
                     DueDate = t.DueDate,
                     CreatedAt = t.CreatedAt,
@@ -401,7 +401,7 @@ public class SearchController : ControllerBase
                 Id = t.Id,
                 Title = t.Title,
                 Description = t.Description,
-                Priority = t.Priority,
+                Priority = t.Priority.ToString(),
                 IsCompleted = t.IsCompleted,
                 DueDate = t.DueDate,
                 CreatedAt = t.CreatedAt,

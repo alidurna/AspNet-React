@@ -65,76 +65,76 @@ namespace TaskFlow.API.DTOs
 {
     public class TodoTaskDto
     {
-        [SwaggerSchema("Görevin benzersiz kimliği", Example = 101)]
+        
         public int Id { get; set; }
 
-        [SwaggerSchema("Görev başlığı", Example = "Sunum Hazırlığı")]
+        [SwaggerSchema("Görev başlığı")]
         public string Title { get; set; } = string.Empty;
 
-        [SwaggerSchema("Görev açıklaması", Example = "Sunum için slaytları hazırla.")]
+        [SwaggerSchema("Görev açıklaması")]
         public string? Description { get; set; }
 
-        [SwaggerSchema("Görev tamamlandı mı?", Example = false)]
+        
         public bool IsCompleted { get; set; }
 
-        [SwaggerSchema("Görev ilerleme yüzdesi", Example = 50)]
+        
         public int Progress { get; set; }
 
-        [SwaggerSchema("Oluşturulma tarihi", Example = "2024-07-14T12:00:00Z")]
+        [SwaggerSchema("Oluşturulma tarihi")]
         public DateTime CreatedAt { get; set; }
 
-        [SwaggerSchema("Tamamlanma tarihi", Example = "2024-07-15T18:00:00Z")]
+        [SwaggerSchema("Tamamlanma tarihi")]
         public DateTime? CompletedAt { get; set; }
 
-        [SwaggerSchema("Bitiş tarihi", Example = "2024-07-20T23:59:59Z")]
+        [SwaggerSchema("Bitiş tarihi")]
         public DateTime? DueDate { get; set; }
 
-        [SwaggerSchema("Hatırlatma tarihi", Example = "2024-07-19T09:00:00Z")]
+        [SwaggerSchema("Hatırlatma tarihi")]
         public DateTime? ReminderDate { get; set; }
 
-        [SwaggerSchema("Başlangıç tarihi", Example = "2024-07-14T09:00:00Z")]
+        [SwaggerSchema("Başlangıç tarihi")]
         public DateTime? StartDate { get; set; }
 
-        [SwaggerSchema("Görev önceliği", Example = "High")]
+        [SwaggerSchema("Görev önceliği")]
         public Priority Priority { get; set; }
 
-        [SwaggerSchema("Etiketler (virgülle ayrılmış)", Example = "sunum,ofis")] 
+        [SwaggerSchema("Etiketler (virgülle ayrılmış)")] 
         public string? Tags { get; set; }
 
-        [SwaggerSchema("Ek notlar", Example = "Sunumda müşteri odaklılık vurgulanacak.")]
+        [SwaggerSchema("Ek notlar")]
         public string? Notes { get; set; }
 
-        [SwaggerSchema("Görevin ait olduğu kullanıcı ID'si", Example = 5)]
+        
         public int UserId { get; set; }
 
-        [SwaggerSchema("Kullanıcı adı", Example = "Ali Durna")]
+        [SwaggerSchema("Kullanıcı adı")]
         public string UserName { get; set; } = string.Empty;
 
-        [SwaggerSchema("Kategori ID'si", Example = 2)]
+        
         public int? CategoryId { get; set; }
 
-        [SwaggerSchema("Kategori adı", Example = "Sunumlar")]
+        [SwaggerSchema("Kategori adı")]
         public string CategoryName { get; set; } = string.Empty;
 
-        [SwaggerSchema("Kategori rengi", Example = "#FF5733")]
+        [SwaggerSchema("Kategori rengi")]
         public string CategoryColor { get; set; } = string.Empty;
 
-        [SwaggerSchema("Görev vadesi geçti mi?", Example = false)]
+        
         public bool IsOverdue { get; set; }
 
-        [SwaggerSchema("Vade bitimine kalan gün sayısı", Example = 3)]
+        
         public int? DaysUntilDue { get; set; }
 
-        [SwaggerSchema("Tamamlanma yüzdesi", Example = 50)]
+        
         public int CompletionPercentage { get; set; }
 
-        [SwaggerSchema("Görev aktif mi?", Example = true)]
+        
         public bool IsActive { get; set; } = true;
 
         [SwaggerSchema("Kategori detayları")]
         public virtual CategoryDto? Category { get; set; }
 
-        [SwaggerSchema("Üst görev ID'si", Example = 10)]
+        
         public int? ParentTaskId { get; set; }
 
         [SwaggerSchema("Üst görev detayları")]
@@ -143,11 +143,14 @@ namespace TaskFlow.API.DTOs
         [SwaggerSchema("Alt görevler listesi")]
         public virtual ICollection<TodoTaskDto> SubTasks { get; set; } = new List<TodoTaskDto>();
 
-        [SwaggerSchema("Atanan kullanıcı ID'si", Example = 7)]
+        
         public int? AssignedUserId { get; set; }
 
-        [SwaggerSchema("Atanan kullanıcı adı", Example = "Mehmet Yılmaz")]
+        [SwaggerSchema("Atanan kullanıcı adı")]
         public string? AssignedUserName { get; set; }
+
+        [SwaggerSchema("Görevin güncellenme tarihi")]
+        public DateTime? UpdatedAt { get; set; }
     }
 
     /// <summary>

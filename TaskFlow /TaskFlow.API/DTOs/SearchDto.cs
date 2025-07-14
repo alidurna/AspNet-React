@@ -1,15 +1,3 @@
-/*
- * SearchDto.cs - Arama İşlemleri İçin DTO Modelleri
- * ================================================
- * Bu dosya TaskFlow uygulamasının gelişmiş arama özelliklerinde kullanılan
- * tüm Data Transfer Object (DTO) sınıflarını içerir.
- * 
- * İçerik:
- * - Arama istekleri (Request DTOs)
- * - Arama sonuçları (Response DTOs)  
- * - Arama önerileri (Suggestion DTOs)
- */
-
 using System.ComponentModel.DataAnnotations;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -17,37 +5,52 @@ namespace TaskFlow.API.DTOs
 {
     public class TaskSearchRequest
     {
-        [SwaggerSchema("Aranacak anahtar kelime", Example = "sunum")]
+        [SwaggerSchema("Aranacak anahtar kelime")]
         public string? Query { get; set; }
 
-        [SwaggerSchema("Öncelik filtresi", Example = "High")]
+        [SwaggerSchema("Öncelik filtresi")]
         public string? Priority { get; set; }
 
-        [SwaggerSchema("Tamamlanma durumu filtresi", Example = false)]
+        [SwaggerSchema("Tamamlanma durumu filtresi")]
         public bool? IsCompleted { get; set; }
 
-        [SwaggerSchema("Kategori ID filtresi", Example = 2)]
+        [SwaggerSchema("Kategori ID filtresi")]
         public int? CategoryId { get; set; }
 
-        [SwaggerSchema("Başlangıç tarihi filtresi", Example = "2024-07-01T00:00:00Z")]
+        [SwaggerSchema("Başlangıç tarihi filtresi")]
         public DateTime? StartDate { get; set; }
 
-        [SwaggerSchema("Bitiş tarihi filtresi", Example = "2024-07-31T23:59:59Z")]
+        [SwaggerSchema("Bitiş tarihi filtresi")]
         public DateTime? EndDate { get; set; }
 
-        [SwaggerSchema("Sayfa numarası", Example = 1)]
-        public int? Page { get; set; }
+        [SwaggerSchema("Bitiş tarihi aralığı başlangıcı")]
+        public DateTime? DueDateStart { get; set; }
 
-        [SwaggerSchema("Sayfa boyutu", Example = 20)]
-        public int? PageSize { get; set; }
+        [SwaggerSchema("Bitiş tarihi aralığı bitişi")]
+        public DateTime? DueDateEnd { get; set; }
+
+        [SwaggerSchema("Sıralama alanı (örn: title, priority, duedate, createdat)")]
+        public string? SortBy { get; set; }
+
+        [SwaggerSchema("Sıralama yönü (asc/desc)")]
+        public string? SortOrder { get; set; }
+
+        [SwaggerSchema("Sayfa numarası")]
+        public int Page { get; set; } = 1;
+
+        [SwaggerSchema("Sayfa boyutu")]
+        public int PageSize { get; set; } = 20;
     }
 
     public class GlobalSearchRequest
     {
-        [SwaggerSchema("Aranacak anahtar kelime", Example = "proje")]
+        [SwaggerSchema("Aranacak anahtar kelime")]
         public string Query { get; set; } = string.Empty;
 
-        [SwaggerSchema("Kullanıcılar da dahil edilsin mi?", Example = true)]
+        [SwaggerSchema("Kullanıcılar da dahil edilsin mi?")]
         public bool? IncludeUsers { get; set; }
+
+        [SwaggerSchema("Maksimum sonuç sayısı")]
+        public int MaxResults { get; set; } = 20;
     }
 } 

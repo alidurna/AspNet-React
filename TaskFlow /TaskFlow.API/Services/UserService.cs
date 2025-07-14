@@ -539,7 +539,7 @@ namespace TaskFlow.API.Services
             }
         }
 
-        public async Task<bool> RequestEmailVerificationAsync(EmailVerificationRequest emailVerificationRequest)
+        public async Task<bool> RequestEmailVerificationAsync(EmailVerificationRequestDto emailVerificationRequest)
         {
             try
             {
@@ -582,7 +582,7 @@ namespace TaskFlow.API.Services
             }
         }
 
-        public async Task<bool> VerifyEmailAsync(EmailVerification emailVerification)
+        public async Task<bool> VerifyEmailAsync(EmailVerificationDto emailVerification)
         {
             try
             {

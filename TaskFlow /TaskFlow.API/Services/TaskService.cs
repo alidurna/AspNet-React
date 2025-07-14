@@ -1309,7 +1309,7 @@ namespace TaskFlow.API.Services
                 Title = task.Title,
                 Description = task.Description,
                 IsCompleted = task.IsCompleted,
-                Progress = task.CompletionPercentage, // Assuming CompletionPercentage is now Progress
+                Progress = task.CompletionPercentage,
                 CreatedAt = task.CreatedAt,
                 CompletedAt = task.CompletedAt,
                 DueDate = task.DueDate,
@@ -1324,8 +1324,9 @@ namespace TaskFlow.API.Services
                 IsOverdue = task.DueDate.HasValue && task.DueDate.Value < DateTime.UtcNow && !task.IsCompleted,
                 DaysUntilDue = task.DueDate.HasValue ? (int)(task.DueDate.Value - DateTime.UtcNow).TotalDays : null,
                 CompletionPercentage = task.CompletionPercentage,
-                AssignedUserId = task.AssignedUserId, // Yeni eklendi
-                AssignedUserName = task.AssignedUser?.FirstName + " " + task.AssignedUser?.LastName // Yeni eklendi
+                AssignedUserId = task.AssignedUserId,
+                AssignedUserName = task.AssignedUser?.FirstName + " " + task.AssignedUser?.LastName,
+                UpdatedAt = task.UpdatedAt
             };
 
             // Category bilgisini ekle
@@ -1336,7 +1337,7 @@ namespace TaskFlow.API.Services
                     Id = task.Category.Id,
                     Name = task.Category.Name,
                     Description = task.Category.Description,
-                    ColorCode = task.Category.ColorCode,
+                    Color = task.Category.ColorCode,
                     Icon = task.Category.Icon,
                     IsActive = task.Category.IsActive,
                     CreatedAt = task.Category.CreatedAt,

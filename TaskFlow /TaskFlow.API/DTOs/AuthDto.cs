@@ -66,29 +66,29 @@ namespace TaskFlow.API.DTOs
     {
         [Required(ErrorMessage = "Email alanı zorunludur")]
         [EmailAddress(ErrorMessage = "Geçerli bir email adresi giriniz")]
-        [SwaggerSchema("Kullanıcının e-posta adresi", Example = "ali@example.com")]
+        [SwaggerSchema("Kullanıcının e-posta adresi")]
         public string Email { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Şifre alanı zorunludur")]
         [StringLength(100, MinimumLength = 6, ErrorMessage = "Şifre en az 6 karakter olmalıdır")]
-        [SwaggerSchema("Kullanıcının şifresi", Example = "Gizli123!")]
+        [SwaggerSchema("Kullanıcının şifresi")]
         public string Password { get; set; } = string.Empty;
 
         [Compare("Password", ErrorMessage = "Şifreler eşleşmiyor")]
-        [SwaggerSchema("Şifre tekrar", Example = "Gizli123!")]
+        [SwaggerSchema("Şifre tekrar")]
         public string ConfirmPassword { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Ad alanı zorunludur")]
         [StringLength(50)]
-        [SwaggerSchema("Kullanıcının adı", Example = "Ali")]
+        [SwaggerSchema("Kullanıcının adı")]
         public string FirstName { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Soyad alanı zorunludur")]
         [StringLength(50)]
-        [SwaggerSchema("Kullanıcının soyadı", Example = "Durna")]
+        [SwaggerSchema("Kullanıcının soyadı")]
         public string LastName { get; set; } = string.Empty;
 
-        [SwaggerSchema("Kullanıcının telefon numarası", Example = "+905551112233")]
+        [SwaggerSchema("Kullanıcının telefon numarası")]
         public string? PhoneNumber { get; set; }
     }
 
@@ -96,64 +96,64 @@ namespace TaskFlow.API.DTOs
     {
         [Required(ErrorMessage = "Email alanı zorunludur")]
         [EmailAddress(ErrorMessage = "Geçerli bir email adresi giriniz")]
-        [SwaggerSchema("Kullanıcının e-posta adresi", Example = "ali@example.com")]
+        [SwaggerSchema("Kullanıcının e-posta adresi")]
         public string Email { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Şifre alanı zorunludur")]
-        [SwaggerSchema("Kullanıcının şifresi", Example = "Gizli123!")]
+        [SwaggerSchema("Kullanıcının şifresi")]
         public string Password { get; set; } = string.Empty;
 
-        [SwaggerSchema("Beni hatırla seçeneği", Example = false)]
+        
         public bool RememberMe { get; set; }
     }
 
     public class AuthResponseDto
     {
-        [SwaggerSchema("JWT access token", Example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")]
+        [SwaggerSchema("JWT access token")]
         public string Token { get; set; } = string.Empty;
 
-        [SwaggerSchema("JWT refresh token", Example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")]
+        [SwaggerSchema("JWT refresh token")]
         public string RefreshToken { get; set; } = string.Empty;
 
-        [SwaggerSchema("Token'ın geçerlilik süresi (dakika)", Example = 60)]
+        
         public int ExpiresInMinutes { get; set; }
 
-        [SwaggerSchema("Token'ın geçerlilik bitiş tarihi", Example = "2024-07-14T15:00:00Z")]
+        [SwaggerSchema("Token'ın geçerlilik bitiş tarihi")]
         public DateTime ExpiresAt { get; set; }
 
         [SwaggerSchema("Kullanıcı bilgileri")]
         public UserDto User { get; set; } = new();
 
-        [SwaggerSchema("İşlem başarılı mı?", Example = true)]
+        
         public bool Success { get; set; }
 
-        [SwaggerSchema("İşlem mesajı", Example = "Giriş başarılı.")]
+        [SwaggerSchema("İşlem mesajı")]
         public string Message { get; set; } = string.Empty;
     }
 
     public class TokenRefreshRequestDto
     {
         [Required(ErrorMessage = "Access token gereklidir")]
-        [SwaggerSchema("Mevcut access token", Example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")]
+        [SwaggerSchema("Mevcut access token")]
         public string AccessToken { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Refresh token gereklidir")]
-        [SwaggerSchema("Mevcut refresh token", Example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")]
+        [SwaggerSchema("Mevcut refresh token")]
         public string RefreshToken { get; set; } = string.Empty;
     }
 
     public class TokenRefreshResponseDto
     {
-        [SwaggerSchema("Yeni access token", Example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")]
+        [SwaggerSchema("Yeni access token")]
         public string AccessToken { get; set; } = string.Empty;
 
-        [SwaggerSchema("Yeni refresh token", Example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")]
+        [SwaggerSchema("Yeni refresh token")]
         public string RefreshToken { get; set; } = string.Empty;
 
-        [SwaggerSchema("Token'ın geçerlilik süresi (dakika)", Example = 60)]
+        
         public int ExpiresInMinutes { get; set; }
 
-        [SwaggerSchema("Token'ın geçerlilik bitiş tarihi", Example = "2024-07-14T15:00:00Z")]
+        [SwaggerSchema("Token'ın geçerlilik bitiş tarihi")]
         public DateTime ExpiresAt { get; set; }
     }
 } 

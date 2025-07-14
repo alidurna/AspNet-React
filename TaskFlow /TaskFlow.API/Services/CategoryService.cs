@@ -560,10 +560,9 @@ namespace TaskFlow.API.Services
 
             return new CategoryDto
             {
-                Id = category.Id,
                 Name = category.Name,
                 Description = category.Description,
-                ColorCode = category.ColorCode,
+                Color = category.ColorCode,
                 Icon = category.Icon,
                 IsActive = category.IsActive,
                 IsDefault = category.IsDefault,

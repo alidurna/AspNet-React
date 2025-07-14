@@ -89,6 +89,7 @@
  */
 
 import React, { useEffect } from "react";
+import type { PropsWithChildren } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { useAppSelector, useAppDispatch } from "../../store";
 import { selectToasts, removeToast } from "../../store/slices/uiSlice";
@@ -257,7 +258,7 @@ export const ToastManager: React.FC = () => {
  * Toaster Provider Component
  * React Hot Toast'ın global konfigürasyonu
  */
-export const ToastProvider: React.FC = () => {
+export const ToastProvider: React.FC<PropsWithChildren<{}>> = ({ children }) => {
   return (
     <>
       <ToastManager />
@@ -283,6 +284,7 @@ export const ToastProvider: React.FC = () => {
           },
         }}
       />
+      {children}
     </>
   );
 };

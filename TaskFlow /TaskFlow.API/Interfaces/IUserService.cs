@@ -62,8 +62,8 @@ namespace TaskFlow.API.Interfaces
         Task<UserStatsDto> GetUserStatsAsync(int userId);
         Task<bool> RequestPasswordResetAsync(PasswordResetRequestDto model);
         Task<bool> ResetPasswordAsync(PasswordResetDto model);
-        Task<bool> RequestEmailVerificationAsync(EmailVerificationRequest model);
-        Task<bool> VerifyEmailAsync(EmailVerification model);
+        Task<bool> RequestEmailVerificationAsync(EmailVerificationRequestDto model);
+        Task<bool> VerifyEmailAsync(EmailVerificationDto model);
         Task<TokenRefreshResponseDto> RefreshTokenAsync(TokenRefreshRequestDto model);
         Task<bool> RevokeRefreshTokenAsync(int userId);
         Task<bool> LogoutAllSessionsAsync(int userId);

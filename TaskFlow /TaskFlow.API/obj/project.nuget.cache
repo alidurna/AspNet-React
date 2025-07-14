@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "QrXThGOBRsE=",
+  "dgSpecHash": "R/qaPs8w2hI=",
   "success": true,
   "projectFilePath": "/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/TaskFlow.API.csproj",
   "expectedPackageFiles": [
@@ -70,8 +70,9 @@
     "/Users/alidurna/.nuget/packages/sqlitepclraw.provider.e_sqlite3/2.1.10/sqlitepclraw.provider.e_sqlite3.2.1.10.nupkg.sha512",
     "/Users/alidurna/.nuget/packages/stackexchange.redis/2.8.41/stackexchange.redis.2.8.41.nupkg.sha512",
     "/Users/alidurna/.nuget/packages/swashbuckle.aspnetcore/9.0.1/swashbuckle.aspnetcore.9.0.1.nupkg.sha512",
-    "/Users/alidurna/.nuget/packages/swashbuckle.aspnetcore.swagger/9.0.1/swashbuckle.aspnetcore.swagger.9.0.1.nupkg.sha512",
-    "/Users/alidurna/.nuget/packages/swashbuckle.aspnetcore.swaggergen/9.0.1/swashbuckle.aspnetcore.swaggergen.9.0.1.nupkg.sha512",
+    "/Users/alidurna/.nuget/packages/swashbuckle.aspnetcore.annotations/9.0.3/swashbuckle.aspnetcore.annotations.9.0.3.nupkg.sha512",
+    "/Users/alidurna/.nuget/packages/swashbuckle.aspnetcore.swagger/9.0.3/swashbuckle.aspnetcore.swagger.9.0.3.nupkg.sha512",
+    "/Users/alidurna/.nuget/packages/swashbuckle.aspnetcore.swaggergen/9.0.3/swashbuckle.aspnetcore.swaggergen.9.0.3.nupkg.sha512",
     "/Users/alidurna/.nuget/packages/swashbuckle.aspnetcore.swaggerui/9.0.1/swashbuckle.aspnetcore.swaggerui.9.0.1.nupkg.sha512",
     "/Users/alidurna/.nuget/packages/system.codedom/6.0.0/system.codedom.6.0.0.nupkg.sha512",
     "/Users/alidurna/.nuget/packages/system.collections.immutable/7.0.0/system.collections.immutable.7.0.0.nupkg.sha512",

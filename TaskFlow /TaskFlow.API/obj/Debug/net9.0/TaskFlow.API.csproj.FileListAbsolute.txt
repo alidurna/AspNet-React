@@ -180,3 +180,4 @@
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.pdb
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/TaskFlow.API.genruntimeconfig.cache
 /Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/obj/Debug/net9.0/ref/TaskFlow.API.dll
+/Users/alidurna/Documents/GitHub/AspNet-React/TaskFlow /TaskFlow.API/bin/Debug/net9.0/Swashbuckle.AspNetCore.Annotations.dll

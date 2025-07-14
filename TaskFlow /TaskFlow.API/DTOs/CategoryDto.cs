@@ -65,29 +65,44 @@ namespace TaskFlow.API.DTOs
 {
     public class CategoryDto
     {
-        [SwaggerSchema("Kategori kimliği", Example = 1)]
+        [SwaggerSchema("Kategori ID")]
         public int Id { get; set; }
 
-        [Required]
-        [StringLength(100)]
-        [SwaggerSchema("Kategori adı", Example = "Yazılım")] 
+        [SwaggerSchema("Kategori adı")]
         public string Name { get; set; } = string.Empty;
 
-        [StringLength(500)]
-        [SwaggerSchema("Kategori açıklaması", Example = "Yazılım projeleri için ana kategori.")]
+        [SwaggerSchema("Kategori açıklaması")]
         public string? Description { get; set; }
 
-        [SwaggerSchema("Kategori rengi (hex)", Example = "#FF5733")]
-        public string? ColorCode { get; set; }
+        [SwaggerSchema("Kategori rengi (hex)")]
+        public string? Color { get; set; }
 
-        [SwaggerSchema("Kategorinin oluşturulma tarihi", Example = "2024-07-14T12:00:00Z")]
+        [SwaggerSchema("Kategorinin oluşturulma tarihi")]
         public DateTime CreatedAt { get; set; }
 
-        [SwaggerSchema("Kategorinin güncellenme tarihi", Example = "2024-07-15T15:00:00Z")]
-        public DateTime UpdatedAt { get; set; }
+        [SwaggerSchema("Kategorinin güncellenme tarihi")]
+        public DateTime? UpdatedAt { get; set; }
 
-        [SwaggerSchema("Kategoriye ait görev sayısı", Example = 12)]
-        public int TaskCount { get; set; }
+        [SwaggerSchema("Kategori ikonu")]
+        public string? Icon { get; set; }
+
+        [SwaggerSchema("Kategori aktif mi?")]
+        public bool? IsActive { get; set; }
+
+        [SwaggerSchema("Varsayılan kategori mi?")]
+        public bool? IsDefault { get; set; }
+
+        [SwaggerSchema("Toplam görev sayısı")]
+        public int? TotalTaskCount { get; set; }
+
+        [SwaggerSchema("Tamamlanan görev sayısı")]
+        public int? CompletedTaskCount { get; set; }
+
+        [SwaggerSchema("Bekleyen görev sayısı")]
+        public int? PendingTaskCount { get; set; }
+
+        [SwaggerSchema("Tamamlanma yüzdesi")]
+        public decimal? CompletionPercentage { get; set; }
     }
 }
 

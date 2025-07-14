@@ -7,7 +7,7 @@ namespace TaskFlow.API.DTOs
     {
         [Required]
         [EmailAddress]
-        [SwaggerSchema("Doğrulama kodu gönderilecek e-posta adresi", Example = "ali@example.com")]
+        [SwaggerSchema("Doğrulama kodu gönderilecek e-posta adresi")]
         public string Email { get; set; } = string.Empty;
     }
 
@@ -15,11 +15,11 @@ namespace TaskFlow.API.DTOs
     {
         [Required]
         [EmailAddress]
-        [SwaggerSchema("Doğrulama yapılacak e-posta adresi", Example = "ali@example.com")]
+        [SwaggerSchema("Doğrulama yapılacak e-posta adresi")]
         public string Email { get; set; } = string.Empty;
 
         [Required]
-        [SwaggerSchema("E-posta doğrulama kodu", Example = "123456")]
+        [SwaggerSchema("E-posta doğrulama kodu")]
         public string Token { get; set; } = string.Empty;
     }
 } 
