@@ -38,8 +38,10 @@ export interface User {
   lastName: string; // Örnek: "Durna"
   email: string; // Örnek: "ali@example.com"
   phoneNumber?: string; // Örnek: "+90 555 123 45 67" (opsiyonel)
+  profileImage?: string; // Eklendi
   createdAt: string; // ISO date string: "2024-01-01T12:00:00Z"
   updatedAt: string; // ISO date string: "2024-01-01T12:00:00Z"
+  isEmailVerified: boolean; // Eklendi
 }
 
 /**
@@ -190,4 +192,13 @@ export interface JwtPayload {
   role?: string; // User role (admin, user, etc.) - future feature
   iat: number; // Issued at (Unix timestamp)
   exp: number; // Expiration time (Unix timestamp)
+}
+
+export interface EmailVerificationRequest {
+  email: string;
+}
+
+export interface EmailVerification {
+  email: string;
+  token: string;
 }

@@ -539,13 +539,13 @@ namespace TaskFlow.API.Services
             }
         }
 
-        public async Task<bool> RequestEmailVerificationAsync(EmailVerificationRequestDto emailVerificationRequestDto)
+        public async Task<bool> RequestEmailVerificationAsync(EmailVerificationRequest emailVerificationRequest)
         {
             try
             {
-                _logger.LogInformation("Email verification request for email: {Email}", emailVerificationRequestDto.Email);
+                _logger.LogInformation("Email verification request for email: {Email}", emailVerificationRequest.Email);
 
-                var user = await GetUserByEmailAsync(emailVerificationRequestDto.Email);
+                var user = await GetUserByEmailAsync(emailVerificationRequest.Email);
                 if (user == null)
                 {
                     throw new InvalidOperationException("Kullanıcı bulunamadı");
@@ -572,25 +572,25 @@ namespace TaskFlow.API.Services
                 // TODO: Email gönderme servisi eklenecek
                 // await _emailService.SendEmailVerificationAsync(user.Email, verificationToken);
 
-                _logger.LogInformation("Email verification token generated for user: {Email}", emailVerificationRequestDto.Email);
+                _logger.LogInformation("Email verification token generated for user: {Email}", emailVerificationRequest.Email);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error requesting email verification for email: {Email}", emailVerificationRequestDto.Email);
+                _logger.LogError(ex, "Error requesting email verification for email: {Email}", emailVerificationRequest.Email);
                 throw;
             }
         }
 
-        public async Task<bool> VerifyEmailAsync(EmailVerificationDto emailVerificationDto)
+        public async Task<bool> VerifyEmailAsync(EmailVerification emailVerification)
         {
             try
             {
-                _logger.LogInformation("Email verification attempt for email: {Email}", emailVerificationDto.Email);
+                _logger.LogInformation("Email verification attempt for email: {Email}", emailVerification.Email);
 
                 var user = await _context.Users
-                    .FirstOrDefaultAsync(u => u.Email == emailVerificationDto.Email.ToLower().Trim() 
-                                          && u.EmailVerificationToken == emailVerificationDto.Token 
+                    .FirstOrDefaultAsync(u => u.Email == emailVerification.Email.ToLower().Trim() 
+                                          && u.EmailVerificationToken == emailVerification.Token 
                                           && u.IsActive);
 
                 if (user == null)
@@ -620,7 +620,7 @@ namespace TaskFlow.API.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error verifying email for: {Email}", emailVerificationDto.Email);
+                _logger.LogError(ex, "Error verifying email for: {Email}", emailVerification.Email);
                 throw;
             }
         }

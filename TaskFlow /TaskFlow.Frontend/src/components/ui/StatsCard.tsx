@@ -103,7 +103,7 @@ interface StatsCardProps {
   trend?: string;
   trendUp?: boolean;
   progress?: number;
-  color?: "blue" | "purple" | "green" | "yellow" | "red";
+  color?: "blue" | "purple" | "green" | "yellow" | "red" | "orange" | "cyan" | "teal"; // Yeni renkler eklendi
   isLoading?: boolean;
   onClick?: () => void;
 }
@@ -155,6 +155,27 @@ const StatsCard: React.FC<StatsCardProps> = ({
       text: "text-red-700",
       progressBg: "bg-red-600",
       border: "border-red-200",
+    },
+    orange: { // Yeni renk tanımı
+      bg: "bg-white",
+      iconBg: "bg-orange-600",
+      text: "text-orange-700",
+      progressBg: "bg-orange-600",
+      border: "border-orange-200",
+    },
+    cyan: { // Yeni renk tanımı
+      bg: "bg-white",
+      iconBg: "bg-cyan-600",
+      text: "text-cyan-700",
+      progressBg: "bg-cyan-600",
+      border: "border-cyan-200",
+    },
+    teal: { // Yeni renk tanımı
+      bg: "bg-white",
+      iconBg: "bg-teal-600",
+      text: "text-teal-700",
+      progressBg: "bg-teal-600",
+      border: "border-teal-200",
     },
   };
 

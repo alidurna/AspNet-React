@@ -149,11 +149,19 @@ public interface IFileUploadService
     Task<bool> DeleteUserAvatarsAsync(int userId);
     
     /// <summary>
-    /// Task'ın tüm attachment'larını siler
+    /// Ekli dosyaları belirtilen göreve göre siler.
     /// </summary>
-    /// <param name="taskId">Task ID</param>
-    /// <returns>Silinen dosya sayısı</returns>
+    /// <param name="taskId">Ekli dosyaları silinecek görevin ID'si.</param>
+    /// <returns>Silinen ekli dosya sayısı.</returns>
     Task<int> DeleteTaskAttachmentsAsync(int taskId);
+
+    /// <summary>
+    /// Belirli bir ekli dosyayı ID'sine göre siler.
+    /// </summary>
+    /// <param name="attachmentId">Silinecek ekli dosyanın ID'si.</param>
+    /// <param name="userId">İşlemi yapan kullanıcının ID'si.</param>
+    /// <returns>İşlemin başarılı olup olmadığını gösteren boolean değer.</returns>
+    Task<bool> DeleteAttachmentAsync(int attachmentId, int userId);
     
     /// <summary>
     /// Dosya boyutu formatlar (KB, MB, GB)
@@ -163,12 +171,20 @@ public interface IFileUploadService
     string FormatFileSize(long bytes);
     
     /// <summary>
-    /// Dosya tipi kategori belirler (image, document, archive vb.)
+    /// Dosya kategorisini (image, document, other) belirler
     /// </summary>
-    /// <param name="contentType">MIME type</param>
+    /// <param name="contentType">Dosyanın MIME tipi</param>
     /// <param name="fileName">Dosya adı</param>
-    /// <returns>Dosya kategorisi</returns>
+    /// <returns>Dosya kategorisi string olarak</returns>
     string GetFileCategory(string contentType, string fileName);
+
+    /// <summary>
+    /// Belirli bir göreve ait ekli dosyaların listesini getirir.
+    /// </summary>
+    /// <param name="taskId">Ekli dosyaları getirilecek görevin ID'si.</param>
+    /// <param name="userId">İşlemi yapan kullanıcının ID'si.</param>
+    /// <returns>AttachmentDto nesnelerinin bir listesini içeren ApiResponseModel.</returns>
+    Task<ApiResponseModel<List<AttachmentDto>>> GetAttachmentsForTaskAsync(int taskId, int userId);
     
     /// <summary>
     /// Güvenli dosya adı oluşturur

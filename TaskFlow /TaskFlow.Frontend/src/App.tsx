@@ -83,10 +83,15 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ToastProvider } from "./components/ui/Toast";
 import PWAInstallBanner from "./components/ui/PWAInstallBanner";
 import usePWA from "./hooks/usePWA";
+import useSignalR from "./hooks/useSignalR"; // Eklendi
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
+import ProtectedRoute from "./components/common/ProtectedRoute";
+import Tasks from "./pages/Tasks";
+import Categories from "./pages/Categories";
+import Statistics from "./pages/Statistics";
 
 /**
  * App
@@ -98,33 +103,34 @@ import Profile from "./pages/Profile";
  */
 function App() {
   const { isOnline, updateAvailable, updateServiceWorker } = usePWA();
+  useSignalR(); // SignalR bağlantısını başlat
 
   return (
     <Provider store={store}>
-      <AuthProvider>
-        <ToastProvider />
+      <Router>
+        <AuthProvider>
+          <ToastProvider />
 
-        {/* PWA Update Banner */}
-        {updateAvailable && (
-          <div className="fixed top-0 left-0 right-0 z-50 bg-blue-600 text-white p-2 text-center">
-            <span className="mr-4">Yeni sürüm mevcut!</span>
-            <button
-              onClick={updateServiceWorker}
-              className="bg-white text-blue-600 px-3 py-1 rounded font-medium"
-            >
-              Güncelle
-            </button>
-          </div>
-        )}
+          {/* PWA Update Banner */}
+          {updateAvailable && (
+            <div className="fixed top-0 left-0 right-0 z-50 bg-blue-600 text-white p-2 text-center">
+              <span className="mr-4">Yeni sürüm mevcut!</span>
+              <button
+                onClick={updateServiceWorker}
+                className="bg-white text-blue-600 px-3 py-1 rounded font-medium"
+              >
+                Güncelle
+              </button>
+            </div>
+          )}
 
-        {/* Offline Indicator */}
-        {!isOnline && (
-          <div className="fixed top-0 left-0 right-0 z-40 bg-red-600 text-white p-2 text-center">
-            <span>🔴 Offline - İnternet bağlantınızı kontrol edin</span>
-          </div>
-        )}
+          {/* Offline Indicator */}
+          {!isOnline && (
+            <div className="fixed top-0 left-0 right-0 z-40 bg-red-600 text-white p-2 text-center">
+              <span>🔴 Offline - İnternet bağlantınızı kontrol edin</span>
+            </div>
+          )}
 
-        <Router>
           {/* ===== MAIN ROUTING CONFIGURATION ===== */}
           <Routes>
             {/* ===== HOME ROUTE ===== */}
@@ -139,21 +145,50 @@ function App() {
             <Route path="/register" element={<Register />} />
 
             {/* Dashboard sayfası - ana kontrol paneli */}
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
 
             {/* Profile sayfası - kullanıcı profili */}
-            <Route path="/profile" element={<Profile />} />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
+
+            {/* Görevler sayfası - kullanıcının görevlerini yönetir */}
+            <Route path="/tasks" element={
+              <ProtectedRoute>
+                <Tasks />
+              </ProtectedRoute>
+            } />
+
+            {/* Kategoriler sayfası - kullanıcının kategorilerini yönetir */}
+            <Route path="/categories" element={
+              <ProtectedRoute>
+                <Categories />
+              </ProtectedRoute>
+            } />
+
+            {/* İstatistikler sayfası - kullanıcının istatistiklerini gösterir */}
+            <Route path="/statistics" element={
+              <ProtectedRoute>
+                <Statistics />
+              </ProtectedRoute>
+            } />
 
             {/* ===== CATCH-ALL ROUTE ===== */}
             {/* 404 durumları ve geçersiz URL'ler için */}
             {/* Kullanıcıyı login sayfasına yönlendirir */}
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
-        </Router>
 
-        {/* PWA Install Banner */}
-        <PWAInstallBanner />
-      </AuthProvider>
+          {/* PWA Install Banner */}
+          <PWAInstallBanner />
+        </AuthProvider>
+      </Router>
     </Provider>
   );
 }

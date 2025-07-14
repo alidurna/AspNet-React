@@ -63,7 +63,7 @@ namespace TaskFlow.API.Controllers
     /// </remarks>
     [ApiController]
     [ApiVersion("1.0")]
-    [Route("api/v{version:apiVersion}/[controller]")]
+    [Route("api/v{version:apiVersion}/users")] // Değiştirildi: [controller] yerine users kullanıldı
     [Produces("application/json")]
     [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
     public class UsersController : ControllerBase
@@ -468,20 +468,16 @@ namespace TaskFlow.API.Controllers
         [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
-        public async Task<ActionResult<ApiResponseModel<object>>> RequestEmailVerification([FromBody] EmailVerificationRequestDto emailVerificationRequestDto)
+        public async Task<ActionResult<ApiResponseModel<object>>> RequestEmailVerification([FromBody] EmailVerificationRequest emailVerificationRequest)
         {
             try
             {
-                await _userService.RequestEmailVerificationAsync(emailVerificationRequestDto);
+                await _userService.RequestEmailVerificationAsync(emailVerificationRequest);
 
                 return Ok(ApiResponseModel<object>.SuccessResponse(
                     "E-posta doğrulama bağlantısı email adresinize gönderildi",
                     null
                 ));
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(ApiResponseModel<object>.ErrorResponse(ex.Message));
             }
             catch (Exception ex)
             {
@@ -504,11 +500,11 @@ namespace TaskFlow.API.Controllers
         [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
         [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
-        public async Task<ActionResult<ApiResponseModel<object>>> VerifyEmail([FromBody] EmailVerificationDto emailVerificationDto)
+        public async Task<ActionResult<ApiResponseModel<object>>> VerifyEmail([FromBody] EmailVerification emailVerification)
         {
             try
             {
-                await _userService.VerifyEmailAsync(emailVerificationDto);
+                await _userService.VerifyEmailAsync(emailVerification);
 
                 return Ok(ApiResponseModel<object>.SuccessResponse(
                     "E-posta adresiniz başarıyla doğrulandı",

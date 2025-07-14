@@ -1,19 +1,21 @@
 using System.ComponentModel.DataAnnotations;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace TaskFlow.API.DTOs
 {
     public class ChangePasswordDto
     {
-        [Required(ErrorMessage = "Mevcut şifre zorunludur")]
-        public string CurrentPassword { get; set; }
+        [Required]
+        [SwaggerSchema("Mevcut şifre", Example = "EskiSifre123!")]
+        public string CurrentPassword { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Yeni şifre zorunludur")]
-        [StringLength(100, MinimumLength = 6, ErrorMessage = "Şifre en az 6 karakter olmalıdır")]
-        [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$", 
-            ErrorMessage = "Şifre en az bir büyük harf, bir küçük harf ve bir rakam içermelidir")]
-        public string NewPassword { get; set; }
+        [Required]
+        [StringLength(100, MinimumLength = 6)]
+        [SwaggerSchema("Yeni şifre", Example = "YeniSifre456!")]
+        public string NewPassword { get; set; } = string.Empty;
 
         [Compare("NewPassword", ErrorMessage = "Şifreler eşleşmiyor")]
-        public string ConfirmPassword { get; set; }
+        [SwaggerSchema("Yeni şifre tekrar", Example = "YeniSifre456!")]
+        public string ConfirmPassword { get; set; } = string.Empty;
     }
 } 

@@ -116,6 +116,12 @@ public class TaskFlowDbContext : DbContext
     /// </summary>
     public DbSet<TodoTask> TodoTasks { get; set; } = null!;
 
+    /// <summary>
+    /// Attachments tablosu - Görevlere eklenen dosyalar
+    /// Her görevin birden fazla eki olabilir
+    /// </summary>
+    public DbSet<Attachment> Attachments { get; set; } = null!;
+
     // ===== MODEL YAPILANDIRMASI (FLUENT API) =====
     /// <summary>
     /// Model konfigürasyonu - Fluent API
@@ -151,6 +157,24 @@ public class TaskFlowDbContext : DbContext
             entity.Property(e => e.RefreshToken).HasMaxLength(500);
 
             entity.HasIndex(e => e.Email).IsUnique();
+
+            // Kullanıcının oluşturduğu görevler
+            entity.HasMany(e => e.Tasks)
+                .WithOne(t => t.User)
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            // Kullanıcıya atanan görevler
+            entity.HasMany(e => e.AssignedTasks)
+                .WithOne(t => t.AssignedUser)
+                .HasForeignKey(t => t.AssignedUserId)
+                .OnDelete(DeleteBehavior.SetNull); // Atanan kullanıcı silinirse görevi null yapar
+
+            // Kullanıcının yüklediği ekler
+            entity.HasMany(e => e.Attachments)
+                .WithOne(a => a.User)
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.Restrict); // Kullanıcı silindiğinde ekleri tutarız
         });
 
         // TodoTask entity configuration
@@ -179,6 +203,18 @@ public class TaskFlowDbContext : DbContext
                 .WithMany(e => e.SubTasks)
                 .HasForeignKey(e => e.ParentTaskId)
                 .OnDelete(DeleteBehavior.SetNull);
+            
+            // Göreve ait ekler
+            entity.HasMany(e => e.Attachments)
+                .WithOne(a => a.TodoTask)
+                .HasForeignKey(a => a.TodoTaskId)
+                .OnDelete(DeleteBehavior.Cascade); // Görev silindiğinde ekleri de sileriz
+            
+            // Atanan kullanıcı ilişkisi (daha önce eklenen AssignedUser config'i ile çakışmaması için burada tekrar tanımlıyorum)
+            entity.HasOne(e => e.AssignedUser)
+                .WithMany(e => e.AssignedTasks)
+                .HasForeignKey(e => e.AssignedUserId)
+                .OnDelete(DeleteBehavior.SetNull); // Atanan kullanıcı silindiğinde null yap
         });
 
         // Category entity configuration
@@ -195,6 +231,29 @@ public class TaskFlowDbContext : DbContext
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
+        // Attachment entity configuration
+        modelBuilder.Entity<Attachment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FileName).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.FilePath).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.ContentType).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.FileSize).IsRequired();
+            entity.Property(e => e.UploadDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasOne(e => e.User)
+                .WithMany(e => e.Attachments)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict); // Kullanıcı silindiğinde ekleri tutarız
+
+            entity.HasOne(e => e.TodoTask)
+                .WithMany(e => e.Attachments)
+                .HasForeignKey(e => e.TodoTaskId)
+                .OnDelete(DeleteBehavior.Cascade); // Görev silindiğinde ekleri de sileriz
+        });
+
+        SeedData(modelBuilder); // Seed data çağrısı
     }
 
     /// <summary>

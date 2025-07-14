@@ -17,7 +17,10 @@ import Input from "../components/ui/Input";
 import Card from "../components/ui/Card";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
 import ConfirmModal from "../components/ui/ConfirmModal";
+import TaskDetailModal from "../components/tasks/TaskDetailModal"; // Eklendi
 import { useToast } from "../hooks/useToast";
+import { format } from "date-fns"; // Tarih formatlama için import
+import useSignalR from "../hooks/useSignalR"; // useSignalR hook'unu import et
 
 /**
  * Tasks sayfası, kullanıcının görevlerini yönetebileceği ana arayüzü sağlar.
@@ -35,6 +38,8 @@ const Tasks: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentTask, setCurrentTask] = useState<TodoTaskDto | null>(null);
+  const [isViewingDetails, setIsViewingDetails] = useState(false); // Yeni state: Detay görüntüleme modunda mı?
+  const [selectedTaskIds, setSelectedTaskIds] = useState<number[]>([]); // Yeni state: Seçilen görev ID'leri
   const [taskForm, setTaskForm] = useState<
     CreateTodoTaskDto | UpdateTodoTaskDto
   >({
@@ -48,6 +53,9 @@ const Tasks: React.FC = () => {
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
+
+  // SignalR bağlantısını başlat
+  const { connection } = useSignalR();
 
   // Görevleri çekmek için React Query kullanımı
   const {
@@ -140,19 +148,65 @@ const Tasks: React.FC = () => {
     mutationFn: (data: {
       taskId: number;
       updateProgressDto: UpdateTaskProgressDto;
-    }) => tasksAPI.updateTaskProgress(data.taskId, data.updateProgressDto),
+    }) => tasksAPI.updateTaskProgress(data.taskId, data.updateProgressDto.progress),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       showSuccess("Görev ilerlemesi güncellendi.");
     },
     onError: (error) => {
       showError(
-        `Görev ilerlemesi güncellenirken hata oluştu: ${error.message}`
+        `Görev ilerlemesi güncellenirken hata oluştu: ${(error as Error).message}`
       );
     },
   });
 
-  const handleOpenModal = (task?: TodoTaskDto) => {
+  // Toplu görev silme mutasyonu
+  const bulkDeleteTasksMutation = useMutation({
+    mutationFn: (taskIds: number[]) => tasksAPI.bulkDeleteTasks({ taskIds }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      showSuccess("Seçilen görevler başarıyla silindi.");
+      setSelectedTaskIds([]); // Seçimi temizle
+    },
+    onError: (error) => {
+      showError(`Toplu silme başarısız oldu: ${error.message}`);
+    },
+  });
+
+  // Toplu görev tamamlama mutasyonu
+  const bulkCompleteTasksMutation = useMutation({
+    mutationFn: (taskIds: number[]) => tasksAPI.bulkCompleteTasks({ taskIds }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      showSuccess("Seçilen görevler başarıyla tamamlandı.");
+      setSelectedTaskIds([]); // Seçimi temizle
+    },
+    onError: (error) => {
+      showError(`Toplu tamamlama başarısız oldu: ${error.message}`);
+    },
+  });
+
+  // SignalR TaskUpdate olayını dinle ve görevleri yeniden getir
+  useEffect(() => {
+    if (connection) {
+      const handleTaskUpdate = (data: any) => {
+        console.log("SignalR: Görev güncellemesi alındı:", data);
+        // Görevlerle ilgili herhangi bir güncelleme olduğunda 'tasks' query key'ini invalidate et
+        queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        // İsteğe bağlı: Spesifik görev ID'sine göre güncellemeleri daha detaylı işleyebiliriz
+        // Ancak genel bir invalidate, tüm listeyi güncel tutmak için yeterli.
+      };
+
+      connection.on("TaskUpdate", handleTaskUpdate);
+
+      // Component unmount edildiğinde veya connection değiştiğinde event listener'ı temizle
+      return () => {
+        connection.off("TaskUpdate", handleTaskUpdate);
+      };
+    }
+  }, [connection, queryClient]);
+
+  const handleOpenModal = (task?: TodoTaskDto, viewOnly: boolean = false) => {
     if (task) {
       setCurrentTask(task);
       setTaskForm({
@@ -163,7 +217,7 @@ const Tasks: React.FC = () => {
           : "",
         priority: task.priority,
         categoryId: task.categoryId || undefined,
-        // isCompleted burada kullanılmıyor, form state'inden kaldırıldı.
+        // isCompleted kaldırıldı
       });
     } else {
       setCurrentTask(null);
@@ -173,15 +227,17 @@ const Tasks: React.FC = () => {
         dueDate: "",
         priority: "Low",
         categoryId: undefined,
-        // isCompleted burada kullanılmıyor, form state'inden kaldırıldı.
+        // isCompleted kaldırıldı
       });
     }
+    setIsViewingDetails(viewOnly); // Modalı detay görüntüleme modunda aç
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setCurrentTask(null);
+    setIsViewingDetails(false); // Modalı kapatırken detay modunu sıfırla
   };
 
   const handleChange = (
@@ -225,6 +281,12 @@ const Tasks: React.FC = () => {
     }
   };
 
+  const handleDelete = () => {
+    if (taskToDelete !== null) {
+      deleteTaskMutation.mutate(taskToDelete);
+    }
+  };
+
   const handleSearch = () => {
     setPage(1);
     queryClient.invalidateQueries({ queryKey: ["tasks"] });
@@ -242,16 +304,43 @@ const Tasks: React.FC = () => {
     updateTaskProgressMutation.mutate({ taskId, updateProgressDto });
   };
 
-  const confirmDelete = (taskId: number) => {
-    setTaskToDelete(taskId);
-    setShowConfirmModal(true);
+  const handleSelectTask = (taskId: number, isSelected: boolean) => {
+    setSelectedTaskIds((prev) =>
+      isSelected ? [...prev, taskId] : prev.filter((id) => id !== taskId)
+    );
   };
 
-  const handleDelete = () => {
-    if (taskToDelete) {
-      deleteTaskMutation.mutate(taskToDelete);
+  const handleSelectAllTasks = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const isChecked = event.target.checked;
+    if (isChecked) {
+      const allTaskIds = tasksData?.data?.tasks?.map((task) => task.id) || [];
+      setSelectedTaskIds(allTaskIds);
+    } else {
+      setSelectedTaskIds([]);
     }
   };
+
+  const handleBulkDelete = () => {
+    if (selectedTaskIds.length > 0) {
+      bulkDeleteTasksMutation.mutate(selectedTaskIds);
+    } else {
+      showError("Lütfen silmek için en az bir görev seçin.");
+    }
+  };
+
+  const handleBulkComplete = () => {
+    if (selectedTaskIds.length > 0) {
+      bulkCompleteTasksMutation.mutate(selectedTaskIds);
+    } else {
+      showError("Lütfen tamamlamak için en az bir görev seçin.");
+    }
+  };
+
+  const isAllTasksSelected = (
+    tasksData?.data?.tasks.length ?? 0
+  ) > 0 && selectedTaskIds.length === (tasksData?.data?.tasks.length ?? 0);
+
+  const isAnyTaskSelected = selectedTaskIds.length > 0;
 
   if (isLoadingTasks || isLoadingCategories) {
     return <LoadingSpinner />;
@@ -260,7 +349,7 @@ const Tasks: React.FC = () => {
   if (tasksError) {
     return (
       <div className="text-red-500">
-        Görevler yüklenirken hata oluştu: {tasksError.message}
+        Görevler yüklenirken hata oluştu: {(tasksError as Error)?.message ?? 'Bilinmeyen bir hata oluştu.'}
       </div>
     );
   }
@@ -268,7 +357,7 @@ const Tasks: React.FC = () => {
   if (categoriesError) {
     return (
       <div className="text-red-500">
-        Kategoriler yüklenirken hata oluştu: {categoriesError.message}
+        Kategoriler yüklenirken hata oluştu: {(categoriesError as Error)?.message ?? 'Bilinmeyen bir hata oluştu.'}
       </div>
     );
   }
@@ -313,61 +402,104 @@ const Tasks: React.FC = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {tasksData?.data.tasks.map((task: TodoTaskDto) => (
-          <Card
-            key={task.id}
-            className="p-4 shadow-md dark:bg-gray-800 dark:border-gray-700"
+      {/* Toplu İşlem Kontrolleri */}
+      {isAnyTaskSelected && (
+        <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-md shadow-sm">
+          <p className="text-gray-700 dark:text-gray-300 self-center">
+            {selectedTaskIds.length} görev seçildi.
+          </p>
+          <Button
+            onClick={handleBulkComplete}
+            className="bg-indigo-500 hover:bg-indigo-600 text-white"
           >
-            <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
-              {task.title}
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-2">
-              {task.description}
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Son Tarih:{" "}
-              {task.dueDate
-                ? new Date(task.dueDate).toLocaleDateString()
-                : "Yok"}
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Öncelik: {task.priority}
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Kategori: {task.categoryName || "Yok"}
-            </p>
-            <div className="flex items-center mt-2">
-              <input
-                type="checkbox"
-                checked={task.isCompleted}
-                onChange={() =>
-                  handleToggleComplete(task.id, !task.isCompleted)
-                }
-                className="mr-2"
-              />
-              <label className="text-gray-700 dark:text-gray-300">
-                Tamamlandı
-              </label>
-            </div>
-            <div className="mt-4 flex gap-2">
-              <Button
-                onClick={() => handleOpenModal(task)}
-                className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-3"
-              >
-                Düzenle
-              </Button>
-              <Button
-                onClick={() => confirmDelete(task.id)}
-                className="bg-red-500 hover:bg-red-600 text-white text-sm py-1 px-3"
-              >
-                Sil
-              </Button>
-            </div>
-          </Card>
-        ))}
-      </div>
+            Seçilenleri Tamamla
+          </Button>
+          <Button
+            onClick={handleBulkDelete}
+            variant="destructive"
+          >
+            Seçilenleri Sil
+          </Button>
+        </div>
+      )}
 
+      {/* Görev Listesi */}
+      {isLoadingTasks ? (
+        <div className="flex justify-center items-center h-64">
+          <LoadingSpinner />
+        </div>
+      ) : (tasksData?.data?.tasks?.length ?? 0) === 0 ? (
+        <p className="text-center text-gray-500">Henüz görev bulunmamaktadır.</p>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-md shadow-sm mb-2">
+            <input
+              type="checkbox"
+              checked={isAllTasksSelected}
+              onChange={handleSelectAllTasks}
+              className="mr-3 w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+            />
+            <label htmlFor="selectAllTasks" className="text-md font-semibold text-gray-800 dark:text-white">
+              Tümünü Seç / Seçimi Kaldır
+            </label>
+          </div>
+          {tasksData?.data?.tasks.map((task) => (
+            <Card key={task.id} className="p-4 flex items-center justify-between shadow-sm">
+              <div className="flex items-center flex-1">
+                <input
+                  type="checkbox"
+                  checked={selectedTaskIds.includes(task.id)}
+                  onChange={() => handleSelectTask(task.id, !selectedTaskIds.includes(task.id))}
+                  className="mr-3 w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                />
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold">{task.title}</h3>
+                  {task.description && (
+                    <p className="text-gray-600 text-sm mt-1 line-clamp-2">
+                      {task.description}
+                    </p>
+                  )}
+                  <div className="text-xs text-gray-500 mt-2">
+                    <span>Öncelik: {task.priority}</span>
+                    {task.dueDate && (
+                      <span className="ml-4">Bitiş Tarihi: {format(new Date(task.dueDate), "dd.MM.yyyy")}
+                      </span>
+                    )}
+                    {task.categoryName && (
+                      <span className="ml-4">Kategori: {task.categoryName}</span>
+                    )}
+                    <span className="ml-4">Durum: {task.status}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex space-x-2 ml-4">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleOpenModal(task, true)} // Detay görüntüleme modu
+                >
+                  Detayları Görüntüle
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => handleOpenModal(task)}>
+                  Düzenle
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    setTaskToDelete(task.id);
+                    setShowConfirmModal(true);
+                  }}
+                >
+                  Sil
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Sayfalama Kontrolleri */}
       <div className="flex justify-between mt-6">
         <Button
           onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
@@ -399,7 +531,7 @@ const Tasks: React.FC = () => {
         message="Bu görevi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
       />
 
-      {isModalOpen && (
+      {isModalOpen && !isViewingDetails && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
           <Card className="p-6 w-full max-w-md dark:bg-gray-800">
             <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">
@@ -514,27 +646,44 @@ const Tasks: React.FC = () => {
                 </label>
               </div>
               <div className="flex justify-end gap-4">
-                <Button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="bg-gray-500 hover:bg-gray-600 text-white"
-                >
-                  İptal
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-blue-500 hover:bg-blue-600 text-white"
-                  disabled={
-                    createTaskMutation.isPending || updateTaskMutation.isPending
-                  }
-                >
-                  {currentTask ? "Kaydet" : "Oluştur"}
-                </Button>
+                {isViewingDetails ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleCloseModal}
+                  >
+                    Kapat
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      type="button"
+                      onClick={handleCloseModal}
+                      className="bg-gray-500 hover:bg-gray-600 text-white"
+                    >
+                      İptal
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="bg-blue-500 hover:bg-blue-600 text-white"
+                      disabled={
+                        createTaskMutation.isPending || updateTaskMutation.isPending
+                      }
+                    >
+                      {currentTask ? "Kaydet" : "Oluştur"}
+                    </Button>
+                  </>
+                )}
               </div>
             </form>
           </Card>
         </div>
       )}
+
+      {isModalOpen && isViewingDetails && currentTask && (
+        <TaskDetailModal task={currentTask} onClose={handleCloseModal} />
+      )}
+
     </div>
   );
 };

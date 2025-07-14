@@ -134,8 +134,7 @@ builder.Services.AddCors(options =>
               )
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials()
-              .SetIsOriginAllowed(origin => true); // WebSocket için gerekli
+              .AllowCredentials();
     });
 });
 
@@ -385,8 +384,21 @@ builder.Services.AddAuthentication(options =>
         {
             // Token başarıyla validate edildiğinde
             var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-            logger.LogInformation("Token validated for user: {UserId}", 
-                context.Principal?.FindFirst("sub")?.Value);
+            
+            // Tüm claim'leri logla
+            if (context.Principal != null)
+            {
+                foreach (var claim in context.Principal.Claims)
+                {
+                    logger.LogInformation("Claim Type: {ClaimType}, Claim Value: {ClaimValue}", claim.Type, claim.Value);
+                }
+                logger.LogInformation("Token validated for user: {UserId}", 
+                    context.Principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value);
+            }
+            else
+            {
+                logger.LogWarning("Token validated but Principal is null.");
+            }
             return Task.CompletedTask;
         },
         
@@ -634,7 +646,7 @@ app.MapControllers();
  * - Achievement notifications
  * - Typing indicators
  */
-app.MapHub<TaskFlow.API.Hubs.TaskFlowHub>("/api/hubs/taskflow");
+app.MapHub<TaskFlow.API.Hubs.TaskFlowHub>("/api/v1.0/hubs/taskflow"); // Değiştirildi
 
 // ===== ROOT ENDPOINT =====
 /*

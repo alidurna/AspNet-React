@@ -12,19 +12,26 @@
  */
 
 import axios from "axios";
+import config from "../config/environment"; // config objesini varsayılan olarak import et
 import type {
   LoginRequest,
   RegisterRequest,
   AuthResponse,
   User,
+  EmailVerificationRequest,
+  EmailVerification,
 } from "../types/auth.types";
+
+import type { AttachmentDto } from "../types/file.types";
+import type { BulkDeleteTaskDto, BulkCompleteTaskDto } from "../types/task.types"; // Eklendi
+import type { SearchSuggestionsResponse } from "../types/search.types"; // Eklendi
 
 /**
  * API Base Configuration
  *
  * Tüm istekler bu base URL üzerinden yönlendirilir.
  */
-const API_BASE_URL = "/api";
+const API_BASE_URL = "/api"; // Frontend, istekleri Vite proxy'sine göndermeli
 
 /**
  * Axios Instance Oluşturma
@@ -55,6 +62,15 @@ export const tokenManager = {
   removeToken: (): void => {
     localStorage.removeItem("taskflow_token");
   },
+  setRefreshToken: (refreshToken: string): void => {
+    localStorage.setItem("taskflow_refresh_token", refreshToken);
+  },
+  getRefreshToken: (): string | null => {
+    return localStorage.getItem("taskflow_refresh_token");
+  },
+  removeRefreshToken: (): void => {
+    localStorage.removeItem("taskflow_refresh_token");
+  },
   isTokenValid: (): boolean => {
     const token = tokenManager.getToken();
     if (!token) return false;
@@ -68,6 +84,13 @@ export const tokenManager = {
   },
 };
 
+// Yetkilendirme hatası durumunda çağrılacak callback fonksiyonu
+let onUnauthorizedCallback: (() => void) | null = null;
+
+export const setOnUnauthorizedCallback = (callback: () => void) => {
+  onUnauthorizedCallback = callback;
+};
+
 /**
  * Request Interceptor
  *
@@ -76,7 +99,7 @@ export const tokenManager = {
 apiClient.interceptors.request.use(
   (config) => {
     const token = tokenManager.getToken();
-    if (token && tokenManager.isTokenValid()) {
+    if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     if (process.env.NODE_ENV === "development") {
@@ -94,10 +117,25 @@ apiClient.interceptors.request.use(
   }
 );
 
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 /**
  * Response Interceptor
  *
  * Her API yanıtından sonra hata yönetimi ve token geçersizliğini kontrol eder.
+ * 401 Unauthorized hatası alındığında JWT token yenileme mekanizmasını tetikler.
  */
 apiClient.interceptors.response.use(
   (response) => {
@@ -110,18 +148,79 @@ apiClient.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
-    console.error("❌ Response Error:", error);
-    if (error.response?.status === 401) {
-      tokenManager.removeToken();
-      window.location.href = "/login";
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Token süresi dolduğunda veya geçersiz olduğunda (401 Unauthorized) ve henüz yeniden token almıyorsak
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // Eğer zaten bir yenileme isteği devam ediyorsa, mevcut isteği sıraya al
+        return new Promise(function(resolve, reject) {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers['Authorization'] = 'Bearer ' + token;
+          return apiClient(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      const refreshToken = tokenManager.getRefreshToken();
+
+      if (refreshToken) {
+        try {
+          const response = await axios.post(
+            `${API_BASE_URL}/users/refresh-token`,
+            { refreshToken },
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              },
+            }
+          );
+
+          if (response.data.success && response.data.data?.token) {
+            const { token: newAccessToken, refreshToken: newRefreshToken } = response.data.data;
+            tokenManager.setToken(newAccessToken);
+            tokenManager.setRefreshToken(newRefreshToken);
+            apiClient.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+
+            processQueue(null, newAccessToken);
+
+            originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+            return apiClient(originalRequest);
+          } else {
+            // Refresh token geçersiz veya başka bir hata
+            processQueue(error, null);
+            tokenManager.removeToken();
+            tokenManager.removeRefreshToken();
+            if (onUnauthorizedCallback) onUnauthorizedCallback(); // Callback'i çağır
+            return Promise.reject(error);
+          }
+        } catch (refreshError) {
+          console.error("❌ Refresh token hatası:", refreshError);
+          processQueue(refreshError, null);
+          tokenManager.removeToken();
+          tokenManager.removeRefreshToken();
+          if (onUnauthorizedCallback) onUnauthorizedCallback(); // Callback'i çağır
+          return Promise.reject(refreshError);
+        } finally {
+          isRefreshing = false;
+        }
+      } else {
+        // Refresh token yoksa doğrudan login sayfasına yönlendir
+        tokenManager.removeToken();
+        tokenManager.removeRefreshToken();
+        if (onUnauthorizedCallback) onUnauthorizedCallback(); // Callback'i çağır
+        return Promise.reject(error);
+      }
     }
-    if (error.response?.status === 403) {
-      console.error("Access denied");
-    }
-    if (error.response?.status >= 500) {
-      console.error("Server error occurred");
-    }
+
+    // Genel hata işleme
     return Promise.reject(error);
   }
 );
@@ -145,6 +244,8 @@ export const authAPI = {
       );
       if (response.data.success && response.data.data?.token) {
         tokenManager.setToken(response.data.data.token);
+        // Başarılı girişte apiClient'in varsayılan Authorization header'ını ayarla
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${response.data.data.token}`;
       }
       return response.data;
     } catch (error) {
@@ -186,8 +287,8 @@ export const authAPI = {
       console.error("Logout API error:", error);
     } finally {
       tokenManager.removeToken();
-      // Frontend tarafında direkt login sayfasına yönlendir, backend responsundan bağımsız
-      window.location.href = "/login";
+      // Frontend tarafında direkt login sayfasına yönlendirme logic'i artık AuthContext tarafından yönetiliyor
+      // window.location.href = "/login"; // Bu satırı kaldırdık
     }
   },
   /**
@@ -206,9 +307,636 @@ export const authAPI = {
   //     throw new Error(message);
   //   }
   // },
+
+  /**
+   * E-posta doğrulama isteği gönderir.
+   * Kullanıcının kayıtlı e-posta adresine bir doğrulama kodu gönderir.
+   * @param emailData EmailVerificationRequest (yalnızca email içerir)
+   * @returns ApiResponse<object>
+   */
+  requestEmailVerification: async (emailData: EmailVerificationRequest): Promise<ApiResponse<object>> => {
+    try {
+      const response = await apiClient.post<ApiResponse<object>>(
+        "/users/email-verification-request",
+        emailData
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "E-posta doğrulama isteği başarısız oldu";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * E-posta adresini doğrulama kodu ile onaylar.
+   * Kullanıcının e-posta adresini ve aldığı doğrulama kodunu doğrulama için gönderir.
+   * @param verificationData EmailVerification (email ve token içerir)
+   * @returns ApiResponse<object>
+   */
+  verifyEmail: async (verificationData: EmailVerification): Promise<ApiResponse<object>> => {
+    try {
+      const response = await apiClient.post<ApiResponse<object>>(
+        "/users/email-verification",
+        verificationData
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "E-posta doğrulama başarısız oldu";
+      throw new Error(message);
+    }
+  },
 };
 
-// API Response Type
+/**
+ * Profile API Service
+ *
+ * Kullanıcı profili bilgilerini yönetmek için fonksiyonlar.
+ */
+export const profileAPI = {
+  /**
+   * Kullanıcı profilini getirir.
+   * @returns UserProfile
+   */
+  getProfile: async (): Promise<ApiResponse<UserProfile>> => {
+    try {
+      const response = await apiClient.get<ApiResponse<UserProfile>>("/users/profile");
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Profil bilgileri alınamadı";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Kullanıcı profilini günceller.
+   * @param data UpdateProfileRequest
+   * @returns UserProfile
+   */
+  updateProfile: async (
+    data: UpdateProfileRequest
+  ): Promise<ApiResponse<UserProfile>> => {
+    try {
+      const response = await apiClient.put<ApiResponse<UserProfile>>(
+        "/v1.0/users/profile",
+        data
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Profil güncellenemedi";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Kullanıcının şifresini değiştirir.
+   * @param data ChangePasswordRequest
+   * @returns boolean Başarılı ise true
+   */
+  changePassword: async (
+    data: ChangePasswordRequest
+  ): Promise<ApiResponse<boolean>> => {
+    try {
+      const response = await apiClient.put<ApiResponse<boolean>>(
+        "/v1.0/users/change-password",
+        data
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Şifre değiştirilemedi";
+      throw new Error(message);
+    }
+  },
+  requestEmailVerification: (data: EmailVerificationRequest): Promise<ApiResponse<void>> =>
+    apiClient.post<ApiResponse<void>>("/v1.0/users/request-email-verification", data).then(response => response.data),
+  verifyEmail: (data: EmailVerification): Promise<ApiResponse<void>> =>
+    apiClient.post<ApiResponse<void>>("/v1.0/users/verify-email", data).then(response => response.data),
+  getUserStatistics: (): Promise<ApiResponse<UserStatsDto>> =>
+    apiClient.get<ApiResponse<UserStatsDto>>("/users/statistics").then(response => response.data),
+};
+
+/**
+ * File Upload API Service
+ *
+ * Dosya yükleme (avatar, attachment) ve yönetimi için fonksiyonlar.
+ */
+export const fileUploadAPI = {
+  /**
+   * Kullanıcının avatarını yükler.
+   * @param file File
+   * @returns ApiResponse<any>
+   */
+  uploadAvatar: async (file: File): Promise<ApiResponse<any>> => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await apiClient.post<ApiResponse<any>>(
+        "/files/avatar",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Avatar yükleme başarısız oldu";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Görev eki yükler.
+   * @param request AttachmentUploadRequestDto
+   * @returns ApiResponse<any>
+   */
+  uploadAttachment: async (
+    request: AttachmentUploadRequestDto
+  ): Promise<ApiResponse<any>> => {
+    try {
+      const formData = new FormData();
+      formData.append("file", request.file);
+      formData.append("taskId", request.taskId.toString());
+      const response = await apiClient.post<ApiResponse<any>>(
+        "/files/attachment",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Ek yükleme başarısız oldu";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Kullanıcının profil avatarını siler.
+   * @returns ApiResponse<object>
+   */
+  deleteAvatar: async (): Promise<ApiResponse<object>> => {
+    try {
+      const response = await apiClient.delete<ApiResponse<object>>("/files/avatar");
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Avatar silme başarısız oldu";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Yükleme limitleri bilgilerini getirir.
+   * @returns ApiResponse<UploadLimitsDto>
+   */
+  getUploadLimits: async (): Promise<ApiResponse<UploadLimitsDto>> => {
+    try {
+      const response = await apiClient.get<ApiResponse<UploadLimitsDto>>("/files/limits");
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Yükleme limitleri alınamadı";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Belirli bir göreve ait ekli dosyaların listesini getirir.
+   * @param taskId number
+   * @returns ApiResponse<AttachmentDto[]>
+   */
+  getAttachmentsForTask: async (taskId: number): Promise<ApiResponse<AttachmentDto[]>> => {
+    try {
+      const response = await apiClient.get<ApiResponse<AttachmentDto[]>>(`/files/attachments/task/${taskId}`);
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Ekli dosyalar getirilemedi";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Belirli bir göreve ait ekli dosyaları siler.
+   * @param taskId number
+   * @returns ApiResponse<object>
+   */
+  deleteTaskAttachments: async (taskId: number): Promise<ApiResponse<object>> => {
+    try {
+      const response = await apiClient.delete<ApiResponse<object>>(`/files/attachment/task/${taskId}`);
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Ekli dosyalar silinemedi";
+      throw new Error(message);
+    }
+  },
+};
+
+/**
+ * Categories API Service
+ *
+ * Kategori oluşturma, listeleme, güncelleme ve silme işlemleri için fonksiyonlar.
+ */
+export const categoriesAPI = {
+  /**
+   * Tüm kategorileri getirir.
+   * @param filters CategoryFilterDto
+   * @returns CategoryDto[]
+   */
+  getCategories: async (
+    filters?: CategoryFilterDto
+  ): Promise<ApiResponse<CategoryDto[]>> => {
+    try {
+      const response = await apiClient.get<ApiResponse<CategoryDto[]>>(
+        "/categories",
+        { params: filters }
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Kategoriler alınamadı";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Yeni kategori oluşturur.
+   * @param category CreateCategoryDto
+   * @returns CategoryDto
+   */
+  createCategory: async (
+    category: CreateCategoryDto
+  ): Promise<ApiResponse<CategoryDto>> => {
+    try {
+      const response = await apiClient.post<ApiResponse<CategoryDto>>(
+        "/categories",
+        category
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Kategori oluşturulamadı";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Kategoriyi ID'ye göre günceller.
+   * @param id number
+   * @param category UpdateCategoryDto
+   * @returns CategoryDto
+   */
+  updateCategory: async (
+    id: number,
+    category: UpdateCategoryDto
+  ): Promise<ApiResponse<CategoryDto>> => {
+    try {
+      const response = await apiClient.put<ApiResponse<CategoryDto>>(
+        `/categories/${id}`,
+        category
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Kategori güncellenemedi";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Kategoriyi ID'ye göre siler.
+   * @param id number
+   * @returns object
+   */
+  deleteCategory: async (id: number): Promise<ApiResponse<object>> => {
+    try {
+      const response = await apiClient.delete<ApiResponse<object>>(
+        `/categories/${id}`
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Kategori silinemedi";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Kullanıcıya ait kategori istatistiklerini getirir.
+   * @returns CategorySummaryDto[]
+   */
+  getCategorySummary: async (): Promise<ApiResponse<CategorySummaryDto[]>> => {
+    try {
+      const response = await apiClient.get<ApiResponse<CategorySummaryDto[]>>(
+        "/categories/summary"
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Kategori özeti alınamadı";
+      throw new Error(message);
+    }
+  },
+};
+
+/**
+ * Tasks API Service
+ *
+ * Görev oluşturma, listeleme, güncelleme ve silme işlemleri için fonksiyonlar.
+ */
+export const tasksAPI = {
+  /**
+   * Tüm görevleri getirir.
+   * @param filters TodoTaskFilterDto
+   * @returns TodoTaskDto[]
+   */
+  getTasks: async (
+    filters?: TodoTaskFilterDto
+  ): Promise<ApiResponse<{ tasks: TodoTaskDto[]; pagination: PaginationMetadata }>> => {
+    try {
+      const response = await apiClient.get<ApiResponse<{ tasks: TodoTaskDto[]; pagination: PaginationMetadata }>>(
+        "/todotasks",
+        { params: filters }
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Görevler alınamadı";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Belirli bir görevi ID'ye göre getirir.
+   * @param id number
+   * @returns TodoTaskDto
+   */
+  getTaskById: async (id: number): Promise<ApiResponse<TodoTaskDto>> => {
+    try {
+      const response = await apiClient.get<ApiResponse<TodoTaskDto>>(
+        `/todotasks/${id}`
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Görev bulunamadı";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Yeni görev oluşturur.
+   * @param task CreateTodoTaskDto
+   * @returns TodoTaskDto
+   */
+  createTask: async (
+    task: CreateTodoTaskDto
+  ): Promise<ApiResponse<TodoTaskDto>> => {
+    try {
+      const response = await apiClient.post<ApiResponse<TodoTaskDto>>(
+        "/todotasks",
+        task
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Görev oluşturulamadı";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Görevi ID'ye göre günceller.
+   * @param id number
+   * @param task UpdateTodoTaskDto
+   * @returns TodoTaskDto
+   */
+  updateTask: async (
+    id: number,
+    task: UpdateTodoTaskDto
+  ): Promise<ApiResponse<TodoTaskDto>> => {
+    try {
+      const response = await apiClient.put<ApiResponse<TodoTaskDto>>(
+        `/todotasks/${id}`,
+        task
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Görev güncellenemedi";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Görevi ID'ye göre siler.
+   * @param id number
+   * @returns object
+   */
+  deleteTask: async (id: number): Promise<ApiResponse<object>> => {
+    try {
+      const response = await apiClient.delete<ApiResponse<object>>(
+        `/todotasks/${id}`
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Görev silinemedi";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Görev tamamlama durumunu günceller.
+   * @param id number
+   * @param isCompleted boolean
+   * @returns object
+   */
+  completeTask: async (
+    id: number,
+    isCompleted: boolean
+  ): Promise<ApiResponse<object>> => {
+    try {
+      const response = await apiClient.patch<ApiResponse<object>>(
+        `/todotasks/${id}/complete`,
+        { isCompleted }
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Görev tamamlama durumu güncellenemedi";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Görev ilerlemesini günceller.
+   * @param id number
+   * @param progress number
+   * @returns object
+   */
+  updateTaskProgress: async (
+    id: number,
+    progress: number
+  ): Promise<ApiResponse<object>> => {
+    try {
+      const response = await apiClient.patch<ApiResponse<object>>(
+        `/todotasks/${id}/progress`,
+        { progress }
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Görev ilerlemesi güncellenemedi";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Görev istatistiklerini getirir.
+   * @returns TaskStatsDto
+   */
+  getTaskStats: async (): Promise<ApiResponse<TaskStatsDto>> => {
+    try {
+      const response = await apiClient.get<ApiResponse<TaskStatsDto>>(
+        "/todotasks/statistics"
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Görev istatistikleri alınamadı";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Önceliğe göre görev istatistiklerini getirir.
+   * @returns TaskPriorityStatsDto[]
+   */
+  getTaskPriorityStats: async (): Promise<
+    ApiResponse<TaskPriorityStatsDto[]>
+  > => {
+    try {
+      const response = await apiClient.get<
+        ApiResponse<TaskPriorityStatsDto[]>
+      >("/todotasks/priority-statistics");
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Görev öncelik istatistikleri alınamadı";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Birden fazla görevü siler.
+   * @param tasks BulkDeleteTaskDto[]
+   * @returns ApiResponse<object>
+   */
+  bulkDeleteTasks: async (data: BulkDeleteTaskDto): Promise<ApiResponse<object>> => {
+    try {
+      const response = await apiClient.post<ApiResponse<object>>("/todotasks/bulk-delete", data);
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Görevler silinemedi";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Birden fazla görevin tamamlama durumunu günceller.
+   * @param tasks BulkCompleteTaskDto[]
+   * @returns ApiResponse<object>
+   */
+  bulkCompleteTasks: async (data: BulkCompleteTaskDto): Promise<ApiResponse<object>> => {
+    try {
+      const response = await apiClient.post<ApiResponse<object>>("/todotasks/bulk-complete", data);
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Görevler tamamlanmadı";
+      throw new Error(message);
+    }
+  },
+};
+
+/**
+ * Search API Service
+ *
+ * Global ve gelişmiş arama işlemleri için fonksiyonlar.
+ */
+export const searchAPI = {
+  /**
+   * Görevler üzerinde gelişmiş arama yapar.
+   * @param request TaskSearchRequest
+   * @returns TaskSearchResult[]
+   */
+  searchTasks: async (
+    request: TaskSearchRequest
+  ): Promise<ApiResponse<TaskSearchResult[]>> => {
+    try {
+      const response = await apiClient.get<ApiResponse<TaskSearchResult[]>>(
+        "/search/tasks",
+        { params: request }
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Görev arama başarısız";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Arama önerilerini getirir (autocomplete için).
+   * @param query string
+   * @returns ApiResponse<SearchSuggestionsResponse>
+   */
+  getSearchSuggestions: async (query: string): Promise<ApiResponse<SearchSuggestionsResponse>> => {
+    try {
+      const response = await apiClient.get<ApiResponse<SearchSuggestionsResponse>>(
+        `/search/suggestions?query=${query}`
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Arama önerileri alınamadı";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Global arama yapar.
+   * @param request GlobalSearchRequest
+   * @returns ApiResponse<GlobalSearchResponse>
+   */
+  globalSearch: async (request: GlobalSearchRequest): Promise<ApiResponse<GlobalSearchResponse>> => {
+    try {
+      const response = await apiClient.post<ApiResponse<GlobalSearchResponse>>(
+        "/search/global",
+        request
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Global arama başarısız";
+      throw new Error(message);
+    }
+  },
+};
+
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
@@ -222,9 +950,11 @@ export interface UserProfile {
   email: string;
   firstName: string;
   lastName: string;
+  phoneNumber?: string; // Eklendi: Kullanıcının telefon numarası
   profileImage?: string;
   createdAt: string;
   lastLoginAt?: string;
+  isEmailVerified: boolean; // Eklendi
   stats: {
     totalTasks: number;
     completedTasks: number;
@@ -237,32 +967,26 @@ export interface UpdateProfileRequest {
   firstName: string;
   lastName: string;
   profileImage?: string;
+  phoneNumber?: string; // Eklendi: Kullanıcının telefon numarası
 }
 
 export interface UserStatsDto {
   totalTasks: number;
   completedTasks: number;
   pendingTasks: number;
-  overdueTasks: number;
-  completionRate: number;
-  tasksByPriority: {
-    priority: string;
-    count: number;
-  }[];
-  tasksByCategory: {
-    category: string;
-    count: number;
-  }[];
+  inProgressTasks: number; // Backend DTO'sundan eklendi
+  taskCompletionRate: number; // Backend DTO'sundan eklendi (completionRate olarak güncellendi)
+  averageCompletionDays: number; // Backend DTO'sundan eklendi
+  tasksCompletedThisMonth: number; // Backend DTO'sundan eklendi
+  tasksCompletedThisWeek: number; // Backend DTO'sundan eklendi
 }
 
-// Change Password Types
 export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
 }
 
-// Password Reset Types
 export interface PasswordResetRequestDto {
   email: string;
 }
@@ -274,7 +998,6 @@ export interface PasswordResetDto {
   confirmPassword: string;
 }
 
-// Email Verification Types
 export interface EmailVerificationRequestDto {
   email: string;
 }
@@ -284,7 +1007,6 @@ export interface EmailVerificationDto {
   token: string;
 }
 
-// Token Refresh Types
 export interface TokenRefreshRequestDto {
   refreshToken: string;
 }
@@ -295,682 +1017,6 @@ export interface TokenRefreshResponseDto {
   user: User;
 }
 
-// Profile API
-export const profileAPI = {
-  getProfile: async (): Promise<ApiResponse<UserProfile>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<UserProfile>>(
-        "/users/profile"
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Profil bilgileri alınamadı";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Kullanıcı Profilini Güncelle
-   * @param data UpdateProfileRequest
-   * @returns UserProfile
-   */
-  updateProfile: async (
-    data: UpdateProfileRequest
-  ): Promise<ApiResponse<UserProfile>> => {
-    try {
-      const response = await apiClient.put<ApiResponse<UserProfile>>(
-        "/users/profile",
-        data
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Profil güncellenirken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Kullanıcı İstatistiklerini Al
-   * @returns UserStatsDto
-   */
-  getUserStatistics: async (): Promise<ApiResponse<UserStatsDto>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<UserStatsDto>>(
-        "/users/statistics"
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Kullanıcı istatistikleri alınamadı";
-      throw new Error(message);
-    }
-  },
-};
-
-// New API objects for other functionalities
-export const userAuthAPI = {
-  /**
-   * Şifre Değiştir
-   * @param data ChangePasswordRequest
-   * @returns boolean (başarı durumu)
-   */
-  changePassword: async (
-    data: ChangePasswordRequest
-  ): Promise<ApiResponse<boolean>> => {
-    try {
-      const response = await apiClient.put<ApiResponse<boolean>>(
-        "/users/change-password",
-        data
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Şifre değiştirme başarısız";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Şifre Sıfırlama İsteği Gönder
-   * @param data PasswordResetRequestDto
-   * @returns object
-   */
-  requestPasswordReset: async (
-    data: PasswordResetRequestDto
-  ): Promise<ApiResponse<object>> => {
-    try {
-      const response = await apiClient.post<ApiResponse<object>>(
-        "/users/password-reset-request",
-        data
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Şifre sıfırlama isteği gönderilirken hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Şifreyi Sıfırla
-   * @param data PasswordResetDto
-   * @returns object
-   */
-  resetPassword: async (
-    data: PasswordResetDto
-  ): Promise<ApiResponse<object>> => {
-    try {
-      const response = await apiClient.post<ApiResponse<object>>(
-        "/users/password-reset",
-        data
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Şifre sıfırlanırken hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * E-posta Doğrulama İsteği Gönder
-   * @param data EmailVerificationRequestDto
-   * @returns object
-   */
-  requestEmailVerification: async (
-    data: EmailVerificationRequestDto
-  ): Promise<ApiResponse<object>> => {
-    try {
-      const response = await apiClient.post<ApiResponse<object>>(
-        "/users/email-verification-request",
-        data
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "E-posta doğrulama isteği gönderilirken hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * E-postayı Doğrula
-   * @param data EmailVerificationDto
-   * @returns object
-   */
-  verifyEmail: async (
-    data: EmailVerificationDto
-  ): Promise<ApiResponse<object>> => {
-    try {
-      const response = await apiClient.post<ApiResponse<object>>(
-        "/users/email-verification",
-        data
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "E-posta doğrulanırken hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Refresh Token ile Yeni JWT Al
-   * @param data TokenRefreshRequestDto
-   * @returns TokenRefreshResponseDto
-   */
-  refreshToken: async (
-    data: TokenRefreshRequestDto
-  ): Promise<ApiResponse<TokenRefreshResponseDto>> => {
-    try {
-      const response = await apiClient.post<
-        ApiResponse<TokenRefreshResponseDto>
-      >("/users/refresh-token", data);
-      // Yeni token ve refresh token'ı kaydet
-      if (response.data.success && response.data.data?.token) {
-        tokenManager.setToken(response.data.data.token);
-        // Refresh token'ı da yönetmemiz gerekebilir, ancak mevcut kodda sadece JWT token saklanıyor.
-        // Eğer backend refresh token'ı da döndürüyorsa, burada saklanmalı.
-      }
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Token yenilenirken hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Tüm Oturumları Kapat (Refresh Token'ları İptal Et)
-   * @returns object
-   */
-  logoutAllSessions: async (): Promise<ApiResponse<object>> => {
-    try {
-      const response = await apiClient.post<ApiResponse<object>>(
-        "/users/logout-all-sessions"
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Tüm oturumlar kapatılırken hata oluştu";
-      throw new Error(message);
-    }
-  },
-};
-
-/**
- * Tasks API Service (Future Implementation)
- *
- * Görev yönetimi işlemleri
- */
-export const tasksAPI = {
-  /**
-   * Kullanıcının görevlerini filtreleme ve sayfalama ile getirir
-   * @param filter Filtreleme ve sayfalama parametreleri
-   * @returns Görev listesi ve sayfalama metadata
-   */
-  getTasks: async (
-    filter?: TodoTaskFilterDto
-  ): Promise<
-    ApiResponse<{ tasks: TodoTaskDto[]; pagination: PaginationMetadata }>
-  > => {
-    try {
-      const response = await apiClient.get<
-        ApiResponse<{ tasks: TodoTaskDto[]; pagination: PaginationMetadata }>
-      >("/todotasks", { params: filter });
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Görevler alınırken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Belirli bir görevi ID'sine göre getirir
-   * @param id Görev ID'si
-   * @returns Görev detayları
-   */
-  getTaskById: async (id: number): Promise<ApiResponse<TodoTaskDto>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<TodoTaskDto>>(
-        `/todotasks/${id}`
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Görev alınırken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Yeni görev oluşturur
-   * @param data Görev oluşturma bilgileri
-   * @returns Oluşturulan görev
-   */
-  createTask: async (
-    data: CreateTodoTaskDto
-  ): Promise<ApiResponse<TodoTaskDto>> => {
-    try {
-      const response = await apiClient.post<ApiResponse<TodoTaskDto>>(
-        "/todotasks",
-        data
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Görev oluşturulurken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Görevi günceller
-   * @param id Görev ID'si
-   * @param data Güncelleme bilgileri
-   * @returns Güncellenen görev
-   */
-  updateTask: async (
-    id: number,
-    data: UpdateTodoTaskDto
-  ): Promise<ApiResponse<TodoTaskDto>> => {
-    try {
-      const response = await apiClient.put<ApiResponse<TodoTaskDto>>(
-        `/todotasks/${id}`,
-        data
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Görev güncellenirken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Görevi siler
-   * @param id Görev ID'si
-   * @returns Başarılı silme yanıtı
-   */
-  deleteTask: async (id: number): Promise<ApiResponse<object>> => {
-    try {
-      const response = await apiClient.delete<ApiResponse<object>>(
-        `/todotasks/${id}`
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Görev silinirken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Görevin tamamlanma durumunu günceller
-   * @param id Görev ID'si
-   * @param data Tamamlanma durumu bilgisi
-   * @returns Güncellenen görev
-   */
-  completeTask: async (
-    id: number,
-    data: CompleteTaskDto
-  ): Promise<ApiResponse<TodoTaskDto>> => {
-    try {
-      const response = await apiClient.patch<ApiResponse<TodoTaskDto>>(
-        `/todotasks/${id}/complete`,
-        data
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Görev tamamlanırken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Görevin ilerleme durumunu günceller
-   * @param id Görev ID'si
-   * @param data İlerleme durumu bilgisi (0-100)
-   * @returns Güncellenen görev
-   */
-  updateTaskProgress: async (
-    id: number,
-    data: UpdateTaskProgressDto
-  ): Promise<ApiResponse<TodoTaskDto>> => {
-    try {
-      const response = await apiClient.patch<ApiResponse<TodoTaskDto>>(
-        `/todotasks/${id}/progress`,
-        data
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Görev ilerlemesi güncellenirken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Görevleri metin tabanlı arar
-   * @param searchText Aranacak metin
-   * @param maxResults Maksimum sonuç sayısı
-   * @returns Arama sonuçları listesi
-   */
-  searchTasks: async (
-    searchText: string,
-    maxResults?: number
-  ): Promise<ApiResponse<TodoTaskDto[]>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<TodoTaskDto[]>>(
-        "/todotasks/search",
-        { params: { searchText, maxResults } }
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Görevler aranırken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Vadesi geçmiş görevleri getirir
-   * @returns Vadesi geçmiş görevler listesi
-   */
-  getOverdueTasks: async (): Promise<ApiResponse<TodoTaskDto[]>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<TodoTaskDto[]>>(
-        "/todotasks/overdue"
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Vadesi geçmiş görevler alınırken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Bugün vadesi dolan görevleri getirir
-   * @returns Bugün vadesi dolan görevler listesi
-   */
-  getTasksDueToday: async (): Promise<ApiResponse<TodoTaskDto[]>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<TodoTaskDto[]>>(
-        "/todotasks/today"
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Bugün vadesi dolan görevler alınırken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Bu hafta vadesi dolan görevleri getirir
-   * @returns Bu hafta vadesi dolan görevler listesi
-   */
-  getTasksDueThisWeek: async (): Promise<ApiResponse<TodoTaskDto[]>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<TodoTaskDto[]>>(
-        "/todotasks/this-week"
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Bu hafta vadesi dolan görevler alınırken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Belirli bir ana görevin alt görevlerini getirir
-   * @param parentId Ana görevin ID'si
-   * @returns Alt görevler listesi
-   */
-  getSubTasks: async (
-    parentId: number
-  ): Promise<ApiResponse<TodoTaskDto[]>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<TodoTaskDto[]>>(
-        `/todotasks/${parentId}/subtasks`
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Alt görevler alınırken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Genel görev istatistiklerini getirir
-   * @returns Görev istatistikleri
-   */
-  getTaskStatistics: async (): Promise<ApiResponse<TaskStatsDto>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<TaskStatsDto>>(
-        "/todotasks/statistics"
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Görev istatistikleri alınırken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Önceliğe göre görev istatistiklerini getirir
-   * @returns Önceliğe göre görev istatistikleri listesi
-   */
-  getTaskPriorityStatistics: async (): Promise<
-    ApiResponse<TaskPriorityStatsDto[]>
-  > => {
-    try {
-      const response = await apiClient.get<ApiResponse<TaskPriorityStatsDto[]>>(
-        "/todotasks/statistics/priority"
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Önceliğe göre görev istatistikleri alınırken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-};
-
-/**
- * Categories API Service (Future Implementation)
- *
- * Kategori yönetimi işlemleri
- */
-export const categoriesAPI = {
-  /**
-   * Kullanıcının kategorilerini getirir
-   * @param filter Filtreleme parametreleri
-   * @returns Kategoriler listesi
-   */
-  getCategories: async (
-    filter?: CategoryFilterDto
-  ): Promise<ApiResponse<CategoryDto[]>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<CategoryDto[]>>(
-        "/categories",
-        { params: filter }
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Kategoriler alınırken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Belirli bir kategoriyi ID'sine göre getirir
-   * @param id Kategori ID'si
-   * @returns Kategori detayları
-   */
-  getCategoryById: async (id: number): Promise<ApiResponse<CategoryDto>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<CategoryDto>>(
-        `/categories/${id}`
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Kategori alınırken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Yeni kategori oluşturur
-   * @param data Kategori oluşturma bilgileri
-   * @returns Oluşturulan kategori
-   */
-  createCategory: async (
-    data: CreateCategoryDto
-  ): Promise<ApiResponse<CategoryDto>> => {
-    try {
-      const response = await apiClient.post<ApiResponse<CategoryDto>>(
-        "/categories",
-        data
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Kategori oluşturulurken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Kategoriyi günceller
-   * @param id Kategori ID'si
-   * @param data Güncelleme bilgileri
-   * @returns Güncellenen kategori
-   */
-  updateCategory: async (
-    id: number,
-    data: UpdateCategoryDto
-  ): Promise<ApiResponse<CategoryDto>> => {
-    try {
-      const response = await apiClient.put<ApiResponse<CategoryDto>>(
-        `/categories/${id}`,
-        data
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Kategori güncellenirken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Kategoriyi siler
-   * @param id Kategori ID'si
-   * @returns Başarılı silme yanıtı
-   */
-  deleteCategory: async (id: number): Promise<ApiResponse<object>> => {
-    try {
-      const response = await apiClient.delete<ApiResponse<object>>(
-        `/categories/${id}`
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Kategori silinirken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Kategori istatistiklerini getirir
-   * @returns Kategori istatistikleri listesi
-   */
-  getCategoryStatistics: async (): Promise<
-    ApiResponse<CategorySummaryDto[]>
-  > => {
-    try {
-      const response = await apiClient.get<ApiResponse<CategorySummaryDto[]>>(
-        "/categories/statistics"
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Kategori istatistikleri alınırken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-};
-
-// TODO: Add other API service objects for Search
-
-// Search Types
 export interface GlobalSearchRequest {
   query: string;
   includeUsers?: boolean;
@@ -1028,77 +1074,6 @@ export interface TaskSearchRequest {
   pageSize?: number;
 }
 
-// Search API
-export const searchAPI = {
-  /**
-   * Tüm varlıklarda (görevler, kategoriler, kullanıcılar) global arama yapar.
-   * @param request Global arama parametreleri
-   * @returns Birleşik arama sonuçları
-   */
-  globalSearch: async (
-    request: GlobalSearchRequest
-  ): Promise<ApiResponse<GlobalSearchResponse>> => {
-    try {
-      const response = await apiClient.post<ApiResponse<GlobalSearchResponse>>(
-        "/search/global",
-        request
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Global arama başarısız oldu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Gelişmiş filtrelerle görev bazlı arama yapar.
-   * @param request Görev arama parametreleri
-   * @returns Filtrelenmiş görev sonuçları
-   */
-  searchTasks: async (
-    request: TaskSearchRequest
-  ): Promise<ApiResponse<TaskSearchResult[]>> => {
-    try {
-      const response = await apiClient.post<ApiResponse<TaskSearchResult[]>>(
-        "/search/tasks",
-        request
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Görev araması başarısız oldu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Arama terimine göre öneriler getirir.
-   * @param query Arama terimi
-   * @returns Arama önerileri listesi
-   */
-  getSearchSuggestions: async (
-    query: string
-  ): Promise<ApiResponse<string[]>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<string[]>>(
-        `/search/suggestions?query=${query}`
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Arama önerileri alınırken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-};
-
-// Default Export - Ana API Client
-export default apiClient;
-
-// New types for file uploads
 export interface AttachmentUploadRequestDto {
   taskId: number;
   file: File;
@@ -1117,143 +1092,6 @@ export interface UploadLimitsDto {
   };
 }
 
-// File Upload API
-export const fileUploadAPI = {
-  /**
-   * Kullanıcı avatarını yükle
-   * @param file Yüklenecek resim dosyası
-   * @returns Başarılı yükleme yanıtı
-   */
-  uploadAvatar: async (
-    file: File
-  ): Promise<
-    ApiResponse<{
-      fileName: string;
-      originalName: string;
-      size: string;
-      category: string;
-      contentType: string;
-    }>
-  > => {
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const response = await apiClient.post<
-        ApiResponse<{
-          fileName: string;
-          originalName: string;
-          size: string;
-          category: string;
-          contentType: string;
-        }>
-      >("/files/avatar", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Avatar yüklenirken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Görev eki yükle
-   * @param data Yüklenecek ek bilgileri ve dosya
-   * @returns Başarılı yükleme yanıtı
-   */
-  uploadAttachment: async (
-    data: AttachmentUploadRequestDto
-  ): Promise<ApiResponse<object>> => {
-    try {
-      const formData = new FormData();
-      formData.append("taskId", data.taskId.toString());
-      formData.append("file", data.file);
-      const response = await apiClient.post<ApiResponse<object>>(
-        "/files/attachment",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Ek dosya yüklenirken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Kullanıcının avatarını sil
-   * @returns Başarılı silme yanıtı
-   */
-  deleteAvatar: async (): Promise<ApiResponse<object>> => {
-    try {
-      const response = await apiClient.delete<ApiResponse<object>>(
-        "/files/avatar"
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Avatar silinirken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Bir göreve ait tüm ekleri sil
-   * @param taskId Eki silinecek görevin ID'si
-   * @returns Başarılı silme yanıtı
-   */
-  deleteTaskAttachments: async (
-    taskId: number
-  ): Promise<ApiResponse<object>> => {
-    try {
-      const response = await apiClient.delete<ApiResponse<object>>(
-        `/files/attachment/task/${taskId}`
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Görev ekleri silinirken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Yükleme limitlerini ve izin verilen dosya türlerini al
-   * @returns Yükleme limitleri bilgisi
-   */
-  getUploadLimits: async (): Promise<ApiResponse<UploadLimitsDto>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<UploadLimitsDto>>(
-        "/files/limits"
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Yükleme limitleri alınırken bir hata oluştu";
-      throw new Error(message);
-    }
-  },
-};
-
-// Categories Types
 export interface CategoryDto {
   id: number;
   name: string;
@@ -1293,7 +1131,6 @@ export interface CategorySummaryDto {
   completionRate: number;
 }
 
-// Task Types
 export interface TodoTaskDto {
   id: number;
   title: string;
@@ -1310,6 +1147,8 @@ export interface TodoTaskDto {
   updatedAt: string;
   parentTaskId?: number;
   subTasks?: TodoTaskDto[]; // Alt görevler
+  creatorUserName?: string; // Oluşturan kullanıcının adı
+  assignedUserName?: string; // Atanan kullanıcının adı
 }
 
 export interface CreateTodoTaskDto {

@@ -186,6 +186,16 @@ const navigationItems = [
       </svg>
     ),
   },
+  {
+    name: "Swagger API",
+    href: "http://localhost:5281/swagger", // Tam URL
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+      </svg>
+    ),
+    external: true, // Harici link
+  },
 ];
 
 interface SidebarProps {
@@ -287,39 +297,34 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           </button>
         </div>
 
-        {/* Navigation Menu */}
-        <nav className="flex-1 px-4 py-6 space-y-2">
-          {navigationItems.map((item) => {
-            const isActive = isActiveRoute(item.href);
-            return (
+        {/* Main Navigation */}
+        <ul className="flex-1 py-4 space-y-2">
+          {navigationItems.map((item) =>
+            item.external ? (
+              <a
+                key={item.name}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex items-center gap-3 px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition-colors duration-200 ${isActiveRoute(item.href) ? "bg-blue-500 text-white" : ""}`}
+              >
+                {item.icon}
+                <span>{item.name}</span>
+              </a>
+            ) : (
               <Link
                 key={item.name}
                 to={item.href}
-                onClick={() => {
-                  // Close mobile sidebar when navigating
-                  if (window.innerWidth < 1024) {
-                    onToggle();
-                  }
-                }}
-                className={`
-                  flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200
-                  ${
-                    isActive
-                      ? "bg-gray-100 text-gray-900 font-semibold border-r-4 border-blue-600"
-                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                  }
-                `}
+                className={`flex items-center gap-3 px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition-colors duration-200 ${isActiveRoute(item.href) ? "bg-blue-500 text-white" : ""}`}
               >
-                <span className={isActive ? "text-blue-600" : "text-gray-400"}>
-                  {item.icon}
-                </span>
+                {item.icon}
                 <span>{item.name}</span>
               </Link>
-            );
-          })}
-        </nav>
+            )
+          )}
+        </ul>
 
-        {/* User Profile Section (Moved to Header User Menu) */}
+        {/* User Profile Section */}
         {/* <div className="border-t border-gray-200 py-3 px-4">
           
           <div className="flex items-center space-x-3 mb-4">

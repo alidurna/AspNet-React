@@ -5,6 +5,8 @@ const CACHE_NAME = "taskflow-v1.0.0";
 const API_CACHE_NAME = "taskflow-api-v1.0.0";
 const STATIC_CACHE_NAME = "taskflow-static-v1.0.0";
 
+let apiBaseUrl = ''; // API base URL'si buradan gelecek
+
 // Cache edilecek statik dosyalar
 const STATIC_ASSETS = [
   "/",
@@ -130,6 +132,7 @@ self.addEventListener("fetch", (event) => {
 async function handleApiRequest(request) {
   const url = new URL(request.url);
   const cache = await caches.open(API_CACHE_NAME);
+  let fullApiUrl = ''; // fullApiUrl'ı burada tanımlayarak scope dışı kalmasını önle
 
   try {
     // GET request'ler için stale-while-revalidate
@@ -140,8 +143,10 @@ async function handleApiRequest(request) {
       if (cachedResponse) {
         console.log("📱 API Cache HIT:", url.pathname);
 
-        // Background'da güncelle
-        fetch(request)
+        // Background'da güncelle (doğrudan tam URL'ye istek at)
+        fullApiUrl = `${apiBaseUrl}/api/v1.0${url.pathname.replace('/api', '')}`;
+        console.log(`SW: Revalidate - Constructed fullApiUrl: ${fullApiUrl}`);
+        fetch(fullApiUrl, { headers: request.headers })
           .then((response) => {
             if (response.ok) {
               cache.put(request, response.clone());
@@ -155,8 +160,11 @@ async function handleApiRequest(request) {
       }
     }
 
-    // Network'ten al
-    const response = await fetch(request);
+    // Network'ten al (doğrudan tam URL'ye istek at)
+    console.log(`SW: Original API Request URL: ${request.url}`);
+    fullApiUrl = `${apiBaseUrl}/api/v1.0${url.pathname.replace('/api', '')}`;
+    console.log(`SW: Constructed fullApiUrl: ${fullApiUrl}`);
+    const response = await fetch(fullApiUrl, { headers: request.headers });
 
     // Başarılı GET response'ları cache'e al
     if (response.ok && request.method === "GET") {
@@ -182,7 +190,19 @@ async function handleApiRequest(request) {
       showOfflineNotification();
 
       // Background sync'e ekle
-      await addToBackgroundSync(request);
+      const requestToSync = new Request(fullApiUrl, {
+        method: request.method,
+        headers: request.headers,
+        body: request.method !== "GET" ? await request.clone().text() : null,
+        mode: request.mode,
+        credentials: request.credentials,
+        cache: request.cache,
+        redirect: request.redirect,
+        referrer: request.referrer,
+        integrity: request.integrity,
+        keepalive: request.keepalive,
+      });
+      await addToBackgroundSync(requestToSync);
     }
 
     return new Response(
@@ -431,5 +451,12 @@ async function removePendingRequest(id) {
     };
   });
 }
+
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SET_API_BASE_URL') {
+    apiBaseUrl = event.data.url;
+    console.log(`Service Worker: API Base URL set to ${apiBaseUrl}`);
+  }
+});
 
 console.log("📱 TaskFlow Service Worker loaded successfully");

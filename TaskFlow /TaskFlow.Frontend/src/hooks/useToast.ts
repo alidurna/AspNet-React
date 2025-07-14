@@ -94,6 +94,7 @@
  */
 
 import { useAppDispatch } from "../store";
+import { useMemo } from "react";
 
 /**
  * Toast Utility Functions
@@ -102,37 +103,41 @@ import { useAppDispatch } from "../store";
 export const useToast = () => {
   const dispatch = useAppDispatch();
 
-  return {
-    showSuccess: (message: string) => {
-      dispatch({
-        type: "ui/showSuccessToast",
-        payload: message,
-      });
-    },
+  const memoizedToast = useMemo(() => {
+    return {
+      showSuccess: (message: string) => {
+        dispatch({
+          type: "ui/showSuccessToast",
+          payload: message,
+        });
+      },
 
-    showError: (message: string) => {
-      dispatch({
-        type: "ui/showErrorToast",
-        payload: message,
-      });
-    },
+      showError: (message: string) => {
+        dispatch({
+          type: "ui/showErrorToast",
+          payload: message,
+        });
+      },
 
-    showWarning: (message: string) => {
-      dispatch({
-        type: "ui/showWarningToast",
-        payload: message,
-      });
-    },
+      showWarning: (message: string) => {
+        dispatch({
+          type: "ui/showWarningToast",
+          payload: message,
+        });
+      },
 
-    showInfo: (message: string) => {
-      dispatch({
-        type: "ui/showInfoToast",
-        payload: message,
-      });
-    },
+      showInfo: (message: string) => {
+        dispatch({
+          type: "ui/showInfoToast",
+          payload: message,
+        });
+      },
 
-    clearAll: () => {
-      dispatch({ type: "ui/clearAllToasts" });
-    },
-  };
+      clearAll: () => {
+        dispatch({ type: "ui/clearAllToasts" });
+      },
+    };
+  }, [dispatch]);
+
+  return memoizedToast;
 };

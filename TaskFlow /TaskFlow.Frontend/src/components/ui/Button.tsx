@@ -55,7 +55,7 @@ import React from "react";
  * HTML button elementinin tüm özelliklerini extend eder
  */
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "outline" | "ghost"; // Buton çeşidi/stili
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "destructive"; // Buton çeşidi/stili
   size?: "sm" | "md" | "lg"; // Buton boyutu
   isLoading?: boolean; // Yükleniyor durumu (spinner gösterir)
   leftIcon?: React.ReactNode; // Sol taraftaki ikon
@@ -106,6 +106,7 @@ const Button: React.FC<ButtonProps> = ({
     outline:
       "border border-primary-600 text-primary-600 hover:bg-primary-50 focus:ring-primary-500", // Çerçeveli buton
     ghost: "text-primary-600 hover:bg-primary-50 focus:ring-primary-500", // Sadece metin buton
+    destructive: "bg-red-600 hover:bg-red-700 text-white focus:ring-red-500", // Silme işlemleri için kırmızı buton
   };
 
   // Boyut bazlı padding ve font sınıfları

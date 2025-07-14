@@ -102,10 +102,13 @@ public class FilesController : ControllerBase
 
             _logger.LogInformation("Avatar upload for user {UserId}", userId);
 
-            // Generate safe filename
-            var fileName = _fileUploadService.GenerateSafeFileName(file.FileName, $"user_{userId}_avatar");
-            var size = _fileUploadService.FormatFileSize(file.Length);
-            var category = _fileUploadService.GetFileCategory(file.ContentType, file.FileName);
+            var requestDto = new AvatarUploadRequestDto { File = file, AutoResize = true };
+            var result = await _fileUploadService.UploadAvatarAsync(userId.Value, requestDto);
+
+            if (!result.Success)
+            {
+                return BadRequest(new { success = false, message = result.ErrorMessage });
+            }
 
             return Ok(new 
             { 
@@ -113,11 +116,14 @@ public class FilesController : ControllerBase
                 message = "Avatar upload successful", 
                 data = new
                 {
-                    fileName,
-                    originalName = file.FileName,
-                    size,
-                    category,
-                    contentType = file.ContentType
+                    fileName = result.FileName,
+                    originalName = result.OriginalFileName,
+                    size = _fileUploadService.FormatFileSize(result.FileSize),
+                    contentType = result.ContentType,
+                    fileUrl = result.FileUrl,
+                    uploadedAt = result.UploadedAt,
+                    resizedVersions = result.ResizedVersions,
+                    originalDimensions = result.OriginalDimensions
                 }
             });
         }
@@ -226,6 +232,50 @@ public class FilesController : ControllerBase
     }
 
     /// <summary>
+    /// Belirli bir ekli dosyayı ID'sine göre siler.
+    /// </summary>
+    /// <param name="attachmentId">Silinecek ekli dosyanın ID'si.</param>
+    /// <returns>İşlemin başarılı olup olmadığını gösteren bir yanıt.</returns>
+    /// <response code="200">Ekli dosya başarıyla silindi.</response>
+    /// <response code="401">Yetkilendirme başarısız.</response>
+    /// <response code="404">Ekli dosya bulunamadı veya kullanıcıya ait değil.</response>
+    /// <response code="500">Sunucu hatası.</response>
+    [HttpDelete("attachment/{attachmentId:int}")]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 200)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 404)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+    public async Task<IActionResult> DeleteAttachment(int attachmentId)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+            }
+
+            _logger.LogInformation("Delete attachment {AttachmentId} by user {UserId}", attachmentId, userId);
+
+            var result = await _fileUploadService.DeleteAttachmentAsync(attachmentId, userId.Value);
+
+            if (result)
+            {
+                return Ok(ApiResponseModel<object>.SuccessResponse("Ekli dosya başarıyla silindi."));
+            }
+            else
+            {
+                return NotFound(ApiResponseModel<object>.ErrorResponse("Ekli dosya bulunamadı veya silinemedi."));
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting attachment {AttachmentId}", attachmentId);
+            return StatusCode(500, ApiResponseModel<object>.ErrorResponse("Ekli dosya silinirken bir hata oluştu."));
+        }
+    }
+
+    /// <summary>
     /// Get upload limits info
     /// </summary>
     [HttpGet("limits")]
@@ -251,11 +301,51 @@ public class FilesController : ControllerBase
         return Ok(new { success = true, data = limits });
     }
 
+    /// <summary>
+    /// Belirli bir göreve ait ekli dosyaların listesini getirir.
+    /// </summary>
+    /// <param name="taskId">Ekli dosyaları getirilecek görevin ID'si.</param>
+    /// <returns>Ekli dosya listesi.</returns>
+    /// <response code="200">Ekli dosyalar başarıyla getirildi.</response>
+    /// <response code="401">Yetkilendirme başarısız.</response>
+    /// <response code="500">Sunucu hatası.</response>
+    [HttpGet("attachments/task/{taskId:int}")]
+    [ProducesResponseType(typeof(ApiResponseModel<List<AttachmentDto>>), 200)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+    [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+    public async Task<ActionResult<ApiResponseModel<List<AttachmentDto>>>> GetAttachmentsForTask(int taskId)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+            }
+
+            var result = await _fileUploadService.GetAttachmentsForTaskAsync(taskId, userId.Value);
+
+            if (!result.Success)
+            {
+                return BadRequest(ApiResponseModel<List<AttachmentDto>>.ErrorResponse(result.Message));
+            }
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting attachments for task {TaskId}", taskId);
+            return StatusCode(500, ApiResponseModel<List<AttachmentDto>>.ErrorResponse("Ekli dosyalar getirilirken bir hata oluştu."));
+        }
+    }
+
     private int? GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                         ?? User.FindFirst("sub")?.Value;
-        
-        return int.TryParse(userIdClaim, out var userId) ? userId : null;
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userIdClaim != null && int.TryParse(userIdClaim.Value, out var userId))
+        {
+            return userId;
+        }
+        return null;
     }
 }

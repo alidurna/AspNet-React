@@ -59,38 +59,95 @@
 // ****************************************************************************************************
 using System.ComponentModel.DataAnnotations;
 using TaskFlow.API.Models;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace TaskFlow.API.DTOs
 {
     public class TodoTaskDto
     {
+        [SwaggerSchema("Görevin benzersiz kimliği", Example = 101)]
         public int Id { get; set; }
+
+        [SwaggerSchema("Görev başlığı", Example = "Sunum Hazırlığı")]
         public string Title { get; set; } = string.Empty;
+
+        [SwaggerSchema("Görev açıklaması", Example = "Sunum için slaytları hazırla.")]
         public string? Description { get; set; }
+
+        [SwaggerSchema("Görev tamamlandı mı?", Example = false)]
         public bool IsCompleted { get; set; }
+
+        [SwaggerSchema("Görev ilerleme yüzdesi", Example = 50)]
         public int Progress { get; set; }
+
+        [SwaggerSchema("Oluşturulma tarihi", Example = "2024-07-14T12:00:00Z")]
         public DateTime CreatedAt { get; set; }
+
+        [SwaggerSchema("Tamamlanma tarihi", Example = "2024-07-15T18:00:00Z")]
         public DateTime? CompletedAt { get; set; }
+
+        [SwaggerSchema("Bitiş tarihi", Example = "2024-07-20T23:59:59Z")]
         public DateTime? DueDate { get; set; }
+
+        [SwaggerSchema("Hatırlatma tarihi", Example = "2024-07-19T09:00:00Z")]
         public DateTime? ReminderDate { get; set; }
+
+        [SwaggerSchema("Başlangıç tarihi", Example = "2024-07-14T09:00:00Z")]
         public DateTime? StartDate { get; set; }
-        public DateTime UpdatedAt { get; set; }
+
+        [SwaggerSchema("Görev önceliği", Example = "High")]
         public Priority Priority { get; set; }
+
+        [SwaggerSchema("Etiketler (virgülle ayrılmış)", Example = "sunum,ofis")] 
         public string? Tags { get; set; }
+
+        [SwaggerSchema("Ek notlar", Example = "Sunumda müşteri odaklılık vurgulanacak.")]
         public string? Notes { get; set; }
+
+        [SwaggerSchema("Görevin ait olduğu kullanıcı ID'si", Example = 5)]
         public int UserId { get; set; }
+
+        [SwaggerSchema("Kullanıcı adı", Example = "Ali Durna")]
         public string UserName { get; set; } = string.Empty;
+
+        [SwaggerSchema("Kategori ID'si", Example = 2)]
         public int? CategoryId { get; set; }
+
+        [SwaggerSchema("Kategori adı", Example = "Sunumlar")]
         public string CategoryName { get; set; } = string.Empty;
+
+        [SwaggerSchema("Kategori rengi", Example = "#FF5733")]
         public string CategoryColor { get; set; } = string.Empty;
+
+        [SwaggerSchema("Görev vadesi geçti mi?", Example = false)]
         public bool IsOverdue { get; set; }
+
+        [SwaggerSchema("Vade bitimine kalan gün sayısı", Example = 3)]
         public int? DaysUntilDue { get; set; }
+
+        [SwaggerSchema("Tamamlanma yüzdesi", Example = 50)]
         public int CompletionPercentage { get; set; }
+
+        [SwaggerSchema("Görev aktif mi?", Example = true)]
         public bool IsActive { get; set; } = true;
+
+        [SwaggerSchema("Kategori detayları")]
         public virtual CategoryDto? Category { get; set; }
+
+        [SwaggerSchema("Üst görev ID'si", Example = 10)]
         public int? ParentTaskId { get; set; }
+
+        [SwaggerSchema("Üst görev detayları")]
         public virtual TodoTaskDto? ParentTask { get; set; }
+
+        [SwaggerSchema("Alt görevler listesi")]
         public virtual ICollection<TodoTaskDto> SubTasks { get; set; } = new List<TodoTaskDto>();
+
+        [SwaggerSchema("Atanan kullanıcı ID'si", Example = 7)]
+        public int? AssignedUserId { get; set; }
+
+        [SwaggerSchema("Atanan kullanıcı adı", Example = "Mehmet Yılmaz")]
+        public string? AssignedUserName { get; set; }
     }
 
     /// <summary>

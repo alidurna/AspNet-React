@@ -66,6 +66,9 @@ using SixLabors.ImageSharp.Formats.Png;
 using TaskFlow.API.DTOs;
 using TaskFlow.API.Interfaces;
 using System.Text.RegularExpressions;
+using TaskFlow.API.Data; // Eklendi
+using TaskFlow.API.Models; // Eklendi
+using Microsoft.EntityFrameworkCore; // Eklendi: ToListAsync ve FirstOrDefaultAsync için
 
 namespace TaskFlow.API.Services;
 
@@ -78,7 +81,8 @@ public class FileUploadService : IFileUploadService
     private readonly ILogger<FileUploadService> _logger;
     private readonly IWebHostEnvironment _environment;
     private readonly IConfiguration _configuration;
-    
+    private readonly TaskFlowDbContext _context; // Eklendi
+
     // Upload klasör yolları
     private readonly string _uploadsPath;
     private readonly string _avatarsPath;
@@ -95,11 +99,13 @@ public class FileUploadService : IFileUploadService
     public FileUploadService(
         ILogger<FileUploadService> logger,
         IWebHostEnvironment environment,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        TaskFlowDbContext context) // Eklendi
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _environment = environment ?? throw new ArgumentNullException(nameof(environment));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        _context = context ?? throw new ArgumentNullException(nameof(context)); // Eklendi
         
         // Upload klasörlerini ayarla
         _uploadsPath = Path.Combine(_environment.WebRootPath ?? _environment.ContentRootPath, "uploads");
@@ -407,44 +413,68 @@ public class FileUploadService : IFileUploadService
         }
     }
 
+    /// <summary>
+    /// Ekli dosyaları belirtilen göreve göre siler.
+    /// </summary>
+    /// <param name="taskId">Ekli dosyaları silinecek görevin ID'si.</param>
+    /// <returns>Silinen ekli dosya sayısı.</returns>
     public async Task<int> DeleteTaskAttachmentsAsync(int taskId)
+    {
+        var attachments = await _context.Attachments.Where(a => a.TodoTaskId == taskId).ToListAsync();
+        if (!attachments.Any()) return 0;
+
+        int deletedCount = 0;
+        foreach (var attachment in attachments)
+        {
+            var filePath = Path.Combine(_attachmentsPath, attachment.FileName);
+            if (System.IO.File.Exists(filePath))
+            {
+                System.IO.File.Delete(filePath);
+                _logger.LogInformation("Deleted attachment file: {FilePath}", filePath);
+            }
+            _context.Attachments.Remove(attachment);
+            deletedCount++;
+        }
+        await _context.SaveChangesAsync();
+        return deletedCount;
+    }
+
+    /// <summary>
+    /// Belirli bir ekli dosyayı ID'sine göre siler.
+    /// </summary>
+    /// <param name="attachmentId">Silinecek ekli dosyanın ID'si.</param>
+    /// <param name="userId">İşlemi yapan kullanıcının ID'si.</param>
+    /// <returns>İşlemin başarılı olup olmadığını gösteren boolean değer.</returns>
+    public async Task<bool> DeleteAttachmentAsync(int attachmentId, int userId)
     {
         try
         {
-            var deletedCount = 0;
-            var attachmentDirectory = new DirectoryInfo(_attachmentsPath);
-            
-            if (!attachmentDirectory.Exists)
+            var attachment = await _context.Attachments
+                .FirstOrDefaultAsync(a => a.Id == attachmentId && a.UserId == userId);
+
+            if (attachment == null)
             {
-                _logger.LogWarning("Attachment directory does not exist: {AttachmentPath}", _attachmentsPath);
-                return 0; // Klasör yoksa silecek bir şey yok
+                _logger.LogWarning("Attachment {AttachmentId} not found or not owned by user {UserId}", attachmentId, userId);
+                return false;
             }
 
-            // Task'a ait attachment dosyalarını bul (pattern: task_{taskId}_attachment_*)
-            var taskAttachmentPattern = $"task_{taskId}_attachment_*";
-            var taskAttachmentFiles = attachmentDirectory.GetFiles(taskAttachmentPattern);
-
-            foreach (var file in taskAttachmentFiles)
+            var filePath = Path.Combine(_attachmentsPath, attachment.FileName);
+            if (System.IO.File.Exists(filePath))
             {
-                try
-                {
-                    file.Delete();
-                    deletedCount++;
-                    _logger.LogDebug("Deleted attachment file: {FileName}", file.Name);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to delete attachment file: {FileName}", file.Name);
-                }
+                System.IO.File.Delete(filePath);
+                _logger.LogInformation("Deleted single attachment file: {FilePath}", filePath);
             }
 
-            _logger.LogInformation("Deleted {Count} attachment files for task {TaskId}", deletedCount, taskId);
-            return deletedCount;
+            _context.Attachments.Remove(attachment);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Attachment {AttachmentId} deleted successfully by user {UserId}", attachmentId, userId);
+            return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting attachments for task {TaskId}", taskId);
-            return 0;
+            _logger.LogError(ex, "Error deleting attachment {AttachmentId} for user {UserId}", attachmentId, userId);
+            return false;
         }
     }
 
@@ -512,6 +542,43 @@ public class FileUploadService : IFileUploadService
         
         // Extension ekle
         return $"{fileName}{extension.ToLowerInvariant()}";
+    }
+
+    /// <summary>
+    /// Belirli bir göreve ait ekli dosyaların listesini getirir.
+    /// </summary>
+    /// <param name="taskId">Ekli dosyaları getirilecek görevin ID'si.</param>
+    /// <param name="userId">İşlemi yapan kullanıcının ID'si.</param>
+    /// <returns>AttachmentDto nesnelerinin bir listesini içeren ApiResponseModel.</returns>
+    public async Task<ApiResponseModel<List<AttachmentDto>>> GetAttachmentsForTaskAsync(int taskId, int userId)
+    {
+        try
+        {
+            _logger.LogInformation("Retrieving attachments for task {TaskId} by user {UserId}", taskId, userId);
+
+            var attachments = await _context.Attachments
+                .Where(a => a.TodoTaskId == taskId && a.UserId == userId)
+                .Select(a => new AttachmentDto
+                {
+                    Id = a.Id,
+                    FileName = a.FileName,
+                    FilePath = a.FilePath,
+                    FileSize = a.FileSize,
+                    ContentType = a.ContentType,
+                    UploadedAt = a.UploadDate, // UploadDate olarak düzeltildi
+                    TaskId = a.TodoTaskId, // TodoTaskId olarak düzeltildi
+                    UserId = a.UserId
+                })
+                .ToListAsync();
+
+            return ApiResponseModel<List<AttachmentDto>>.SuccessResponse(
+                $"{attachments.Count} ekli dosya bulundu.", attachments);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving attachments for task {TaskId} by user {UserId}", taskId, userId);
+            return ApiResponseModel<List<AttachmentDto>>.ErrorResponse("Ekli dosyalar getirilirken hata oluştu.");
+        }
     }
 
     #endregion

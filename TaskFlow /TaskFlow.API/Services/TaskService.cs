@@ -3,6 +3,8 @@ using TaskFlow.API.Data;
 using TaskFlow.API.DTOs;
 using TaskFlow.API.Interfaces;
 using TaskFlow.API.Models;
+using Microsoft.AspNetCore.SignalR; // Eklendi
+using TaskFlow.API.Hubs; // Eklendi
 
 // ****************************************************************************************************
 //  TASKSERVICE.CS
@@ -77,6 +79,7 @@ namespace TaskFlow.API.Services
         private readonly TaskFlowDbContext _context;
         private readonly ILogger<TaskService> _logger;
         private readonly IConfiguration _configuration;
+        private readonly IHubContext<TaskFlowHub> _hubContext; // Eklendi
 
         #endregion
 
@@ -85,11 +88,13 @@ namespace TaskFlow.API.Services
         public TaskService(
             TaskFlowDbContext context,
             ILogger<TaskService> logger,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IHubContext<TaskFlowHub> hubContext) // Eklendi
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext)); // Eklendi
         }
 
         #endregion
@@ -138,6 +143,7 @@ namespace TaskFlow.API.Services
                 var task = new TodoTask
                 {
                     UserId = userId,
+                    User = await _context.Users.FindAsync(userId) ?? throw new InvalidOperationException("Kullanıcı bulunamadı."), // User nesnesini başlat
                     CategoryId = createDto.CategoryId,
                     ParentTaskId = createDto.ParentTaskId,
                     Title = createDto.Title.Trim(),
@@ -159,7 +165,27 @@ namespace TaskFlow.API.Services
 
                 // Task'ı relations ile beraber yeniden yükle
                 var createdTask = await GetTaskByIdInternalAsync(task.Id, userId);
-                return await MapToDtoAsync(createdTask!);
+                var createdTaskDto = await MapToDtoAsync(createdTask!);
+
+                // SignalR bildirimi gönder
+                var notificationData = new
+                {
+                    Type = "TaskCreated",
+                    TaskId = createdTaskDto.Id,
+                    TaskTitle = createdTaskDto.Title,
+                    CategoryId = createdTaskDto.CategoryId,
+                    CreatorUserId = createdTaskDto.UserId,
+                    AssignedUserId = createdTaskDto.AssignedUserId, // Eğer görev atanmışsa
+                    Timestamp = DateTime.UtcNow,
+                    Message = $"Yeni görev oluşturuldu: {createdTaskDto.Title}"
+                };
+                await _hubContext.Clients.Group($"User_{createdTaskDto.UserId}").SendAsync("TaskUpdate", notificationData);
+                if (createdTaskDto.AssignedUserId.HasValue && createdTaskDto.AssignedUserId.Value != createdTaskDto.UserId)
+                {
+                    await _hubContext.Clients.Group($"User_{createdTaskDto.AssignedUserId.Value}").SendAsync("TaskUpdate", notificationData);
+                }
+
+                return createdTaskDto;
             }
             catch (Exception ex)
             {
@@ -399,10 +425,31 @@ namespace TaskFlow.API.Services
                 task.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Task updated successfully: {TaskId}", taskId);
+                _logger.LogInformation("Task updated successfully: {TaskId} for user {UserId}", task.Id, userId);
 
-                var updatedTask = await GetTaskByIdInternalAsync(taskId, userId);
-                return await MapToDtoAsync(updatedTask!);
+                // Task'ı relations ile beraber yeniden yükle ve DTO'ya dönüştür
+                var updatedTask = await GetTaskByIdInternalAsync(task.Id, userId);
+                var updatedTaskDto = await MapToDtoAsync(updatedTask!);
+
+                // SignalR bildirimi gönder
+                var notificationData = new
+                {
+                    Type = "TaskUpdated",
+                    TaskId = updatedTaskDto.Id,
+                    TaskTitle = updatedTaskDto.Title,
+                    IsCompleted = updatedTaskDto.IsCompleted,
+                    CreatorUserId = updatedTaskDto.UserId,
+                    AssignedUserId = updatedTaskDto.AssignedUserId,
+                    Timestamp = DateTime.UtcNow,
+                    Message = $"Görev güncellendi: {updatedTaskDto.Title}"
+                };
+                await _hubContext.Clients.Group($"User_{updatedTaskDto.UserId}").SendAsync("TaskUpdate", notificationData);
+                if (updatedTaskDto.AssignedUserId.HasValue && updatedTaskDto.AssignedUserId.Value != updatedTaskDto.UserId)
+                {
+                    await _hubContext.Clients.Group($"User_{updatedTaskDto.AssignedUserId.Value}").SendAsync("TaskUpdate", notificationData);
+                }
+
+                return updatedTaskDto;
             }
             catch (Exception ex)
             {
@@ -441,7 +488,24 @@ namespace TaskFlow.API.Services
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Task and all sub-tasks deleted successfully: {TaskId}", taskId);
+                _logger.LogInformation("Task {TaskId} for user {UserId} marked as inactive.", taskId, userId);
+
+                // SignalR bildirimi gönder
+                var notificationData = new
+                {
+                    Type = "TaskDeleted",
+                    TaskId = task.Id,
+                    TaskTitle = task.Title,
+                    CreatorUserId = task.UserId,
+                    AssignedUserId = task.AssignedUserId, // Eğer görev atanmışsa
+                    Timestamp = DateTime.UtcNow,
+                    Message = $"Görev silindi: {task.Title}"
+                };
+                await _hubContext.Clients.Group($"User_{task.UserId}").SendAsync("TaskUpdate", notificationData);
+                if (task.AssignedUserId.HasValue && task.AssignedUserId.Value != task.UserId)
+                {
+                    await _hubContext.Clients.Group($"User_{task.AssignedUserId.Value}").SendAsync("TaskUpdate", notificationData);
+                }
 
                 return true;
             }
@@ -1096,6 +1160,124 @@ namespace TaskFlow.API.Services
             }
         }
 
+        /// <summary>
+        /// Belirtilen görevleri toplu olarak siler.
+        /// </summary>
+        /// <param name="userId">İşlemi yapan kullanıcının ID'si.</param>
+        /// <param name="taskIds">Silinecek görev ID'lerinin listesi.</param>
+        /// <returns>Silinen görev sayısı.</returns>
+        public async Task<int> BulkDeleteTasksAsync(int userId, List<int> taskIds)
+        {
+            try
+            {
+                _logger.LogInformation("Bulk deleting {Count} tasks for user {UserId}", taskIds.Count, userId);
+
+                var tasksToDelete = await _context.TodoTasks
+                    .Where(t => taskIds.Contains(t.Id) && t.UserId == userId && t.IsActive)
+                    .ToListAsync();
+
+                if (!tasksToDelete.Any())
+                {
+                    return 0; // Silinecek görev bulunamadı
+                }
+
+                _context.TodoTasks.RemoveRange(tasksToDelete);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Successfully bulk deleted {Count} tasks for user {UserId}", tasksToDelete.Count, userId);
+
+                // SignalR bildirimi gönder
+                foreach (var task in tasksToDelete)
+                {
+                    var notificationData = new
+                    {
+                        Type = "TaskDeleted",
+                        TaskId = task.Id,
+                        TaskTitle = task.Title,
+                        CreatorUserId = task.UserId,
+                        AssignedUserId = task.AssignedUserId,
+                        Timestamp = DateTime.UtcNow,
+                        Message = $"Görev silindi (toplu işlem): {task.Title}"
+                    };
+                    await _hubContext.Clients.Group($"User_{task.UserId}").SendAsync("TaskUpdate", notificationData);
+                    if (task.AssignedUserId.HasValue && task.AssignedUserId.Value != task.UserId)
+                    {
+                        await _hubContext.Clients.Group($"User_{task.AssignedUserId.Value}").SendAsync("TaskUpdate", notificationData);
+                    }
+                }
+
+                return tasksToDelete.Count;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error bulk deleting tasks for user {UserId}", userId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Belirtilen görevleri toplu olarak tamamlar.
+        /// </summary>
+        /// <param name="userId">İşlemi yapan kullanıcının ID'si.</param>
+        /// <param name="taskIds">Tamamlanacak görev ID'lerinin listesi.</param>
+        /// <returns>Tamamlanan görev sayısı.</returns>
+        public async Task<int> BulkCompleteTasksAsync(int userId, List<int> taskIds)
+        {
+            try
+            {
+                _logger.LogInformation("Bulk completing {Count} tasks for user {UserId}", taskIds.Count, userId);
+
+                var tasksToComplete = await _context.TodoTasks
+                    .Where(t => taskIds.Contains(t.Id) && t.UserId == userId && t.IsActive && !t.IsCompleted)
+                    .ToListAsync();
+
+                if (!tasksToComplete.Any())
+                {
+                    return 0; // Tamamlanacak görev bulunamadı
+                }
+
+                foreach (var task in tasksToComplete)
+                {
+                    task.IsCompleted = true;
+                    task.Progress = 100;
+                    task.CompletedAt = DateTime.UtcNow;
+                    task.UpdatedAt = DateTime.UtcNow;
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Successfully bulk completed {Count} tasks for user {UserId}", tasksToComplete.Count, userId);
+
+                // SignalR bildirimi gönder
+                foreach (var task in tasksToComplete)
+                {
+                    var notificationData = new
+                    {
+                        Type = "TaskUpdated", // Veya "TaskCompleted" gibi yeni bir tip olabilir
+                        TaskId = task.Id,
+                        TaskTitle = task.Title,
+                        IsCompleted = task.IsCompleted,
+                        CreatorUserId = task.UserId,
+                        AssignedUserId = task.AssignedUserId,
+                        Timestamp = DateTime.UtcNow,
+                        Message = $"Görev tamamlandı (toplu işlem): {task.Title}"
+                    };
+                    await _hubContext.Clients.Group($"User_{task.UserId}").SendAsync("TaskUpdate", notificationData);
+                    if (task.AssignedUserId.HasValue && task.AssignedUserId.Value != task.UserId)
+                    {
+                        await _hubContext.Clients.Group($"User_{task.AssignedUserId.Value}").SendAsync("TaskUpdate", notificationData);
+                    }
+                }
+
+                return tasksToComplete.Count;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error bulk completing tasks for user {UserId}", userId);
+                throw;
+            }
+        }
+
         #endregion
 
         #region Helper Methods
@@ -1105,6 +1287,7 @@ namespace TaskFlow.API.Services
             return await _context.TodoTasks
                 .Include(t => t.Category)
                 .Include(t => t.ParentTask)
+                .Include(t => t.AssignedUser) // AssignedUser'ı dahil et
                 .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId && t.IsActive);
         }
 
@@ -1140,7 +1323,9 @@ namespace TaskFlow.API.Services
                 CategoryColor = task.Category?.ColorCode ?? string.Empty,
                 IsOverdue = task.DueDate.HasValue && task.DueDate.Value < DateTime.UtcNow && !task.IsCompleted,
                 DaysUntilDue = task.DueDate.HasValue ? (int)(task.DueDate.Value - DateTime.UtcNow).TotalDays : null,
-                CompletionPercentage = task.CompletionPercentage
+                CompletionPercentage = task.CompletionPercentage,
+                AssignedUserId = task.AssignedUserId, // Yeni eklendi
+                AssignedUserName = task.AssignedUser?.FirstName + " " + task.AssignedUser?.LastName // Yeni eklendi
             };
 
             // Category bilgisini ekle

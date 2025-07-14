@@ -98,6 +98,19 @@ import type { TaskFilterFormData } from "../../schemas/taskSchemas";
 import { useToast } from "../../hooks/useToast";
 import ConfirmModal from "../ui/ConfirmModal";
 import AdvancedSearchModal from "../search/AdvancedSearchModal";
+import { searchAPI } from "../../services/api"; // Eklendi
+import { useRef, useEffect, useCallback } from "react"; // Eklendi
+
+// Debounce yardımcı fonksiyonu
+const debounce = (func: Function, delay: number) => {
+  let timeoutId: NodeJS.Timeout;
+  return (...args: any[]) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      func(...args);
+    }, delay);
+  };
+};
 
 interface BreadcrumbItem {
   name: string;
@@ -120,10 +133,65 @@ const Header: React.FC<HeaderProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]); // Eklendi
+  const [showSuggestions, setShowSuggestions] = useState(false); // Eklendi
+
+  const searchInputRef = useRef<HTMLInputElement>(null); // Eklendi
+  const suggestionsRef = useRef<HTMLDivElement>(null); // Eklendi
 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
+
+  // Debounce hook'u yerine useCallback kullanarak arama önerilerini geciktir
+  const debouncedFetchSuggestions = useCallback(
+    debounce(async (query: string) => {
+      if (query.length < 2) {
+        setSuggestions([]);
+        return;
+      }
+      try {
+        const response = await searchAPI.getSearchSuggestions(query);
+        if (response.success && response.data) {
+          setSuggestions(response.data.suggestions);
+          setShowSuggestions(true);
+        }
+      } catch (error) {
+        console.error("Arama önerileri getirilirken hata oluştu:", error);
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }, 300),
+    []
+  );
+
+  useEffect(() => {
+    if (searchQuery.trim().length > 0) {
+      debouncedFetchSuggestions(searchQuery);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, [searchQuery, debouncedFetchSuggestions]);
+
+  // Dışarı tıklama olayını dinle
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchInputRef.current &&
+        !searchInputRef.current.contains(event.target as Node) &&
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const handleLogout = () => {
     setIsConfirmModalOpen(true);
@@ -145,11 +213,31 @@ const Header: React.FC<HeaderProps> = ({
     setIsConfirmModalOpen(false);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      // Hızlı arama mantığı burada uygulanacak
+      try {
+        const response = await searchAPI.globalSearch({ query: searchQuery, includeUsers: true });
+        if (response.success && response.data) {
+          showSuccess(`Global arama tamamlandı: ${response.data.totalResults} sonuç bulundu.`);
+          console.log("Global Arama Sonuçları:", response.data);
+          // TODO: Arama sonuçlarını göstermek için navigasyon veya modal kullanımı
+        } else {
+          showError(`Global arama başarısız: ${response.message}`);
+        }
+      } catch (error) {
+        showError(`Global arama sırasında hata oluştu: ${(error as Error).message}`);
+        console.error("Global arama hatası:", error);
+      }
+      setShowSuggestions(false); // Arama yapınca önerileri gizle
     }
+  };
+
+  const handleSelectSuggestion = (suggestion: string) => {
+    setSearchQuery(suggestion);
+    setShowSuggestions(false);
+    // İsteğe bağlı: Öneriyi seçince hemen arama yap
+    // handleSearch({ preventDefault: () => {} } as React.FormEvent);
   };
 
   const handleAdvancedSearch = (filters: any) => {
@@ -209,17 +297,35 @@ const Header: React.FC<HeaderProps> = ({
           </div>
 
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <form onSubmit={handleSearch} className="flex-grow">
+            <div className="relative flex items-center space-x-2">
+              <form onSubmit={handleSearch} className="flex-grow relative">
                 <input
+                  ref={searchInputRef}
                   type="text"
                   placeholder="Ara..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setIsSearchFocused(false)}
+                  onFocus={() => setShowSuggestions(true)} // Odaklandığında önerileri göster
                   className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+                {showSuggestions && suggestions.length > 0 && (
+                  <div
+                    ref={suggestionsRef}
+                    className="absolute top-full left-0 w-full max-w-xs bg-white border border-gray-300 rounded-md shadow-lg z-10 dark:bg-gray-700 dark:border-gray-600"
+                  >
+                    <ul className="py-1">
+                      {suggestions.map((suggestion, index) => (
+                        <li
+                          key={index}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer dark:hover:bg-gray-600 dark:text-gray-200"
+                          onClick={() => handleSelectSuggestion(suggestion)}
+                        >
+                          {suggestion}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </form>
               <button
                 onClick={() => setIsSearchModalOpen(true)}

@@ -55,15 +55,15 @@ namespace TaskFlow.API.Interfaces
     {
         Task<AuthResponseDto> RegisterAsync(RegisterDto registerDto);
         Task<AuthResponseDto> LoginAsync(LoginDto loginDto);
-        Task<UserDto> GetUserByIdAsync(int id);
+        Task<UserDto?> GetUserByIdAsync(int id);
         Task<UserProfileDto> GetUserProfileAsync(string userId);
         Task<UserProfileDto> UpdateProfileAsync(string userId, UpdateProfileDto model);
         Task<bool> ChangePasswordAsync(string userId, ChangePasswordDto model);
         Task<UserStatsDto> GetUserStatsAsync(int userId);
         Task<bool> RequestPasswordResetAsync(PasswordResetRequestDto model);
         Task<bool> ResetPasswordAsync(PasswordResetDto model);
-        Task<bool> RequestEmailVerificationAsync(EmailVerificationRequestDto model);
-        Task<bool> VerifyEmailAsync(EmailVerificationDto model);
+        Task<bool> RequestEmailVerificationAsync(EmailVerificationRequest model);
+        Task<bool> VerifyEmailAsync(EmailVerification model);
         Task<TokenRefreshResponseDto> RefreshTokenAsync(TokenRefreshRequestDto model);
         Task<bool> RevokeRefreshTokenAsync(int userId);
         Task<bool> LogoutAllSessionsAsync(int userId);

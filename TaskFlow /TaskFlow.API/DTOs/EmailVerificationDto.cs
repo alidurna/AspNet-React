@@ -1,21 +1,25 @@
 using System.ComponentModel.DataAnnotations;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace TaskFlow.API.DTOs
 {
     public class EmailVerificationRequestDto
     {
-        [Required(ErrorMessage = "Email adresi gereklidir")]
-        [EmailAddress(ErrorMessage = "Geçerli bir email adresi giriniz")]
-        public string Email { get; set; }
+        [Required]
+        [EmailAddress]
+        [SwaggerSchema("Doğrulama kodu gönderilecek e-posta adresi", Example = "ali@example.com")]
+        public string Email { get; set; } = string.Empty;
     }
 
     public class EmailVerificationDto
     {
-        [Required(ErrorMessage = "Verification token gereklidir")]
-        public string Token { get; set; }
+        [Required]
+        [EmailAddress]
+        [SwaggerSchema("Doğrulama yapılacak e-posta adresi", Example = "ali@example.com")]
+        public string Email { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Email adresi gereklidir")]
-        [EmailAddress(ErrorMessage = "Geçerli bir email adresi giriniz")]
-        public string Email { get; set; }
+        [Required]
+        [SwaggerSchema("E-posta doğrulama kodu", Example = "123456")]
+        public string Token { get; set; } = string.Empty;
     }
 } 

@@ -146,7 +146,7 @@ const developmentConfig: EnvironmentConfig = {
   isTest: false,
 
   // API Configuration
-  apiBaseUrl: "http://localhost:5000/api",
+  apiBaseUrl: "http://localhost:5281",
   apiTimeout: 10000,
 
   // CDN Configuration

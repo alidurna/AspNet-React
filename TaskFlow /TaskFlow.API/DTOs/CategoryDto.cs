@@ -59,101 +59,36 @@
 // ****************************************************************************************************
 
 using System.ComponentModel.DataAnnotations;
+using Swashbuckle.AspNetCore.Annotations;
 
-namespace TaskFlow.API.DTOs;
-
-/// <summary>
-/// Category bilgilerini API'den dönerken kullanılan DTO
-/// GET /api/categories endpoint'inden döner
-/// 
-/// Bu DTO sadece READ operations için kullanılır
-/// Computed properties ve navigation properties içerir
-/// </summary>
-public class CategoryDto
+namespace TaskFlow.API.DTOs
 {
-    /// <summary>
-    /// Kategori ID'si - Primary key
-    /// Frontend'de routing ve state management için kullanılır
-    /// </summary>
-    public int Id { get; set; }
+    public class CategoryDto
+    {
+        [SwaggerSchema("Kategori kimliği", Example = 1)]
+        public int Id { get; set; }
 
-    /// <summary>
-    /// Kategori adı
-    /// UI'da gösterilecek ana text
-    /// </summary>
-    public string Name { get; set; } = string.Empty;
+        [Required]
+        [StringLength(100)]
+        [SwaggerSchema("Kategori adı", Example = "Yazılım")] 
+        public string Name { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Kategori açıklaması (opsiyonel)
-    /// Tooltip veya description area'da gösterilebilir
-    /// </summary>
-    public string? Description { get; set; }
+        [StringLength(500)]
+        [SwaggerSchema("Kategori açıklaması", Example = "Yazılım projeleri için ana kategori.")]
+        public string? Description { get; set; }
 
-    /// <summary>
-    /// Kategori renk kodu (HEX format)
-    /// UI'da kategori badge'leri için kullanılır
-    /// Örnek: "#3498DB", "#E74C3C"
-    /// </summary>
-    public string ColorCode { get; set; } = string.Empty;
+        [SwaggerSchema("Kategori rengi (hex)", Example = "#FF5733")]
+        public string? ColorCode { get; set; }
 
-    /// <summary>
-    /// Kategori ikonu (CSS class veya icon name)
-    /// Font Awesome, Material Icons vb. için
-    /// Örnek: "fas fa-briefcase", "work_outline"
-    /// </summary>
-    public string? Icon { get; set; }
+        [SwaggerSchema("Kategorinin oluşturulma tarihi", Example = "2024-07-14T12:00:00Z")]
+        public DateTime CreatedAt { get; set; }
 
-    /// <summary>
-    /// Kategorinin aktif olup olmadığı
-    /// Soft delete pattern için kullanılır
-    /// false olsa da database'de kalır, sadece UI'da gösterilmez
-    /// </summary>
-    public bool IsActive { get; set; }
+        [SwaggerSchema("Kategorinin güncellenme tarihi", Example = "2024-07-15T15:00:00Z")]
+        public DateTime UpdatedAt { get; set; }
 
-    /// <summary>
-    /// Varsayılan kategori mi?
-    /// Kullanıcının default kategorisi (ilk kurulumda)
-    /// Her kullanıcının bir tane default kategorisi olur
-    /// </summary>
-    public bool IsDefault { get; set; }
-
-    /// <summary>
-    /// Bu kategorideki toplam görev sayısı
-    /// Dashboard'da istatistik göstermek için
-    /// Computed property - database'de tutulmaz
-    /// </summary>
-    public int TotalTaskCount { get; set; }
-
-    /// <summary>
-    /// Bu kategorideki tamamlanan görev sayısı
-    /// Progress tracking için kullanılır
-    /// </summary>
-    public int CompletedTaskCount { get; set; }
-
-    /// <summary>
-    /// Bu kategorideki bekleyen görev sayısı
-    /// TotalTaskCount - CompletedTaskCount
-    /// </summary>
-    public int PendingTaskCount { get; set; }
-
-    /// <summary>
-    /// Tamamlanma yüzdesi (0-100)
-    /// Progress bar'lar için kullanılır
-    /// Math.Round((CompletedTaskCount / TotalTaskCount) * 100, 1)
-    /// </summary>
-    public decimal CompletionPercentage { get; set; }
-
-    /// <summary>
-    /// Kategori oluşturulma tarihi
-    /// Sorting ve filtering için kullanılır
-    /// </summary>
-    public DateTime CreatedAt { get; set; }
-
-    /// <summary>
-    /// Son güncellenme tarihi
-    /// Cache invalidation için kullanılabilir
-    /// </summary>
-    public DateTime UpdatedAt { get; set; }
+        [SwaggerSchema("Kategoriye ait görev sayısı", Example = 12)]
+        public int TaskCount { get; set; }
+    }
 }
 
 /// <summary>

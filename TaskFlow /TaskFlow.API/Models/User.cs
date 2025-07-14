@@ -107,6 +107,10 @@ namespace TaskFlow.API.Models
         
         public virtual ICollection<TodoTask> Tasks { get; set; } = new List<TodoTask>();
         
+        // Yeni eklenen alanlar: Atanan görevler ve yüklenen ekler
+        public virtual ICollection<TodoTask> AssignedTasks { get; set; } = new List<TodoTask>();
+        public virtual ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
+        
         public virtual ICollection<Category> Categories { get; set; } = new List<Category>();
         
         [NotMapped]

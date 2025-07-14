@@ -72,9 +72,21 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
+import ErrorBoundary from "./components/common/ErrorBoundary.tsx"; // Eklendi
+import environment from "./config/environment"; // Environment config import edildi
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-const queryClient = new QueryClient();
+import { Provider } from "react-redux"; // Provider import edildi
+import { store } from "./store"; // Redux store import edildi
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 dakika
+      gcTime: 1000 * 60 * 10, // 10 dakika (önceki default'tan biraz daha uzun)
+    },
+  },
+});
 
 /**
  * Uygulamanın kökünü oluşturur ve App component'ini QueryClientProvider ile sarmalar.
@@ -83,7 +95,35 @@ const queryClient = new QueryClient();
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <Provider store={store}> {/* Redux Provider eklendi */}
+        <ErrorBoundary> {/* ErrorBoundary ile App'i sararız */}
+          <App />
+        </ErrorBoundary>
+      </Provider>
     </QueryClientProvider>
   </StrictMode>
 );
+
+// Service Worker Registration
+if ("serviceWorker" in navigator) {
+  const config = environment; // Değiştirildi
+  const apiBaseUrlForSw = config.apiBaseUrl;
+
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((registration) => {
+        console.log("ServiceWorker registration successful with scope: ", registration.scope);
+        // Service Worker'a API base URL'sini gönder
+        if (registration.active) {
+          registration.active.postMessage({
+            type: "SET_API_BASE_URL",
+            url: apiBaseUrlForSw,
+          });
+        }
+      })
+      .catch((error) => {
+        console.log("ServiceWorker registration failed: ", error);
+      });
+  });
+}

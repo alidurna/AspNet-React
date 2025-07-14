@@ -341,10 +341,88 @@ namespace TaskFlow.API.Controllers
         }
 
         /// <summary>
-        /// Task'ı siler (soft delete)
+        /// Belirtilen görevleri toplu olarak siler.
         /// </summary>
-        /// <param name="id">Silinecek task ID'si</param>
-        /// <returns>Silme işlemi sonucu</returns>
+        /// <param name="bulkDeleteDto">Silinecek görev ID'lerinin listesini içeren DTO.</param>
+        /// <returns>Silinen görev sayısı.</returns>
+        /// <response code="200">Görevler başarıyla silindi.</response>
+        /// <response code="400">Geçersiz veri veya business rule ihlali.</response>
+        /// <response code="401">Token geçersiz veya eksik.</response>
+        /// <response code="500">Sunucu hatası.</response>
+        [HttpPost("bulk-delete")]
+        [ProducesResponseType(typeof(ApiResponseModel<int>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+        public async Task<ActionResult<ApiResponseModel<int>>> BulkDeleteTasks(
+            [FromBody] BulkDeleteTaskDto bulkDeleteDto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+                }
+
+                var deletedCount = await _taskService.BulkDeleteTasksAsync(userId.Value, bulkDeleteDto.TaskIds);
+
+                return Ok(ApiResponseModel<int>.SuccessResponse(
+                    $"{deletedCount} görev başarıyla silindi.", deletedCount
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error bulk deleting tasks for user {UserId}", GetCurrentUserId());
+                return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
+                    "Toplu görev silinirken bir hata oluştu."));
+            }
+        }
+
+        /// <summary>
+        /// Belirtilen görevleri toplu olarak tamamlar.
+        /// </summary>
+        /// <param name="bulkCompleteDto">Tamamlanacak görev ID'lerinin listesini içeren DTO.</param>
+        /// <returns>Tamamlanan görev sayısı.</returns>
+        /// <response code="200">Görevler başarıyla tamamlandı.</response>
+        /// <response code="400">Geçersiz veri veya business rule ihlali.</response>
+        /// <response code="401">Token geçersiz veya eksik.</response>
+        /// <response code="500">Sunucu hatası.</response>
+        [HttpPost("bulk-complete")]
+        [ProducesResponseType(typeof(ApiResponseModel<int>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+        public async Task<ActionResult<ApiResponseModel<int>>> BulkCompleteTasks(
+            [FromBody] BulkCompleteTaskDto bulkCompleteDto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+                }
+
+                var completedCount = await _taskService.BulkCompleteTasksAsync(userId.Value, bulkCompleteDto.TaskIds);
+
+                return Ok(ApiResponseModel<int>.SuccessResponse(
+                    $"{completedCount} görev başarıyla tamamlandı.", completedCount
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error bulk completing tasks for user {UserId}", GetCurrentUserId());
+                return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
+                    "Toplu görev tamamlanırken bir hata oluştu."));
+            }
+        }
+
+        /// <summary>
+        /// Görevi ID'ye göre siler
+        /// </summary>
+        /// <param name="id">Task ID'si</param>
+        /// <returns>Başarılı sonuç</returns>
         /// <response code="200">Task başarıyla silindi</response>
         /// <response code="401">Token geçersiz veya eksik</response>
         /// <response code="404">Task bulunamadı</response>

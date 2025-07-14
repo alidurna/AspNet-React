@@ -70,7 +70,7 @@ namespace TaskFlow.API.Models
 
         [Required]
         [MaxLength(200)]
-        public string Title { get; set; }
+        public required string Title { get; set; }
 
         [MaxLength(2000)]
         public string? Description { get; set; }
@@ -96,7 +96,7 @@ namespace TaskFlow.API.Models
         [Required]
         public int UserId { get; set; }
 
-        public virtual User User { get; set; }
+        public required virtual User User { get; set; }
 
         public int? CategoryId { get; set; }
 
@@ -117,6 +117,13 @@ namespace TaskFlow.API.Models
         public string? Notes { get; set; }
 
         public bool IsActive { get; set; } = true;
+
+        // Yeni eklenen alanlar: Atanan kullanıcı ve ilişkisi
+        public int? AssignedUserId { get; set; }
+        public virtual User? AssignedUser { get; set; }
+
+        // Göreve ait ekli dosyalar
+        public virtual ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
 
         [NotMapped]
         public bool IsOverdue => DueDate.HasValue && DueDate.Value < DateTime.UtcNow && !IsCompleted;

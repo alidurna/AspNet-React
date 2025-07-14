@@ -270,6 +270,22 @@ namespace TaskFlow.API.Interfaces
         /// <returns>Priority bazlı task dağılımı</returns>
         Task<List<TaskPriorityStatsDto>> GetTaskPriorityStatsAsync(int userId);
 
+        /// <summary>
+        /// Belirtilen görevleri toplu olarak siler.
+        /// </summary>
+        /// <param name="userId">İşlemi yapan kullanıcının ID'si.</param>
+        /// <param name="taskIds">Silinecek görev ID'lerinin listesi.</param>
+        /// <returns>Silinen görev sayısı.</returns>
+        Task<int> BulkDeleteTasksAsync(int userId, List<int> taskIds);
+
+        /// <summary>
+        /// Belirtilen görevleri toplu olarak tamamlar.
+        /// </summary>
+        /// <param name="userId">İşlemi yapan kullanıcının ID'si.</param>
+        /// <param name="taskIds">Tamamlanacak görev ID'lerinin listesi.</param>
+        /// <returns>Tamamlanan görev sayısı.</returns>
+        Task<int> BulkCompleteTasksAsync(int userId, List<int> taskIds);
+
         #endregion
 
         #region Helper Methods

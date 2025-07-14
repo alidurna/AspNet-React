@@ -58,8 +58,8 @@ import {
   type UpdateProfileRequest,
   type ChangePasswordRequest,
   type ApiResponse,
-  userAuthAPI,
   fileUploadAPI, // fileUploadAPI'yi import et
+  authAPI, // authAPI'yi import et
 } from "../services/api";
 import { useToast } from "../hooks/useToast";
 import DashboardLayout from "../components/layout/DashboardLayout";
@@ -68,6 +68,7 @@ import Button from "../components/ui/Button";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
 import Input from "../components/ui/Input";
 import { FaCamera } from "react-icons/fa";
+import { MdDelete } from "react-icons/md"; // Yeni import: Silme ikonu
 
 /**
  * Profile component
@@ -110,6 +111,19 @@ const Profile: React.FC = () => {
     confirmPassword: "",
   });
 
+  // E-posta doğrulama formu için state
+  const [emailVerificationToken, setEmailVerificationToken] = useState<string>("");
+
+  /**
+   * Yükleme limitlerini çeker.
+   * @returns {UseQueryResult<ApiResponse<UploadLimitsDto>, Error>}
+   * @sideeffect API'ye GET isteği atar, cache'den okur veya günceller.
+   */
+  const { data: uploadLimits } = useQuery({
+    queryKey: ["uploadLimits"],
+    queryFn: fileUploadAPI.getUploadLimits,
+  });
+
   /**
    * Profil verisini API'den çeker.
    *
@@ -135,6 +149,7 @@ const Profile: React.FC = () => {
       setFormData({
         firstName: profile.data.firstName,
         lastName: profile.data.lastName,
+        phoneNumber: profile.data.phoneNumber || "", // Telefon numarası eklendi
       });
     }
   }, [profile]);
@@ -167,7 +182,7 @@ const Profile: React.FC = () => {
    * @sideeffect API'ye PUT isteği atar.
    */
   const changePasswordMutation = useMutation({
-    mutationFn: userAuthAPI.changePassword, // profileAPI yerine userAuthAPI kullan
+    mutationFn: profileAPI.changePassword, // userAuthAPI yerine profileAPI kullan
     onSuccess: () => {
       toast.showSuccess("Şifreniz başarıyla değiştirildi");
       setIsChangingPassword(false);
@@ -179,6 +194,71 @@ const Profile: React.FC = () => {
     },
     onError: () => {
       toast.showError("Şifre değiştirilirken bir hata oluştu");
+    },
+  });
+
+  /**
+   * E-posta doğrulama isteği gönderme işlemini yöneten mutation.
+   *
+   * @mutationFn authAPI.requestEmailVerification
+   * @onSuccess Kullanıcıya toast ile başarı mesajı gösterir.
+   * @onError Kullanıcıya hata mesajı gösterir.
+   * @sideeffect API'ye POST isteği atar.
+   */
+  const requestEmailVerificationMutation = useMutation({
+    mutationFn: authAPI.requestEmailVerification,
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.showSuccess("Doğrulama e-postası başarıyla gönderildi!");
+      } else {
+        toast.showError(response.message || "Doğrulama e-postası gönderilirken bir hata oluştu.");
+      }
+    },
+    onError: (error) => {
+      toast.showError(error.message || "Doğrulama e-postası gönderilirken bir hata oluştu.");
+    },
+  });
+
+  /**
+   * E-posta doğrulama işlemini yöneten mutation.
+   *
+   * @mutationFn authAPI.verifyEmail
+   * @onSuccess Kullanıcıya toast ile başarı mesajı gösterir, profil verisini yeniden çeker.
+   * @onError Kullanıcıya hata mesajı gösterir.
+   * @sideeffect API'ye POST isteği atar, cache invalidation ile profil verisini günceller.
+   */
+  const verifyEmailMutation = useMutation({
+    mutationFn: authAPI.verifyEmail,
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.showSuccess("E-posta adresiniz başarıyla doğrulandı!");
+        setEmailVerificationToken(""); // Formu sıfırla
+        queryClient.invalidateQueries({ queryKey: ["profile"] }); // Profil verisini yeniden çek
+      } else {
+        toast.showError(response.message || "E-posta doğrulanırken bir hata oluştu.");
+      }
+    },
+    onError: (error) => {
+      toast.showError(error.message || "E-posta doğrulanırken bir hata oluştu.");
+    },
+  });
+
+  /**
+   * Avatar silme işlemini yöneten mutation.
+   *
+   * @mutationFn fileUploadAPI.deleteAvatar
+   * @onSuccess Kullanıcıya toast ile başarı mesajı gösterir, profil verisini yeniden çeker.
+   * @onError Kullanıcıya hata mesajı gösterir.
+   * @sideeffect API'ye DELETE isteği atar, cache invalidation ile profil verisini günceller.
+   */
+  const deleteAvatarMutation = useMutation({
+    mutationFn: fileUploadAPI.deleteAvatar,
+    onSuccess: () => {
+      toast.showSuccess("Profil fotoğrafı başarıyla silindi!");
+      queryClient.invalidateQueries({ queryKey: ["profile"] }); // Profil verisini yeniden çek
+    },
+    onError: (error) => {
+      toast.showError(error.message || "Profil fotoğrafı silinirken bir hata oluştu.");
     },
   });
 
@@ -236,6 +316,44 @@ const Profile: React.FC = () => {
   };
 
   /**
+   * E-posta doğrulama isteği gönderme handler'ı.
+   * Kullanıcının mevcut email adresine doğrulama e-postası gönderir.
+   */
+  const handleRequestEmailVerification = () => {
+    if (profile?.data?.email) {
+      requestEmailVerificationMutation.mutate({ email: profile.data.email });
+    }
+  };
+
+  /**
+   * E-posta doğrulama formu submit handler'ı.
+   * Kullanıcının girdiği token ile e-postayı doğrular.
+   */
+  const handleVerifyEmail = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (profile?.data?.email && emailVerificationToken) {
+      verifyEmailMutation.mutate({
+        email: profile.data.email,
+        token: emailVerificationToken,
+      });
+    } else {
+      toast.showError("Lütfen doğrulama kodunu ve e-posta adresini girin.");
+    }
+  };
+
+  /**
+   * Avatar silme handler'ı.
+   * Kullanıcının mevcut avatarını siler.
+   */
+  const handleDeleteAvatar = () => {
+    if (profile?.data?.profileImage) {
+      deleteAvatarMutation.mutate();
+    } else {
+      toast.showInfo("Silinecek bir profil fotoğrafınız bulunmamaktadır.");
+    }
+  };
+
+  /**
    * Profil fotoğrafı seçildiğinde çağrılır.
    *
    * @param {React.ChangeEvent<HTMLInputElement>} e - Dosya input change event'i
@@ -261,6 +379,16 @@ const Profile: React.FC = () => {
 
     // setIsUploadingImage(true); // Kaldırıldı
     uploadImageMutation.mutate(file);
+  };
+
+  /**
+   * Form input'larında değişiklik olduğunda çağrılır.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Input change event'i
+   * @returns {void}
+   */
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   // Profil verisi yükleniyorsa loading spinner göster
@@ -291,339 +419,229 @@ const Profile: React.FC = () => {
   const userData = profile.data;
 
   return (
-    <DashboardLayout title="Profil" breadcrumbs={[{ name: "Profil" }]}>
+    <DashboardLayout title="Profilim" breadcrumbs={[{ name: "Profilim" }]}>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Profil Fotoğrafı ve İstatistikler */}
-        <div className="lg:col-span-1">
-          <Card>
-            <div className="p-6 text-center">
-              <div className="relative inline-block">
-                <div className="w-32 h-32 rounded-full overflow-hidden mx-auto mb-4 bg-gray-200">
-                  {userData.profileImage ? (
-                    <img
-                      src={userData.profileImage}
-                      alt="Profil"
-                      className="w-full h-full object-cover"
+        {/* Sol Sütun: Profil Bilgileri ve İstatistikler */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Profil Bilgileri Kartı */}
+          <Card title="Profil Bilgilerim">
+            {isLoading ? (
+              <LoadingSpinner />
+            ) : error ? (
+              <p className="text-red-500">Profil bilgileri yüklenirken hata oluştu.</p>
+            ) : (
+              <form onSubmit={handleProfileUpdate}>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">Ad</label>
+                    <Input
+                      id="firstName"
+                      name="firstName"
+                      type="text"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      readOnly={!isEditing}
+                      className="mt-1 block w-full"
                     />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                      <span className="text-4xl text-gray-400">
-                        {userData.firstName[0]}
-                        {userData.lastName[0]}
-                      </span>
+                  </div>
+                  <div>
+                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Soyad</label>
+                    <Input
+                      id="lastName"
+                      name="lastName"
+                      type="text"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      readOnly={!isEditing}
+                      className="mt-1 block w-full"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">E-posta</label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={profile?.data?.email || ""}
+                      readOnly
+                      className="mt-1 block w-full bg-gray-100 cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">Telefon Numarası</label>
+                    <Input
+                      id="phoneNumber"
+                      name="phoneNumber"
+                      type="text"
+                      value={formData.phoneNumber}
+                      onChange={handleChange} // handleChange fonksiyonu kullanıldı
+                      readOnly={!isEditing}
+                      className="mt-1 block w-full"
+                    />
+                  </div>
+                  {isEditing && (
+                    <div className="flex justify-end space-x-3">
+                      <Button type="button" variant="secondary" onClick={() => setIsEditing(false)} disabled={updateProfileMutation.isPending}>İptal</Button>
+                      <Button type="submit" isLoading={updateProfileMutation.isPending}>Kaydet</Button>
+                    </div>
+                  )}
+                  {!isEditing && (
+                    <div className="flex justify-end">
+                      <Button type="button" onClick={() => setIsEditing(true)}>Profili Düzenle</Button>
                     </div>
                   )}
                 </div>
-                {/* Profil fotoğrafı yükleme butonu */}
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="absolute bottom-0 right-0 bg-primary text-white p-2 rounded-full hover:bg-primary-dark transition-colors"
-                  // disabled={isUploadingImage} // Kaldırıldı
-                >
-                  <FaCamera className="w-4 h-4" />
-                </button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                />
-              </div>
-              <h3 className="text-xl font-semibold">
-                {userData.firstName} {userData.lastName}
-              </h3>
-              <p className="text-gray-600">{userData.email}</p>
-            </div>
+              </form>
+            )}
           </Card>
 
-          {/* İstatistikler Kartı */}
-          <Card className="mt-6">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">
-                Görev İstatistikleri
-              </h3>
-              <div className="space-y-4">
-                {/* Toplam Görev */}
+          {/* Şifre Değiştirme Kartı */}
+          <Card title="Şifre Değiştir">
+            {!isChangingPassword ? (
+              <Button onClick={() => setIsChangingPassword(true)}>Şifre Değiştir</Button>
+            ) : (
+              <form onSubmit={handlePasswordChange} className="space-y-4">
                 <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-600">Toplam Görev</span>
-                    <span className="font-semibold">
-                      {userData.stats.totalTasks}
-                    </span>
-                  </div>
-                  <div className="h-2 bg-gray-200 rounded-full">
-                    <div
-                      className="h-full bg-primary rounded-full"
-                      style={{ width: "100%" }}
-                    />
-                  </div>
+                  <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">Mevcut Şifre</label>
+                  <Input
+                    id="currentPassword"
+                    name="currentPassword"
+                    type="password"
+                    value={passwordData.currentPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                    required
+                    className="mt-1 block w-full"
+                  />
                 </div>
-
-                {/* Tamamlanan Görev */}
                 <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-600">Tamamlanan</span>
-                    <span className="font-semibold">
-                      {userData.stats.completedTasks}
-                    </span>
-                  </div>
-                  <div className="h-2 bg-gray-200 rounded-full">
-                    <div
-                      className="h-full bg-green-500 rounded-full"
-                      style={{
-                        width: `${
-                          (userData.stats.completedTasks /
-                            userData.stats.totalTasks) *
-                          100
-                        }%`,
-                      }}
-                    />
-                  </div>
+                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">Yeni Şifre</label>
+                  <Input
+                    id="newPassword"
+                    name="newPassword"
+                    type="password"
+                    value={passwordData.newPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                    required
+                    className="mt-1 block w-full"
+                  />
                 </div>
-
-                {/* Bekleyen Görev */}
                 <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-600">Bekleyen</span>
-                    <span className="font-semibold">
-                      {userData.stats.pendingTasks}
-                    </span>
-                  </div>
-                  <div className="h-2 bg-gray-200 rounded-full">
-                    <div
-                      className="h-full bg-yellow-500 rounded-full"
-                      style={{
-                        width: `${
-                          (userData.stats.pendingTasks /
-                            userData.stats.totalTasks) *
-                          100
-                        }%`,
-                      }}
-                    />
-                  </div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">Yeni Şifre (Tekrar)</label>
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                    required
+                    className="mt-1 block w-full"
+                  />
                 </div>
+                <div className="flex justify-end space-x-3">
+                  <Button type="button" variant="secondary" onClick={() => setIsChangingPassword(false)} disabled={changePasswordMutation.isPending}>İptal</Button>
+                  <Button type="submit" isLoading={changePasswordMutation.isPending}>Şifreyi Değiştir</Button>
+                </div>
+              </form>
+            )}
+          </Card>
 
-                {/* Tamamlanma Oranı */}
-                <div className="pt-4 border-t">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Tamamlanma Oranı</span>
-                    <span className="font-semibold text-lg">
-                      %{Math.round(userData.stats.completionRate * 100)}
-                    </span>
-                  </div>
-                </div>
+          {/* E-posta Doğrulama Kartı */}
+          <Card title="E-posta Doğrulama">
+            {profile?.data?.isEmailVerified ? (
+              <div className="text-green-600 font-semibold flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
+                </svg>
+                E-posta adresiniz doğrulandı.
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-700">
+                  E-posta adresiniz henüz doğrulanmadı. Hesabınızın güvenliğini artırmak için lütfen e-posta adresinizi doğrulayın.
+                </p>
+                <Button
+                  onClick={handleRequestEmailVerification}
+                  isLoading={requestEmailVerificationMutation.isPending}
+                  disabled={requestEmailVerificationMutation.isPending}
+                >
+                  Doğrulama E-postası Gönder
+                </Button>
+
+                <form onSubmit={handleVerifyEmail} className="space-y-3 mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                  <p className="text-sm font-semibold text-gray-800">Doğrulama Kodunu Girin:</p>
+                  <div>
+                    <label htmlFor="emailVerificationToken" className="sr-only">Doğrulama Kodu</label>
+                    <Input
+                      id="emailVerificationToken"
+                      name="emailVerificationToken"
+                      type="text"
+                      placeholder="Doğrulama Kodu"
+                      value={emailVerificationToken}
+                      onChange={(e) => setEmailVerificationToken(e.target.value)}
+                      required
+                      className="mt-1 block w-full"
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <Button type="submit" isLoading={verifyEmailMutation.isPending}>E-postayı Doğrula</Button>
+                  </div>
+                </form>
+              </div>
+            )}
           </Card>
         </div>
 
-        {/* Profil Bilgileri ve Şifre Değiştirme */}
-        <div className="lg:col-span-2">
-          <Card>
-            <div className="p-6">
-              <h2 className="text-2xl font-semibold mb-6">Profil Bilgileri</h2>
-
-              {/* Profil düzenleme formu */}
-              {isEditing ? (
-                <form onSubmit={handleProfileUpdate} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      E-posta
-                    </label>
-                    <p className="mt-1 text-gray-900">{userData.email}</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Ad
-                    </label>
-                    <Input
-                      type="text"
-                      value={formData.firstName}
-                      onChange={(e) =>
-                        setFormData({ ...formData, firstName: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Soyad
-                    </label>
-                    <Input
-                      type="text"
-                      value={formData.lastName}
-                      onChange={(e) =>
-                        setFormData({ ...formData, lastName: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-
-                  <div className="flex space-x-4 mt-6">
-                    <Button
-                      type="submit"
-                      disabled={updateProfileMutation.isPending}
-                    >
-                      {updateProfileMutation.isPending
-                        ? "Kaydediliyor..."
-                        : "Kaydet"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setIsEditing(false)}
-                    >
-                      İptal
-                    </Button>
-                  </div>
-                </form>
-              ) : (
-                <>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        E-posta
-                      </label>
-                      <p className="mt-1 text-gray-900">{userData.email}</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Ad
-                      </label>
-                      <p className="mt-1 text-gray-900">{userData.firstName}</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Soyad
-                      </label>
-                      <p className="mt-1 text-gray-900">{userData.lastName}</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Kayıt Tarihi
-                      </label>
-                      <p className="mt-1 text-gray-900">
-                        {new Date(userData.createdAt).toLocaleDateString(
-                          "tr-TR"
-                        )}
-                      </p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Son Giriş
-                      </label>
-                      <p className="mt-1 text-gray-900">
-                        {userData.lastLoginAt
-                          ? new Date(userData.lastLoginAt).toLocaleDateString(
-                              "tr-TR"
-                            )
-                          : "-"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 space-x-4">
-                    <Button onClick={() => setIsEditing(true)}>
-                      Profili Düzenle
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      onClick={() => setIsChangingPassword(true)}
-                    >
-                      Şifre Değiştir
-                    </Button>
-                  </div>
-                </>
+        {/* Sağ Sütun: Avatar ve İstatistikler */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Avatar Kartı */}
+          <Card title="Profil Fotoğrafı">
+            <div className="flex flex-col items-center">
+              <div className="relative w-32 h-32 rounded-full overflow-hidden mb-4 bg-gray-200 flex items-center justify-center">
+                {profile?.data?.profileImage ? (
+                  <img src={profile.data.profileImage} alt="Profil" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-5xl text-gray-500">{profile?.data?.firstName?.charAt(0) || profile?.data?.email?.charAt(0) || 'U'}</span>
+                )}
+                <input type="file" ref={fileInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute bottom-0 right-0 bg-blue-600 text-white rounded-full p-2 text-xs hover:bg-blue-700 transition-colors duration-200"
+                  title="Fotoğraf Yükle"
+                >
+                  <FaCamera className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-500">PNG, JPG, JPEG veya GIF (max {uploadLimits?.data?.avatar.maxSizeFormatted || '5 MB'})</p>
+              {profile?.data?.profileImage && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleDeleteAvatar}
+                  isLoading={deleteAvatarMutation.isPending}
+                  disabled={deleteAvatarMutation.isPending}
+                  className="mt-3 flex items-center justify-center"
+                >
+                  <MdDelete className="w-4 h-4 mr-2" /> Avatarı Sil
+                </Button>
               )}
             </div>
           </Card>
 
-          {/* Şifre Değiştirme Formu */}
-          {isChangingPassword && (
-            <Card className="mt-6">
-              <div className="p-6">
-                <h2 className="text-xl font-semibold mb-6">Şifre Değiştir</h2>
-
-                <form onSubmit={handlePasswordChange} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Mevcut Şifre
-                    </label>
-                    <Input
-                      type="password"
-                      value={passwordData.currentPassword}
-                      onChange={(e) =>
-                        setPasswordData({
-                          ...passwordData,
-                          currentPassword: e.target.value,
-                        })
-                      }
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Yeni Şifre
-                    </label>
-                    <Input
-                      type="password"
-                      value={passwordData.newPassword}
-                      onChange={(e) =>
-                        setPasswordData({
-                          ...passwordData,
-                          newPassword: e.target.value,
-                        })
-                      }
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Yeni Şifre (Tekrar)
-                    </label>
-                    <Input
-                      type="password"
-                      value={passwordData.confirmPassword}
-                      onChange={(e) =>
-                        setPasswordData({
-                          ...passwordData,
-                          confirmPassword: e.target.value,
-                        })
-                      }
-                      required
-                    />
-                  </div>
-
-                  <div className="flex space-x-4 mt-6">
-                    <Button
-                      type="submit"
-                      disabled={changePasswordMutation.isPending}
-                    >
-                      {changePasswordMutation.isPending
-                        ? "Değiştiriliyor..."
-                        : "Şifreyi Değiştir"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setIsChangingPassword(false)}
-                    >
-                      İptal
-                    </Button>
-                  </div>
-                </form>
+          {/* İstatistikler Kartı */}
+          <Card title="Görev İstatistikleri">
+            {isLoading ? (
+              <LoadingSpinner />
+            ) : error ? (
+              <p className="text-red-500">İstatistikler yüklenirken hata oluştu.</p>
+            ) : (
+              <div className="space-y-3">
+                <p className="flex justify-between"><span>Toplam Görev:</span> <span className="font-semibold">{profile?.data?.stats?.totalTasks || 0}</span></p>
+                <p className="flex justify-between"><span>Tamamlanan:</span> <span className="font-semibold">{profile?.data?.stats?.completedTasks || 0}</span></p>
+                <p className="flex justify-between"><span>Bekleyen:</span> <span className="font-semibold">{profile?.data?.stats?.pendingTasks || 0}</span></p>
+                <p className="flex justify-between"><span>Tamamlanma Oranı:</span> <span className="font-semibold">{profile?.data?.stats?.completionRate?.toFixed(2) || 0}%</span></p>
               </div>
-            </Card>
-          )}
+            )}
+          </Card>
         </div>
       </div>
     </DashboardLayout>

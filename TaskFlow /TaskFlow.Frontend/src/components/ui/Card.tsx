@@ -85,6 +85,8 @@ interface CardProps {
   padding?: "sm" | "md" | "lg"; // İç boşluk boyutu
   shadow?: "sm" | "md" | "lg"; // Gölge boyutu
   hover?: boolean; // Hover efekti aktif mi?
+  title?: string; // Kart başlığı
+  onClick?: () => void; // Kart tıklandığında çalışacak fonksiyon eklendi
 }
 
 /**
@@ -100,6 +102,7 @@ interface CardProps {
  * - Beyaz background ile modern tasarım
  * - Rounded köşeler
  * - Border ile subtle çerçeve
+ * - **onClick**: Kartın tıklanabilir olmasını sağlar ve bir fonksiyon tetikler.
  *
  * Kullanım Alanları:
  * - Login/Register formları
@@ -115,6 +118,8 @@ const Card: React.FC<CardProps> = ({
   padding = "md",
   shadow = "sm",
   hover = false,
+  title,
+  onClick, // onClick prop'u eklendi
 }) => {
   // ===== CSS CLASS TANIMLARI =====
 
@@ -146,7 +151,10 @@ const Card: React.FC<CardProps> = ({
         ${hoverClasses} // Hover efekti (varsa)
         ${className} // Dışarıdan gelen ek sınıflar
       `.trim()}
+      onClick={onClick} // onClick eventi eklendi
+      style={{ cursor: onClick ? "pointer" : "default" }} // onClick varsa cursor pointer yap
     >
+      {title && <h3 className="text-lg font-semibold mb-4">{title}</h3>} {/* Başlık */}
       {/* Card içeriği - children prop'u ile gelen tüm içerik */}
       {children}
     </div>

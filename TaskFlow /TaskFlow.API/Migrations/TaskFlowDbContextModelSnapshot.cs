@@ -17,6 +17,50 @@ namespace TaskFlow.API.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.6");
 
+            modelBuilder.Entity("TaskFlow.API.Models.Attachment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TodoTaskId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UploadDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TodoTaskId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Attachments");
+                });
+
             modelBuilder.Entity("TaskFlow.API.Models.Category", b =>
                 {
                     b.Property<int>("Id")
@@ -69,6 +113,9 @@ namespace TaskFlow.API.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("AssignedUserId")
                         .HasColumnType("INTEGER");
 
                     b.Property<int?>("CategoryId")
@@ -137,6 +184,8 @@ namespace TaskFlow.API.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AssignedUserId");
 
                     b.HasIndex("CategoryId");
 
@@ -232,6 +281,25 @@ namespace TaskFlow.API.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("TaskFlow.API.Models.Attachment", b =>
+                {
+                    b.HasOne("TaskFlow.API.Models.TodoTask", "TodoTask")
+                        .WithMany("Attachments")
+                        .HasForeignKey("TodoTaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TaskFlow.API.Models.User", "User")
+                        .WithMany("Attachments")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("TodoTask");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("TaskFlow.API.Models.Category", b =>
                 {
                     b.HasOne("TaskFlow.API.Models.User", "User")
@@ -245,6 +313,11 @@ namespace TaskFlow.API.Migrations
 
             modelBuilder.Entity("TaskFlow.API.Models.TodoTask", b =>
                 {
+                    b.HasOne("TaskFlow.API.Models.User", "AssignedUser")
+                        .WithMany("AssignedTasks")
+                        .HasForeignKey("AssignedUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("TaskFlow.API.Models.Category", "Category")
                         .WithMany("Tasks")
                         .HasForeignKey("CategoryId")
@@ -261,6 +334,8 @@ namespace TaskFlow.API.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("AssignedUser");
+
                     b.Navigation("Category");
 
                     b.Navigation("ParentTask");
@@ -275,11 +350,17 @@ namespace TaskFlow.API.Migrations
 
             modelBuilder.Entity("TaskFlow.API.Models.TodoTask", b =>
                 {
+                    b.Navigation("Attachments");
+
                     b.Navigation("SubTasks");
                 });
 
             modelBuilder.Entity("TaskFlow.API.Models.User", b =>
                 {
+                    b.Navigation("AssignedTasks");
+
+                    b.Navigation("Attachments");
+
                     b.Navigation("Categories");
 
                     b.Navigation("Tasks");
