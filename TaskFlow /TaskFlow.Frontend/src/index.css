@@ -118,7 +118,7 @@
 
   /* Gradient Background - Ana gradient arkaplan */
   .gradient-bg {
-    @apply bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800;
+    @apply bg-blue-600 via-indigo-700 to-purple-800; /* Orijinal renklere geri döndürüldü veya daha soft bir gradyan */
     background-size: 200% 200%;
     animation: gradient-shift 15s ease infinite;
   }
@@ -198,7 +198,7 @@
   }
 
   body {
-    @apply font-sans text-gray-900 bg-gray-50 antialiased; /* Temel font ve renk */
+    @apply font-sans text-gray-900 bg-gray-50 antialiased; /* Temel font ve arka plan rengi gri-50 */
   }
 
   /* Heading element'leri için temel stiller */

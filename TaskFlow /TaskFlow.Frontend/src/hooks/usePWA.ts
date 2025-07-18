@@ -175,8 +175,8 @@ export const usePWA = (): PWAState & PWAActions => {
 
   // Effects
   useEffect(() => {
-    // Register Service Worker
-    registerServiceWorker().catch(console.error);
+    // Register Service Worker - Geçici olarak devre dışı
+    // registerServiceWorker().catch(console.error);
 
     // Check if app is already installed
     setIsInstalled(checkIfInstalled());

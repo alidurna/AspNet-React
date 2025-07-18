@@ -5,7 +5,7 @@ const CACHE_NAME = "taskflow-v1.0.0";
 const API_CACHE_NAME = "taskflow-api-v1.0.0";
 const STATIC_CACHE_NAME = "taskflow-static-v1.0.0";
 
-let apiBaseUrl = ''; // API base URL'si buradan gelecek
+let apiBaseUrl = 'http://localhost:5281'; // API base URL'si
 
 // Cache edilecek statik dosyalar
 const STATIC_ASSETS = [
@@ -144,7 +144,7 @@ async function handleApiRequest(request) {
         console.log("📱 API Cache HIT:", url.pathname);
 
         // Background'da güncelle (doğrudan tam URL'ye istek at)
-        fullApiUrl = `${apiBaseUrl}/api/v1.0${url.pathname.replace('/api', '')}`;
+        fullApiUrl = `${apiBaseUrl}${url.pathname}`;
         console.log(`SW: Revalidate - Constructed fullApiUrl: ${fullApiUrl}`);
         fetch(fullApiUrl, { headers: request.headers })
           .then((response) => {
@@ -162,7 +162,7 @@ async function handleApiRequest(request) {
 
     // Network'ten al (doğrudan tam URL'ye istek at)
     console.log(`SW: Original API Request URL: ${request.url}`);
-    fullApiUrl = `${apiBaseUrl}/api/v1.0${url.pathname.replace('/api', '')}`;
+    fullApiUrl = `${apiBaseUrl}${url.pathname}`;
     console.log(`SW: Constructed fullApiUrl: ${fullApiUrl}`);
     const response = await fetch(fullApiUrl, { headers: request.headers });
 

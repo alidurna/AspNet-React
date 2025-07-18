@@ -156,4 +156,37 @@ namespace TaskFlow.API.DTOs
         [SwaggerSchema("Token'ın geçerlilik bitiş tarihi")]
         public DateTime ExpiresAt { get; set; }
     }
+
+    public class LoginRecoveryRequestDto
+    {
+        [Required(ErrorMessage = "Email alanı zorunludur")]
+        [EmailAddress(ErrorMessage = "Geçerli bir email adresi giriniz")]
+        [SwaggerSchema("Kullanıcının e-posta adresi")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Şifre alanı zorunludur")]
+        [SwaggerSchema("Kullanıcının şifresi")]
+        public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Recovery code alanı zorunludur")]
+        [SwaggerSchema("2FA recovery code")]
+        public string RecoveryCode { get; set; } = string.Empty;
+    }
+
+    public class Login2FARequestDto
+    {
+        [Required(ErrorMessage = "Email alanı zorunludur")]
+        [EmailAddress(ErrorMessage = "Geçerli bir email adresi giriniz")]
+        [SwaggerSchema("Kullanıcının e-posta adresi")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Şifre alanı zorunludur")]
+        [SwaggerSchema("Kullanıcının şifresi")]
+        public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "TOTP kodu zorunludur")]
+        [StringLength(6, MinimumLength = 6, ErrorMessage = "TOTP kodu 6 haneli olmalıdır")]
+        [SwaggerSchema("2FA TOTP kodu")]
+        public string TotpCode { get; set; } = string.Empty;
+    }
 } 

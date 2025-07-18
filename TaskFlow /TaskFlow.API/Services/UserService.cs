@@ -207,6 +207,13 @@ namespace TaskFlow.API.Services
                     throw new UnauthorizedAccessException("Geçersiz email veya şifre");
                 }
 
+                // 2FA kontrolü
+                if (user.TwoFactorEnabled && !string.IsNullOrEmpty(user.TwoFactorSecret))
+                {
+                    // 2FA etkin, normal login yerine 2FA gerektiğini belirt
+                    throw new InvalidOperationException("2FA_REQUIRED");
+                }
+
                 var token = _jwtService.GenerateToken(user);
                 var refreshToken = _jwtService.GenerateRefreshToken();
                 var expiresAt = DateTime.UtcNow.AddMinutes(_jwtService.TokenExpirationMinutes);
@@ -295,23 +302,7 @@ namespace TaskFlow.API.Services
             }
         }
 
-        public async Task<User?> GetUserByEmailAsync(string email)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(email))
-                    return null;
 
-                var normalizedEmail = email.ToLower().Trim();
-                return await _context.Users
-                    .FirstOrDefaultAsync(u => u.Email == normalizedEmail);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting user by email: {Email}", email);
-                throw;
-            }
-        }
 
         public async Task<UserDto> UpdateUserProfileAsync(int userId, UpdateProfileDto updateDto)
         {
@@ -825,6 +816,106 @@ namespace TaskFlow.API.Services
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+        #endregion
+
+        #region Sosyal Medya Girişi Metodları
+
+        public async Task<User?> GetUserByEmailAsync(string email)
+        {
+            try
+            {
+                return await _context.Users.FirstOrDefaultAsync(u => u.Email == email.ToLower().Trim());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user by email: {Email}", email);
+                throw;
+            }
+        }
+
+        public async Task<User> CreateUserAsync(User user)
+        {
+            try
+            {
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+                
+                _logger.LogInformation("User created via social login: {Email} (ID: {UserId})", user.Email, user.Id);
+                return user;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating user via social login: {Email}", user.Email);
+                throw;
+            }
+        }
+
+        public async Task<User> UpdateUserAsync(User user)
+        {
+            try
+            {
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
+                
+                _logger.LogInformation("User updated via social login: {Email} (ID: {UserId})", user.Email, user.Id);
+                return user;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating user via social login: {Email}", user.Email);
+                throw;
+            }
+        }
+
+        public async Task<bool> SaveRefreshTokenAsync(int userId, string refreshToken)
+        {
+            try
+            {
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                {
+                    return false;
+                }
+
+                user.RefreshToken = refreshToken;
+                user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Refresh token saved for user: {UserId}", userId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving refresh token for user: {UserId}", userId);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Kullanıcının şifresini doğrula
+        /// </summary>
+        /// <param name="email">Kullanıcının email adresi</param>
+        /// <param name="password">Doğrulanacak şifre</param>
+        /// <returns>Şifre doğruysa true, yanlışsa false</returns>
+        public async Task<bool> VerifyPasswordAsync(string email, string password)
+        {
+            try
+            {
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+                if (user == null)
+                {
+                    return false;
+                }
+
+                return _passwordService.VerifyPassword(password, user.PasswordHash);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error verifying password for email: {Email}", email);
+                return false;
+            }
         }
 
         #endregion

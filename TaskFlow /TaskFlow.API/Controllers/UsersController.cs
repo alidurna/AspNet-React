@@ -186,6 +186,12 @@ namespace TaskFlow.API.Controllers
                     authResponse
                 ));
             }
+            catch (InvalidOperationException ex) when (ex.Message == "2FA_REQUIRED")
+            {
+                // 2FA gerekiyor
+                _logger.LogInformation("2FA required for user: {Email}", loginDto.Email);
+                return BadRequest(ApiResponseModel<object>.ErrorResponse("2FA_REQUIRED", "İki faktörlü kimlik doğrulama gerekiyor"));
+            }
             catch (UnauthorizedAccessException ex)
             {
                 // Invalid credentials

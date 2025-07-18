@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
-import { authAPI, tokenManager, profileAPI } from "../services/api";
+import { authAPI, tokenManager, profileAPI, type ApiResponse } from "../services/api";
 import type {
-  AuthContextType,
   LoginRequest,
   RegisterRequest,
   User,
+  AuthResponse,
 } from "../types/auth.types";
 import { useToast } from "../hooks/useToast";
 import { useNavigate } from "react-router-dom"; // useNavigate'i import et
@@ -43,6 +43,16 @@ import { setOnUnauthorizedCallback } from "../services/api"; // setOnUnauthorize
  * AuthContextType: Kimlik doğrulama bağlamının sağladığı değerlerin tipini tanımlar.
  * Bu arayüz, kullanıcı nesnesi, kimlik doğrulama durumu, yükleme durumu ve kimlik doğrulama eylemlerini içerir.
  */
+export interface AuthContextType {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (credentials: LoginRequest, rememberMe: boolean) => Promise<void>;
+  register: (userData: RegisterRequest) => Promise<void>;
+  logout: () => void;
+  updateUser: (userData: Partial<User>) => Promise<void>;
+  socialLogin: (provider: "google" | "apple" | "microsoft") => Promise<any>;
+}
 
 /**
  * AuthContext: Global kimlik doğrulama durumunu tutar.
@@ -87,16 +97,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * @param credentials - `LoginRequest` tipinde kullanıcı e-posta ve şifre bilgileri.
    * @returns Promise<void>
    */
-  const login = useCallback(async (credentials: LoginRequest): Promise<void> => {
+  const login = useCallback(async (credentials: LoginRequest, rememberMe: boolean = false): Promise<void> => {
     setIsLoading(true);
     try {
-      const response = await authAPI.login(credentials);
-      if (response.success && response.data?.user) {
-        setUser(response.data.user);
-        if (response.data.refreshToken) {
-          tokenManager.setRefreshToken(response.data.refreshToken);
+      console.log("🔐 Login attempt with rememberMe:", rememberMe);
+      const response: ApiResponse<AuthResponse> = await authAPI.login(credentials);
+      
+      console.log("📦 Login response:", response);
+      
+      if (response.success && response.data) {
+        // response.data direkt AuthResponse, iç içe data yok
+        const authData = response.data;
+        
+        if (authData.user) {
+          setUser(authData.user);
+          
+          if (authData.token) {
+            console.log("💾 Saving token with rememberMe:", rememberMe);
+            tokenManager.setToken(authData.token, rememberMe);
+            console.log("✅ Token saved. localStorage:", !!localStorage.getItem("taskflow_token"), "sessionStorage:", !!sessionStorage.getItem("taskflow_token"));
+          }
+          
+          if (authData.refreshToken) {
+            console.log("💾 Saving refresh token with rememberMe:", rememberMe);
+            tokenManager.setRefreshToken(authData.refreshToken, rememberMe);
+          }
+          
+          toast.showSuccess(response.message || `Hoş geldiniz, ${authData.user.email}!`);
+        } else {
+          throw new Error("Kullanıcı bilgileri alınamadı.");
         }
-        toast.showSuccess(response.message || `Hoş geldiniz, ${response.data.user.email}!`);
       } else {
         throw new Error(response.message || "Giriş işlemi başarısız.");
       }
@@ -124,13 +154,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = useCallback(async (userData: RegisterRequest): Promise<void> => {
     setIsLoading(true);
     try {
-      const response = await authAPI.register(userData);
-      if (response.success && response.data?.user) {
-        setUser(response.data.user);
-        if (response.data.refreshToken) {
-          tokenManager.setRefreshToken(response.data.refreshToken);
+      const response: ApiResponse<AuthResponse> = await authAPI.register(userData);
+      if (response.success && response.data) {
+        // response.data direkt AuthResponse, iç içe data yok
+        const authData = response.data;
+        
+        if (authData.user) {
+          setUser(authData.user);
+          
+          if (authData.token) {
+            tokenManager.setToken(authData.token);
+          }
+          
+          if (authData.refreshToken) {
+            tokenManager.setRefreshToken(authData.refreshToken);
+          }
+          
+          toast.showSuccess(response.message || "Kayıt işlemi başarıyla tamamlandı!");
+        } else {
+          throw new Error("Kullanıcı bilgileri alınamadı.");
         }
-        toast.showSuccess(response.message || "Kayıt işlemi başarıyla tamamlandı!");
       } else {
         throw new Error(response.message || "Kayıt işlemi başarısız oldu.");
       }
@@ -156,21 +199,120 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    */
   const logout = useCallback((): void => {
     try {
+      // Backend'e çıkış isteği gönder (hata olsa bile devam et)
       authAPI.logout().catch((error) => {
         console.error("Logout API error:", error);
-        toast.showError("Çıkış yapılırken bir hata oluştu.");
+        // Backend hatası olsa bile yerel çıkış yapılacak, bu yüzden hata toast'ı gösterme
       });
 
+      // Yerel state'i temizle
       setUser(null);
       tokenManager.removeToken();
       tokenManager.removeRefreshToken();
-      toast.showSuccess("Başarıyla çıkış yaptınız.");
-      navigate("/login"); // Tam sayfa yenileme yerine navigate kullan
+      
+      // Başarı toast'ı göster
+      toast.showSuccess("Başarıyla çıkış yapıldı!");
+      
+      // Login sayfasına yönlendir
+      navigate("/login");
     } catch (error: any) {
       console.error("❌ Logout error:", error);
       toast.showError(error.message || "Çıkış yapılırken beklenmeyen bir hata oluştu.");
     }
-  }, [toast, navigate]); // navigate'i bağımlılık dizisine ekle
+  }, [toast, navigate]);
+
+  /**
+   * socialLogin:
+   * Sosyal medya hesapları ile giriş yapar.
+   * OAuth 2.0 flow kullanarak güvenli giriş sağlar.
+   *
+   * @param provider - Sosyal medya sağlayıcısı ("google", "apple", "microsoft")
+   * @returns Promise<any> - Giriş sonucu
+   */
+  const socialLogin = useCallback(async (provider: "google" | "apple" | "microsoft"): Promise<any> => {
+    setIsLoading(true);
+    try {
+      console.log(`🚀 ${provider} login attempt`);
+      
+      // OAuth popup window aç
+      const popup = window.open(
+        `${import.meta.env.VITE_API_BASE_URL}/auth/${provider}`,
+        `${provider}_oauth`,
+        'width=500,height=600,scrollbars=yes,resizable=yes'
+      );
+
+      if (!popup) {
+        throw new Error("Popup penceresi açılamadı. Lütfen popup engelleyiciyi kapatın.");
+      }
+
+      // Popup'tan gelen mesajı bekle
+      const result = await new Promise((resolve, reject) => {
+        const handleMessage = (event: MessageEvent) => {
+          if (event.origin !== import.meta.env.VITE_API_BASE_URL) {
+            return;
+          }
+
+          if (event.data.type === 'OAUTH_SUCCESS') {
+            window.removeEventListener('message', handleMessage);
+            popup.close();
+            resolve(event.data);
+          } else if (event.data.type === 'OAUTH_ERROR') {
+            window.removeEventListener('message', handleMessage);
+            popup.close();
+            reject(new Error(event.data.error));
+          }
+        };
+
+        window.addEventListener('message', handleMessage);
+
+        // Timeout kontrolü
+        setTimeout(() => {
+          window.removeEventListener('message', handleMessage);
+          popup.close();
+          reject(new Error("Giriş zaman aşımına uğradı."));
+        }, 60000); // 60 saniye
+      });
+
+      // Backend'e token gönder ve kullanıcı bilgilerini al
+      const response = await authAPI.socialLogin({
+        provider,
+        token: result.token,
+        userData: result.userData
+      });
+
+      if (response.success && response.data) {
+        // Token'ları kaydet
+        tokenManager.setToken(response.data.accessToken);
+        if (response.data.refreshToken) {
+          tokenManager.setRefreshToken(response.data.refreshToken);
+        }
+
+        // Kullanıcı bilgilerini set et
+        setUser({
+          id: response.data.user.id,
+          firstName: response.data.user.firstName,
+          lastName: response.data.user.lastName,
+          email: response.data.user.email,
+          phoneNumber: response.data.user.phoneNumber || undefined,
+          profileImage: response.data.user.profileImage || undefined,
+          createdAt: response.data.user.createdAt,
+          updatedAt: response.data.user.lastLoginAt || response.data.user.createdAt,
+          isEmailVerified: response.data.user.isEmailVerified || true,
+        });
+
+        console.log(`✅ ${provider} login successful`);
+        return response.data;
+      } else {
+        throw new Error(response.message || `${provider} ile giriş başarısız oldu.`);
+      }
+    } catch (error: any) {
+      console.error(`❌ ${provider} login error:`, error);
+      toast.showError(error.message || `${provider} ile giriş yapılırken bir hata oluştu.`);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
 
   /**
    * updateUser:
@@ -221,38 +363,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // onUnauthorizedCallback'i burada set et
     setOnUnauthorizedCallback(() => {
       // Bu callback tetiklendiğinde logout fonksiyonunu çağır
-      logout();
+      // Ancak toast göstermeden sadece state'i temizle
+      setUser(null);
+      tokenManager.removeToken();
+      tokenManager.removeRefreshToken();
+      navigate("/login");
     });
 
     const checkAuthStatus = async () => {
       setIsLoading(true);
       try {
+        console.log("🔍 Checking auth status on app load...");
         const token = tokenManager.getToken();
         const refreshToken = tokenManager.getRefreshToken();
+        
+        console.log("📦 Token found (from getToken):", !!token, "Refresh token found (from getRefreshToken):", !!refreshToken);
+        console.log("📦 localStorage token raw:", localStorage.getItem("taskflow_token"));
+        console.log("📦 sessionStorage token raw:", sessionStorage.getItem("taskflow_token"));
 
-        if (!token || !tokenManager.isTokenValid() && !refreshToken) {
-          // Hem access hem de refresh token yoksa veya access token geçersizse ve refresh token da yoksa
+        // Token geçerliliğini kontrol et
+        const isAccessTokenValid = tokenManager.isTokenValid();
+        console.log("🔍 Access token validity (isTokenValid):", isAccessTokenValid);
+
+        if (!token || (!isAccessTokenValid && !refreshToken)) {
+          console.log("❌ No valid token or refresh token found, clearing auth state");
           setUser(null);
           tokenManager.removeToken();
           tokenManager.removeRefreshToken();
           return;
         }
 
-        // Eğer access token geçersiz ama refresh token varsa, refresh token ile yeni access token almayı dene
-        // Bu kısım artık Axios interceptor'ları tarafından yönetiliyor, doğrudan çağrıya gerek yok.
-        // if (!tokenManager.isTokenValid() && refreshToken) {
-        //     const refreshResponse = await authAPI.refreshToken();
-        //     if (refreshResponse.success && refreshResponse.data?.accessToken && refreshResponse.data?.user) {
-        //         tokenManager.setToken(refreshResponse.data.accessToken);
-        //         // setUser(refreshResponse.data.user); // Kullanıcı bilgisi değişmemişse tekrar set etmeye gerek yok
-        //     } else {
-        //         throw new Error(refreshResponse.message || "Token yenileme başarısız.");
-        //     }
-        // }
+        console.log("✅ Valid token found, attempting to fetch user profile...");
         
         // Kullanıcı bilgisini almak için profileAPI.getProfile kullan
         const response = await profileAPI.getProfile();
+        console.log("✅ Profile API response:", response);
         if (response.success && response.data) {
+          console.log("✅ Profile fetched successfully for:", response.data.email);
           const fetchedUser: User = {
             id: response.data.id,
             firstName: response.data.firstName,
@@ -267,6 +414,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
           // Sadece kullanıcı değiştiyse (id farklıysa veya henüz kullanıcı atanmamışsa) state'i güncelle
           if (!user || user.id !== fetchedUser.id) {
+            console.log("👤 Setting user state:", fetchedUser.email);
             setUser(fetchedUser);
           }
         } else {
@@ -284,7 +432,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     checkAuthStatus();
-  }, [toast, logout]); // user bağımlılığını kaldırdım
+  }, [toast, navigate]); // logout bağımlılığını kaldırdım
 
   /**
    * AuthContext'in sağladığı değer objesi.
@@ -298,6 +446,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     updateUser,
+    socialLogin,
   };
 
   return (

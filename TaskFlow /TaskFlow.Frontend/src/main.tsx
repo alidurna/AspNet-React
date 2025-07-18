@@ -104,26 +104,26 @@ createRoot(document.getElementById("root")!).render(
   </StrictMode>
 );
 
-// Service Worker Registration
-if ("serviceWorker" in navigator) {
-  const config = environment; // Değiştirildi
-  const apiBaseUrlForSw = config.apiBaseUrl;
+// Service Worker Registration - Tamamen devre dışı
+// if ("serviceWorker" in navigator) {
+//   const config = environment; // Değiştirildi
+//   const apiBaseUrlForSw = config.apiBaseUrl;
 
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/sw.js")
-      .then((registration) => {
-        console.log("ServiceWorker registration successful with scope: ", registration.scope);
-        // Service Worker'a API base URL'sini gönder
-        if (registration.active) {
-          registration.active.postMessage({
-            type: "SET_API_BASE_URL",
-            url: apiBaseUrlForSw,
-          });
-        }
-      })
-      .catch((error) => {
-        console.log("ServiceWorker registration failed: ", error);
-      });
-  });
-}
+//   window.addEventListener("load", () => {
+//     navigator.serviceWorker
+//       .register("/sw.js")
+//       .then((registration) => {
+//         console.log("ServiceWorker registration successful with scope: ", registration.scope);
+//         // Service Worker'a API base URL'sini gönder
+//         if (registration.active) {
+//           registration.active.postMessage({
+//             type: "SET_API_BASE_URL",
+//             url: apiBaseUrlForSw,
+//           });
+//         }
+//       })
+//       .catch((error) => {
+//         console.log("ServiceWorker registration failed: ", error);
+//       });
+//   });
+// }

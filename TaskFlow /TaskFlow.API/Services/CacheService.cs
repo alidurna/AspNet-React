@@ -326,6 +326,8 @@ public class CacheService : ICacheService
             // Bu işlem Redis connection'a direct erişim gerektirir
             // Şimdilik basit implementasyon
             _logger.LogWarning("Distributed cache pattern silme henüz implement edilmedi: {Pattern}", pattern);
+            
+            await Task.CompletedTask; // Async pattern için
         }
         catch (Exception ex)
         {
@@ -361,6 +363,8 @@ public class CacheService : ICacheService
             Interlocked.Exchange(ref _cacheMisses, 0);
             
             _logger.LogInformation("Cache istatistikleri sıfırlandı");
+            
+            await Task.CompletedTask; // Async pattern için
         }
         catch (Exception ex)
         {

@@ -124,7 +124,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-medium text-gray-700"
+            className="block text-sm font-light text-neutral-600 mb-2 leading-relaxed"
           >
             {label}
           </label>
@@ -132,11 +132,11 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
 
         {/* ===== INPUT CONTAINER ===== */}
         {/* İkon ve input'u içeren relative container */}
-        <div className="relative">
+        <div className="relative group">
           {/* Sol Taraf İkon */}
           {/* Opsiyonel - varsa input'un sol tarafında göster */}
           {icon && (
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 group-focus-within:text-primary-500 transition-colors duration-200">
               {icon}
             </div>
           )}
@@ -147,21 +147,33 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId} // Accessibility için unique ID
             type={inputType} // Dynamic type (password toggle için)
             className={`
-              input-field
+              w-full px-4 py-3 border-2 border-neutral-100 rounded-xl shadow-sm
+              placeholder-neutral-400 text-neutral-700 text-base
+              focus:outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-300
+              hover:border-neutral-200 hover:shadow-md
+              transition-all duration-300 ease-out
               ${icon ? "pl-10" : ""} // Sol ikon varsa padding ekle
               ${
                 showPasswordToggle ? "pr-10" : ""
               } // Şifre toggle varsa sağ padding
               ${
-                error ? "border-red-300 focus:ring-red-500" : ""
+                error ? "border-error-200 focus:ring-error-100 focus:border-error-300" : ""
               } // Hata durumunda kırmızı border
               ${
-                isFocused ? "ring-2 ring-primary-500" : ""
+                isFocused ? "ring-4 ring-primary-100 border-primary-300 shadow-lg" : ""
               } // Focus durumunda mavi ring
               ${className} // Dışarıdan gelen ek class'lar
             `}
             onFocus={() => setIsFocused(true)} // Focus olunca state güncelle
             onBlur={() => setIsFocused(false)} // Blur olunca state güncelle
+            aria-describedby={
+              error 
+                ? `${inputId}-error` 
+                : showPasswordToggle && type === "password" 
+                  ? `${inputId}-password-toggle` 
+                  : undefined
+            }
+            aria-invalid={!!error}
             {...props} // Diğer tüm HTML input props'ları
           />
 
@@ -170,7 +182,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           {showPasswordToggle && type === "password" && (
             <button
               type="button"
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded p-1"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:ring-offset-2 rounded-lg p-1.5 transition-all duration-200 hover:bg-neutral-50"
               onClick={() => setShowPassword(!showPassword)} // Şifre görünürlüğünü toggle et
               aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
               aria-pressed={showPassword}
@@ -179,7 +191,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               {showPassword ? (
                 // Şifre görünürken - gizle ikonu (kapalı göz)
                 <svg
-                  className="w-5 h-5"
+                  className="w-4 h-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -195,7 +207,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               ) : (
                 // Şifre gizliyken - göster ikonu (açık göz)
                 <svg
-                  className="w-5 h-5"
+                  className="w-4 h-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -222,7 +234,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         {/* ===== ERROR MESSAGE ===== */}
         {/* Validation hata mesajı - varsa göster */}
         {error && (
-          <p className="text-sm text-red-600 animate-slide-up" role="alert" aria-live="polite">
+          <p 
+            id={`${inputId}-error`}
+            className="text-sm text-error-500 font-light mt-2 animate-slide-up" 
+            role="alert" 
+            aria-live="polite"
+          >
             {error}
           </p>
         )}

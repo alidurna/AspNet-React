@@ -54,17 +54,20 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { UseQueryResult } from "@tanstack/react-query";
 import {
   profileAPI,
-  type UserProfile,
-  type UpdateProfileRequest,
-  type ChangePasswordRequest,
   type ApiResponse,
-  fileUploadAPI, // fileUploadAPI'yi import et
   authAPI, // authAPI'yi import et
+  fileUploadAPI, // fileUploadAPI'yi import et
 } from "../services/api";
+import type {
+  UserProfile,
+  UpdateProfileRequest,
+  ChangePasswordRequest,
+} from "../types/auth.types";
+import type { UploadLimitsDto } from "../types/file.types"; // Doğru yerden import edildi
 import { useToast } from "../hooks/useToast";
 import DashboardLayout from "../components/layout/DashboardLayout";
 import Card from "../components/ui/Card";
-import Button from "../components/ui/Button";
+import { Button } from "../components/ui/Button";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
 import Input from "../components/ui/Input";
 import { FaCamera } from "react-icons/fa";
@@ -121,7 +124,7 @@ const Profile: React.FC = () => {
    */
   const { data: uploadLimits } = useQuery({
     queryKey: ["uploadLimits"],
-    queryFn: fileUploadAPI.getUploadLimits,
+    queryFn: fileUploadAPI.getUploadLimits, // fileUploadAPI.getUploadLimits olarak düzeltildi
   });
 
   /**
@@ -181,8 +184,8 @@ const Profile: React.FC = () => {
    * @onError Kullanıcıya hata mesajı gösterir.
    * @sideeffect API'ye PUT isteği atar.
    */
-  const changePasswordMutation = useMutation({
-    mutationFn: profileAPI.changePassword, // userAuthAPI yerine profileAPI kullan
+  const changePasswordMutation = useMutation<ApiResponse<object>, Error, ChangePasswordRequest>({
+    mutationFn: authAPI.changePassword, // profileAPI yerine authAPI kullanıldı
     onSuccess: () => {
       toast.showSuccess("Şifreniz başarıyla değiştirildi");
       setIsChangingPassword(false);
@@ -251,16 +254,17 @@ const Profile: React.FC = () => {
    * @onError Kullanıcıya hata mesajı gösterir.
    * @sideeffect API'ye DELETE isteği atar, cache invalidation ile profil verisini günceller.
    */
-  const deleteAvatarMutation = useMutation({
-    mutationFn: fileUploadAPI.deleteAvatar,
-    onSuccess: () => {
-      toast.showSuccess("Profil fotoğrafı başarıyla silindi!");
-      queryClient.invalidateQueries({ queryKey: ["profile"] }); // Profil verisini yeniden çek
-    },
-    onError: (error) => {
-      toast.showError(error.message || "Profil fotoğrafı silinirken bir hata oluştu.");
-    },
-  });
+  // Avatar silme mutasyonu kaldırıldı
+  // const deleteAvatarMutation = useMutation({
+  //   mutationFn: fileUploadAPI.deleteAvatar,
+  //   onSuccess: () => {
+  //     toast.showSuccess("Profil fotoğrafı başarıyla silindi!");
+  //     queryClient.invalidateQueries({ queryKey: ["profile"] }); // Profil verisini yeniden çek
+  //   },
+  //   onError: (error) => {
+  //     toast.showError(error.message || "Profil fotoğrafı silinirken bir hata oluştu.");
+  //   },
+  // });
 
   /**
    * Profil fotoğrafı yükleme işlemini yöneten mutation.
@@ -270,21 +274,22 @@ const Profile: React.FC = () => {
    * @onError Kullanıcıya hata mesajı gösterir.
    * @sideeffect API'ye POST isteği atar, cache invalidation ile profil verisini günceller.
    */
-  const uploadImageMutation = useMutation({
-    mutationFn: (file: File) => fileUploadAPI.uploadAvatar(file), // fileUploadAPI.uploadAvatar kullan
-    onSuccess: (response) => {
-      toast.showSuccess("Profil fotoğrafı başarıyla güncellendi");
-      // setIsUploadingImage(false); // Kaldırıldı
-      // Profil verilerini yeniden çek
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-      // Eğer backend'den yeni bir profil resmi URL'i dönüyorsa, doğrudan state'i güncelleyebiliriz.
-      // Şu anki backend yanıtında fileName, originalName vb. dönüyor. Frontend'in avatar URL'ini alması için backend'in revize edilmesi gerekebilir.
-    },
-    onError: () => {
-      toast.showError("Profil fotoğrafı yüklenirken bir hata oluştu");
-      // setIsUploadingImage(false); // Kaldırıldı
-    },
-  });
+  // Profil fotoğrafı yükleme mutasyonu kaldırıldı
+  // const uploadImageMutation = useMutation({
+  //   mutationFn: (file: File) => fileUploadAPI.uploadAvatar(file), // fileUploadAPI.uploadAvatar kullan
+  //   onSuccess: (response) => {
+  //     toast.showSuccess("Profil fotoğrafı başarıyla güncellendi");
+  //     // setIsUploadingImage(false); // Kaldırıldı
+  //     // Profil verilerini yeniden çek
+  //     queryClient.invalidateQueries({ queryKey: ["profile"] });
+  //     // Eğer backend'den yeni bir profil resmi URL'i dönüyorsa, doğrudan state'i güncelleyebiliriz.
+  //     // Şu anki backend yanıtında fileName, originalName vb. dönüyor. Frontend'in avatar URL'ini alması için backend'in revize edilmesi gerekebilir.
+  //   },
+  //   onError: () => {
+  //     toast.showError("Profil fotoğrafı yüklenirken bir hata oluştu");
+  //     // setIsUploadingImage(false); // Kaldırıldı
+  //   },
+  // });
 
   /**
    * Profil güncelleme formunun submit event handler'ı.
@@ -347,7 +352,10 @@ const Profile: React.FC = () => {
    */
   const handleDeleteAvatar = () => {
     if (profile?.data?.profileImage) {
-      deleteAvatarMutation.mutate();
+      updateProfileMutation.mutate({
+        ...formData,
+        profileImage: "", // Profil resmini boş string olarak ayarla (backend null olarak işleyebilir)
+      });
     } else {
       toast.showInfo("Silinecek bir profil fotoğrafınız bulunmamaktadır.");
     }
@@ -358,7 +366,7 @@ const Profile: React.FC = () => {
    *
    * @param {React.ChangeEvent<HTMLInputElement>} e - Dosya input change event'i
    * @returns {void}
-   * @sideeffect uploadImageMutation'u tetikler, API'ye dosya yükler.
+   * @sideeffect updateProfileMutation'u tetikler, API'ye dosya yükler.
    * @note Dosya tipi ve boyutu kontrolü yapılır, uygun değilse hata mesajı gösterir.
    */
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -377,8 +385,16 @@ const Profile: React.FC = () => {
       return;
     }
 
-    // setIsUploadingImage(true); // Kaldırıldı
-    uploadImageMutation.mutate(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        updateProfileMutation.mutate({
+          ...formData,
+          profileImage: reader.result, // Base64 string'ini profileImage olarak gönder
+        });
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   /**
@@ -388,7 +404,7 @@ const Profile: React.FC = () => {
    */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev: UpdateProfileRequest) => ({ ...prev, [name]: value })); // prev açıkça tiplendirildi
   };
 
   // Profil verisi yükleniyorsa loading spinner göster
@@ -617,8 +633,8 @@ const Profile: React.FC = () => {
                   type="button"
                   variant="destructive"
                   onClick={handleDeleteAvatar}
-                  isLoading={deleteAvatarMutation.isPending}
-                  disabled={deleteAvatarMutation.isPending}
+                  isLoading={updateProfileMutation.isPending}
+                  disabled={updateProfileMutation.isPending}
                   className="mt-3 flex items-center justify-center"
                 >
                   <MdDelete className="w-4 h-4 mr-2" /> Avatarı Sil

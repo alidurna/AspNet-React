@@ -3,24 +3,37 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   tasksAPI,
   categoriesAPI,
-  type TodoTaskDto, // 'type' anahtar kelimesi eklendi
-  type CategoryDto, // 'type' anahtar kelimesi eklendi
-  type UpdateTaskProgressDto, // 'type' anahtar kelimesi eklendi
-  type CreateTodoTaskDto, // 'type' anahtar kelimesi eklendi
-  type UpdateTodoTaskDto, // 'type' anahtar kelimesi eklendi
-  type TodoTaskFilterDto, // 'type' anahtar kelimesi eklendi
-  type ApiResponse, // ApiResponse eklendi
-  type PaginationMetadata, // PaginationMetadata eklendi
+  type TodoTaskDto,
+  type CategoryDto,
+  type CreateTodoTaskDto,
+  type UpdateTodoTaskDto,
+  type TodoTaskFilterDto,
+  type ApiResponse,
 } from "../services/api";
-import Button from "../components/ui/Button";
+import { Button } from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import Card from "../components/ui/Card";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
 import ConfirmModal from "../components/ui/ConfirmModal";
-import TaskDetailModal from "../components/tasks/TaskDetailModal"; // Eklendi
+import TaskDetailModal from "../components/tasks/TaskDetailModal";
 import { useToast } from "../hooks/useToast";
-import { format } from "date-fns"; // Tarih formatlama için import
-import useSignalR from "../hooks/useSignalR"; // useSignalR hook'unu import et
+import { format } from "date-fns";
+import useSignalR from "../hooks/useSignalR";
+
+// PaginationMetadata tipini tanımla
+interface PaginationMetadata {
+  currentPage: number;
+  totalPages: number;
+  pageSize: number;
+  totalCount: number;
+  hasPrevious: boolean;
+  hasNext: boolean;
+}
+
+// UpdateTaskProgressDto tipini tanımla
+interface UpdateTaskProgressDto {
+  progress: number;
+}
 
 /**
  * Tasks sayfası, kullanıcının görevlerini yönetebileceği ana arayüzü sağlar.
@@ -62,12 +75,7 @@ const Tasks: React.FC = () => {
     data: tasksData,
     isLoading: isLoadingTasks,
     error: tasksError,
-  } = useQuery<
-    ApiResponse<{ tasks: TodoTaskDto[]; pagination: PaginationMetadata }>,
-    Error,
-    ApiResponse<{ tasks: TodoTaskDto[]; pagination: PaginationMetadata }>,
-    (string | number | null)[]
-  >({
+  } = useQuery<ApiResponse<TodoTaskDto[]>, Error>({
     queryKey: ["tasks", page, pageSize, searchQuery, selectedCategory],
     queryFn: async ({ queryKey }) => {
       const [_key, page, pageSize, searchQuery, selectedCategory] = queryKey;
@@ -313,7 +321,7 @@ const Tasks: React.FC = () => {
   const handleSelectAllTasks = (event: React.ChangeEvent<HTMLInputElement>) => {
     const isChecked = event.target.checked;
     if (isChecked) {
-      const allTaskIds = tasksData?.data?.tasks?.map((task) => task.id) || [];
+      const allTaskIds = tasksData?.data?.map((task) => task.id) || [];
       setSelectedTaskIds(allTaskIds);
     } else {
       setSelectedTaskIds([]);
@@ -337,8 +345,8 @@ const Tasks: React.FC = () => {
   };
 
   const isAllTasksSelected = (
-    tasksData?.data?.tasks.length ?? 0
-  ) > 0 && selectedTaskIds.length === (tasksData?.data?.tasks.length ?? 0);
+    tasksData?.data?.length ?? 0
+  ) > 0 && selectedTaskIds.length === (tasksData?.data?.length ?? 0);
 
   const isAnyTaskSelected = selectedTaskIds.length > 0;
 
@@ -428,7 +436,7 @@ const Tasks: React.FC = () => {
         <div className="flex justify-center items-center h-64">
           <LoadingSpinner />
         </div>
-      ) : (tasksData?.data?.tasks?.length ?? 0) === 0 ? (
+      ) : (tasksData?.data?.length ?? 0) === 0 ? (
         <p className="text-center text-gray-500">Henüz görev bulunmamaktadır.</p>
       ) : (
         <div className="space-y-4">
@@ -443,7 +451,7 @@ const Tasks: React.FC = () => {
               Tümünü Seç / Seçimi Kaldır
             </label>
           </div>
-          {tasksData?.data?.tasks.map((task) => (
+          {tasksData?.data.map((task) => (
             <Card key={task.id} className="p-4 flex items-center justify-between shadow-sm">
               <div className="flex items-center flex-1">
                 <input
@@ -510,12 +518,12 @@ const Tasks: React.FC = () => {
         </Button>
         <span className="text-gray-700 dark:text-gray-300">
           Sayfa {page} /{" "}
-          {Math.ceil((tasksData?.data.pagination?.totalCount || 0) / pageSize)}
+          {Math.ceil((tasksData?.data.length || 0) / pageSize)}
         </span>
         <Button
           onClick={() => setPage((prev) => prev + 1)}
           disabled={
-            page * pageSize >= (tasksData?.data.pagination?.totalCount || 0)
+            page * pageSize >= (tasksData?.data.length || 0)
           }
           className="bg-gray-300 dark:bg-gray-700 dark:text-white"
         >
@@ -681,7 +689,11 @@ const Tasks: React.FC = () => {
       )}
 
       {isModalOpen && isViewingDetails && currentTask && (
-        <TaskDetailModal task={currentTask} onClose={handleCloseModal} />
+        <TaskDetailModal
+          isOpen={isModalOpen} // isOpen prop'unu ekle
+          taskId={currentTask.id}
+          onClose={handleCloseModal}
+        />
       )}
 
     </div>

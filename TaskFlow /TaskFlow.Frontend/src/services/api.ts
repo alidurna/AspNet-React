@@ -12,19 +12,61 @@
  */
 
 import axios from "axios";
-import config from "../config/environment"; // config objesini varsayılan olarak import et
 import type {
   LoginRequest,
   RegisterRequest,
   AuthResponse,
-  User,
   EmailVerificationRequest,
   EmailVerification,
+  PasswordResetRequestDto,
+  PasswordResetDto,
+  ChangePasswordRequest,
+  UserProfile,
+  UpdateProfileRequest,
+  UserStatsDto,
+  TwoFactorStatus,
+  Enable2FARequest,
+  Enable2FAResponse,
+  Verify2FARequest,
+  Disable2FARequest,
+  RecoveryCodesResponse,
+  CaptchaConfig,
+  CaptchaVerification,
+  Login2FARequest,
+  LoginRecoveryRequest,
 } from "../types/auth.types";
 
-import type { AttachmentDto } from "../types/file.types";
-import type { BulkDeleteTaskDto, BulkCompleteTaskDto } from "../types/task.types"; // Eklendi
-import type { SearchSuggestionsResponse } from "../types/search.types"; // Eklendi
+import type { AttachmentDto, UploadLimitsDto } from "../types/file.types";
+import type {
+  BulkDeleteTaskDto,
+  BulkCompleteTaskDto,
+  TodoTaskDto,
+  UpdateTodoTaskDto,
+  CreateTodoTaskDto,
+  TodoTaskFilterDto,
+} from "../types/task.types";
+import type {
+  CategoryDto,
+  CreateCategoryDto,
+  UpdateCategoryDto,
+  CategoryFilterDto,
+} from "../types/category.types";
+import type { SearchSuggestionsResponse } from "../types/search.types";
+
+/**
+ * Genel API Yanıt Modeli
+ *
+ * Backend'den dönen tüm API yanıtları için standartlaştırılmış yapı.
+ * Bu, `success`, `message` ve `data` alanlarını içerir.
+ *
+ * @template T - Başarılı yanıt durumunda `data` alanının beklenen veri tipi.
+ */
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+  errors?: string[]; // Hata durumunda detaylı hata mesajları
+}
 
 /**
  * API Base Configuration
@@ -53,23 +95,53 @@ const apiClient = axios.create({
  * JWT token'ı localStorage'da saklama, okuma ve silme işlemleri.
  */
 export const tokenManager = {
-  setToken: (token: string): void => {
-    localStorage.setItem("taskflow_token", token);
+  setToken: (token: string, persist: boolean = true): void => {
+    console.log("🔧 setToken called with persist:", persist);
+    if (persist) {
+      localStorage.setItem("taskflow_token", token);
+      sessionStorage.removeItem("taskflow_token");
+      console.log("💾 Token saved to localStorage");
+    } else {
+      sessionStorage.setItem("taskflow_token", token);
+      localStorage.removeItem("taskflow_token");
+      console.log("💾 Token saved to sessionStorage");
+    }
   },
   getToken: (): string | null => {
-    return localStorage.getItem("taskflow_token");
+    const localToken = localStorage.getItem("taskflow_token");
+    const sessionToken = sessionStorage.getItem("taskflow_token");
+    const token = localToken || sessionToken;
+    console.log("🔍 getToken - localStorage:", !!localToken, "sessionStorage:", !!sessionToken, "returning:", !!token);
+    return token;
   },
   removeToken: (): void => {
+    console.log("🗑️ Removing token from both storages");
     localStorage.removeItem("taskflow_token");
+    sessionStorage.removeItem("taskflow_token");
   },
-  setRefreshToken: (refreshToken: string): void => {
-    localStorage.setItem("taskflow_refresh_token", refreshToken);
+  setRefreshToken: (refreshToken: string, persist: boolean = true): void => {
+    console.log("🔧 setRefreshToken called with persist:", persist);
+    if (persist) {
+      localStorage.setItem("taskflow_refresh_token", refreshToken);
+      sessionStorage.removeItem("taskflow_refresh_token");
+      console.log("💾 Refresh token saved to localStorage");
+    } else {
+      sessionStorage.setItem("taskflow_refresh_token", refreshToken);
+      localStorage.removeItem("taskflow_refresh_token");
+      console.log("💾 Refresh token saved to sessionStorage");
+    }
   },
   getRefreshToken: (): string | null => {
-    return localStorage.getItem("taskflow_refresh_token");
+    const localToken = localStorage.getItem("taskflow_refresh_token");
+    const sessionToken = sessionStorage.getItem("taskflow_refresh_token");
+    const token = localToken || sessionToken;
+    console.log("🔍 getRefreshToken - localStorage:", !!localToken, "sessionStorage:", !!sessionToken, "returning:", !!token);
+    return token;
   },
   removeRefreshToken: (): void => {
+    console.log("🗑️ Removing refresh token from both storages");
     localStorage.removeItem("taskflow_refresh_token");
+    sessionStorage.removeItem("taskflow_refresh_token");
   },
   isTokenValid: (): boolean => {
     const token = tokenManager.getToken();
@@ -77,8 +149,11 @@ export const tokenManager = {
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
       const currentTime = Date.now() / 1000;
-      return payload.exp > currentTime;
+      const isValid = payload.exp > currentTime;
+      console.log("🔍 Token validation - exp:", payload.exp, "current:", currentTime, "valid:", isValid);
+      return isValid;
     } catch {
+      console.log("🔍 Token validation failed - invalid token format");
       return false;
     }
   },
@@ -199,1021 +274,291 @@ apiClient.interceptors.response.use(
             tokenManager.removeToken();
             tokenManager.removeRefreshToken();
             if (onUnauthorizedCallback) onUnauthorizedCallback(); // Callback'i çağır
-            return Promise.reject(error);
           }
         } catch (refreshError) {
-          console.error("❌ Refresh token hatası:", refreshError);
+          console.error("❌ Token refresh failed:", refreshError);
           processQueue(refreshError, null);
           tokenManager.removeToken();
           tokenManager.removeRefreshToken();
           if (onUnauthorizedCallback) onUnauthorizedCallback(); // Callback'i çağır
-          return Promise.reject(refreshError);
         } finally {
           isRefreshing = false;
         }
       } else {
-        // Refresh token yoksa doğrudan login sayfasına yönlendir
+        // Refresh token yok, logout yap
+        console.log("Refresh token yok, yetkisiz erişim callback'i çağrılıyor.");
         tokenManager.removeToken();
         tokenManager.removeRefreshToken();
         if (onUnauthorizedCallback) onUnauthorizedCallback(); // Callback'i çağır
-        return Promise.reject(error);
       }
     }
-
-    // Genel hata işleme
+    console.error("❌ API Error:", error.response?.data || error.message);
     return Promise.reject(error);
   }
 );
 
 /**
- * Authentication API Service
+ * API Endpoint'leri
  *
- * Kullanıcı girişi, kaydı, çıkışı ve profil işlemleri için fonksiyonlar.
+ * Her bir servis alanı (auth, user, task, category) için ayrı API metodları.
  */
+
+// AUTHENTICATION API
 export const authAPI = {
-  /**
-   * Kullanıcı Girişi
-   * @param credentials LoginRequest
-   * @returns AuthResponse
-   */
-  login: async (credentials: LoginRequest): Promise<AuthResponse> => {
-    try {
-      const response = await apiClient.post<AuthResponse>(
-        "/users/login",
-        credentials
-      );
-      if (response.data.success && response.data.data?.token) {
-        tokenManager.setToken(response.data.data.token);
-        // Başarılı girişte apiClient'in varsayılan Authorization header'ını ayarla
-        apiClient.defaults.headers.common['Authorization'] = `Bearer ${response.data.data.token}`;
-      }
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Giriş işlemi başarısız";
-      throw new Error(message);
-    }
-  },
-  /**
-   * Kullanıcı Kaydı
-   * @param userData RegisterRequest
-   * @returns AuthResponse
-   */
-  register: async (userData: RegisterRequest): Promise<AuthResponse> => {
-    try {
-      const response = await apiClient.post<AuthResponse>(
-        "/users/register",
-        userData
-      );
-      if (response.data.success && response.data.data?.token) {
-        tokenManager.setToken(response.data.data.token);
-      }
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Kayıt işlemi başarısız";
-      throw new Error(message);
-    }
-  },
-  /**
-   * Kullanıcı Çıkışı
-   * @returns void
-   */
-  logout: async (): Promise<void> => {
-    try {
-      // Backend'deki UsersController'daki revoke-refresh-token endpoint'ini çağır
-      await apiClient.post("/users/revoke-refresh-token");
-    } catch (error) {
-      console.error("Logout API error:", error);
-    } finally {
-      tokenManager.removeToken();
-      // Frontend tarafında direkt login sayfasına yönlendirme logic'i artık AuthContext tarafından yönetiliyor
-      // window.location.href = "/login"; // Bu satırı kaldırdık
-    }
-  },
-  /**
-   * Kullanıcı Profili Al (authAPI içindeki getProfile kaldırılıyor, profileAPI kullanacağız)
-   * @returns User
-   */
-  // getProfile: async (): Promise<User> => {
-  //   try {
-  //     const response = await apiClient.get<{ success: boolean; data: User }>(
-  //       "/users/profile"
-  //     );
-  //     return response.data.data;
-  //   } catch (error) {
-  //     const message =
-  //       error instanceof Error ? error.message : "Profil bilgileri alınamadı";
-  //     throw new Error(message);
-  //   }
-  // },
+  login: (credentials: LoginRequest): Promise<ApiResponse<AuthResponse>> =>
+    apiClient.post<ApiResponse<AuthResponse>>("/auth/login", credentials).then(res => res.data),
 
-  /**
-   * E-posta doğrulama isteği gönderir.
-   * Kullanıcının kayıtlı e-posta adresine bir doğrulama kodu gönderir.
-   * @param emailData EmailVerificationRequest (yalnızca email içerir)
-   * @returns ApiResponse<object>
-   */
-  requestEmailVerification: async (emailData: EmailVerificationRequest): Promise<ApiResponse<object>> => {
-    try {
-      const response = await apiClient.post<ApiResponse<object>>(
-        "/users/email-verification-request",
-        emailData
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "E-posta doğrulama isteği başarısız oldu";
-      throw new Error(message);
-    }
-  },
+  register: (userData: RegisterRequest): Promise<ApiResponse<AuthResponse>> =>
+    apiClient.post<ApiResponse<AuthResponse>>(
+      "/auth/register",
+      userData
+    ).then(res => res.data),
 
-  /**
-   * E-posta adresini doğrulama kodu ile onaylar.
-   * Kullanıcının e-posta adresini ve aldığı doğrulama kodunu doğrulama için gönderir.
-   * @param verificationData EmailVerification (email ve token içerir)
-   * @returns ApiResponse<object>
-   */
-  verifyEmail: async (verificationData: EmailVerification): Promise<ApiResponse<object>> => {
-    try {
-      const response = await apiClient.post<ApiResponse<object>>(
-        "/users/email-verification",
-        verificationData
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "E-posta doğrulama başarısız oldu";
-      throw new Error(message);
-    }
-  },
+  logout: (): Promise<ApiResponse<object>> =>
+    apiClient.post<ApiResponse<object>>("/auth/logout").then(res => res.data),
+
+  requestEmailVerification: (emailData: EmailVerificationRequest): Promise<ApiResponse<object>> =>
+    apiClient.post<ApiResponse<object>>("/auth/email-verification-request", emailData).then(res => res.data),
+
+  verifyEmail: (verificationData: EmailVerification): Promise<ApiResponse<object>> =>
+    apiClient.post<ApiResponse<object>>("/auth/verify-email", verificationData).then(res => res.data),
+
+  requestPasswordReset: (data: PasswordResetRequestDto): Promise<ApiResponse<object>> =>
+    apiClient.post<ApiResponse<object>>("/auth/password-reset-request", data).then(res => res.data),
+
+  resetPassword: (data: PasswordResetDto): Promise<ApiResponse<object>> =>
+    apiClient.post<ApiResponse<object>>("/auth/reset-password", data).then(res => res.data),
+
+  changePassword: (data: ChangePasswordRequest): Promise<ApiResponse<object>> =>
+    apiClient.put<ApiResponse<object>>("/auth/change-password", data).then(res => res.data),
+
+  socialLogin: (data: { provider: string; token: string; userData: any }): Promise<ApiResponse<AuthResponse>> =>
+    apiClient.post<ApiResponse<AuthResponse>>("/auth/social-login", data).then(res => res.data),
+
+  // 2FA login
+  loginWith2FA: (data: Login2FARequest): Promise<ApiResponse<AuthResponse>> =>
+    apiClient.post<ApiResponse<AuthResponse>>("/auth/login-2fa", data).then(res => res.data),
+
+  // Recovery code ile login
+  loginWithRecoveryCode: (data: LoginRecoveryRequest): Promise<ApiResponse<AuthResponse>> =>
+    apiClient.post<ApiResponse<AuthResponse>>("/auth/login-recovery", data).then(res => res.data),
 };
 
-/**
- * Profile API Service
- *
- * Kullanıcı profili bilgilerini yönetmek için fonksiyonlar.
- */
+// USER API
 export const profileAPI = {
-  /**
-   * Kullanıcı profilini getirir.
-   * @returns UserProfile
-   */
-  getProfile: async (): Promise<ApiResponse<UserProfile>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<UserProfile>>("/users/profile");
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Profil bilgileri alınamadı";
-      throw new Error(message);
-    }
-  },
+  getProfile: (): Promise<ApiResponse<UserProfile>> =>
+    apiClient.get<ApiResponse<UserProfile>>("/v1.0/users/profile").then(res => res.data),
 
-  /**
-   * Kullanıcı profilini günceller.
-   * @param data UpdateProfileRequest
-   * @returns UserProfile
-   */
-  updateProfile: async (
-    data: UpdateProfileRequest
-  ): Promise<ApiResponse<UserProfile>> => {
-    try {
-      const response = await apiClient.put<ApiResponse<UserProfile>>(
-        "/v1.0/users/profile",
-        data
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Profil güncellenemedi";
-      throw new Error(message);
-    }
-  },
+  updateProfile: (userData: UpdateProfileRequest): Promise<ApiResponse<UserProfile>> =>
+    apiClient.put<ApiResponse<UserProfile>>(
+      "/v1.0/users/profile",
+      userData
+    ).then(res => res.data),
 
-  /**
-   * Kullanıcının şifresini değiştirir.
-   * @param data ChangePasswordRequest
-   * @returns boolean Başarılı ise true
-   */
-  changePassword: async (
-    data: ChangePasswordRequest
-  ): Promise<ApiResponse<boolean>> => {
-    try {
-      const response = await apiClient.put<ApiResponse<boolean>>(
-        "/v1.0/users/change-password",
-        data
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Şifre değiştirilemedi";
-      throw new Error(message);
-    }
-  },
-  requestEmailVerification: (data: EmailVerificationRequest): Promise<ApiResponse<void>> =>
-    apiClient.post<ApiResponse<void>>("/v1.0/users/request-email-verification", data).then(response => response.data),
-  verifyEmail: (data: EmailVerification): Promise<ApiResponse<void>> =>
-    apiClient.post<ApiResponse<void>>("/v1.0/users/verify-email", data).then(response => response.data),
-  getUserStatistics: (): Promise<ApiResponse<UserStatsDto>> =>
-    apiClient.get<ApiResponse<UserStatsDto>>("/users/statistics").then(response => response.data),
+  getUserStats: (): Promise<ApiResponse<UserStatsDto>> =>
+    apiClient.get<ApiResponse<UserStatsDto>>("/v1.0/users/statistics").then(res => res.data),
 };
 
-/**
- * File Upload API Service
- *
- * Dosya yükleme (avatar, attachment) ve yönetimi için fonksiyonlar.
- */
+// FILE UPLOAD API
 export const fileUploadAPI = {
-  /**
-   * Kullanıcının avatarını yükler.
-   * @param file File
-   * @returns ApiResponse<any>
-   */
-  uploadAvatar: async (file: File): Promise<ApiResponse<any>> => {
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const response = await apiClient.post<ApiResponse<any>>(
-        "/files/avatar",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Avatar yükleme başarısız oldu";
-      throw new Error(message);
-    }
+  uploadAttachment: (taskId: number, file: File): Promise<ApiResponse<AttachmentDto>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiClient.post<ApiResponse<AttachmentDto>>(`/files/tasks/${taskId}/attachments`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }).then(res => res.data);
   },
 
-  /**
-   * Görev eki yükler.
-   * @param request AttachmentUploadRequestDto
-   * @returns ApiResponse<any>
-   */
-  uploadAttachment: async (
-    request: AttachmentUploadRequestDto
-  ): Promise<ApiResponse<any>> => {
-    try {
-      const formData = new FormData();
-      formData.append("file", request.file);
-      formData.append("taskId", request.taskId.toString());
-      const response = await apiClient.post<ApiResponse<any>>(
-        "/files/attachment",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Ek yükleme başarısız oldu";
-      throw new Error(message);
-    }
-  },
+  deleteAttachment: (attachmentId: number): Promise<ApiResponse<object>> =>
+    apiClient.delete<ApiResponse<object>>(`/files/attachments/${attachmentId}`).then(res => res.data),
 
-  /**
-   * Kullanıcının profil avatarını siler.
-   * @returns ApiResponse<object>
-   */
-  deleteAvatar: async (): Promise<ApiResponse<object>> => {
-    try {
-      const response = await apiClient.delete<ApiResponse<object>>("/files/avatar");
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Avatar silme başarısız oldu";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Yükleme limitleri bilgilerini getirir.
-   * @returns ApiResponse<UploadLimitsDto>
-   */
-  getUploadLimits: async (): Promise<ApiResponse<UploadLimitsDto>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<UploadLimitsDto>>("/files/limits");
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Yükleme limitleri alınamadı";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Belirli bir göreve ait ekli dosyaların listesini getirir.
-   * @param taskId number
-   * @returns ApiResponse<AttachmentDto[]>
-   */
-  getAttachmentsForTask: async (taskId: number): Promise<ApiResponse<AttachmentDto[]>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<AttachmentDto[]>>(`/files/attachments/task/${taskId}`);
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Ekli dosyalar getirilemedi";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Belirli bir göreve ait ekli dosyaları siler.
-   * @param taskId number
-   * @returns ApiResponse<object>
-   */
-  deleteTaskAttachments: async (taskId: number): Promise<ApiResponse<object>> => {
-    try {
-      const response = await apiClient.delete<ApiResponse<object>>(`/files/attachment/task/${taskId}`);
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Ekli dosyalar silinemedi";
-      throw new Error(message);
-    }
-  },
+  getUploadLimits: (): Promise<ApiResponse<UploadLimitsDto>> =>
+    apiClient.get<ApiResponse<UploadLimitsDto>>("/files/upload-limits").then(res => res.data),
 };
 
-/**
- * Categories API Service
- *
- * Kategori oluşturma, listeleme, güncelleme ve silme işlemleri için fonksiyonlar.
- */
-export const categoriesAPI = {
-  /**
-   * Tüm kategorileri getirir.
-   * @param filters CategoryFilterDto
-   * @returns CategoryDto[]
-   */
-  getCategories: async (
-    filters?: CategoryFilterDto
-  ): Promise<ApiResponse<CategoryDto[]>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<CategoryDto[]>>(
-        "/categories",
-        { params: filters }
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Kategoriler alınamadı";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Yeni kategori oluşturur.
-   * @param category CreateCategoryDto
-   * @returns CategoryDto
-   */
-  createCategory: async (
-    category: CreateCategoryDto
-  ): Promise<ApiResponse<CategoryDto>> => {
-    try {
-      const response = await apiClient.post<ApiResponse<CategoryDto>>(
-        "/categories",
-        category
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Kategori oluşturulamadı";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Kategoriyi ID'ye göre günceller.
-   * @param id number
-   * @param category UpdateCategoryDto
-   * @returns CategoryDto
-   */
-  updateCategory: async (
-    id: number,
-    category: UpdateCategoryDto
-  ): Promise<ApiResponse<CategoryDto>> => {
-    try {
-      const response = await apiClient.put<ApiResponse<CategoryDto>>(
-        `/categories/${id}`,
-        category
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Kategori güncellenemedi";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Kategoriyi ID'ye göre siler.
-   * @param id number
-   * @returns object
-   */
-  deleteCategory: async (id: number): Promise<ApiResponse<object>> => {
-    try {
-      const response = await apiClient.delete<ApiResponse<object>>(
-        `/categories/${id}`
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Kategori silinemedi";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Kullanıcıya ait kategori istatistiklerini getirir.
-   * @returns CategorySummaryDto[]
-   */
-  getCategorySummary: async (): Promise<ApiResponse<CategorySummaryDto[]>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<CategorySummaryDto[]>>(
-        "/categories/summary"
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Kategori özeti alınamadı";
-      throw new Error(message);
-    }
-  },
-};
-
-/**
- * Tasks API Service
- *
- * Görev oluşturma, listeleme, güncelleme ve silme işlemleri için fonksiyonlar.
- */
+// TASKS API
 export const tasksAPI = {
-  /**
-   * Tüm görevleri getirir.
-   * @param filters TodoTaskFilterDto
-   * @returns TodoTaskDto[]
-   */
-  getTasks: async (
-    filters?: TodoTaskFilterDto
-  ): Promise<ApiResponse<{ tasks: TodoTaskDto[]; pagination: PaginationMetadata }>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<{ tasks: TodoTaskDto[]; pagination: PaginationMetadata }>>(
-        "/todotasks",
-        { params: filters }
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Görevler alınamadı";
-      throw new Error(message);
-    }
-  },
+  getTasks: (filter?: TodoTaskFilterDto): Promise<ApiResponse<TodoTaskDto[]>> =>
+    apiClient.get<ApiResponse<TodoTaskDto[]>>("/todotasks", { params: filter }).then(res => res.data),
 
-  /**
-   * Belirli bir görevi ID'ye göre getirir.
-   * @param id number
-   * @returns TodoTaskDto
-   */
-  getTaskById: async (id: number): Promise<ApiResponse<TodoTaskDto>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<TodoTaskDto>>(
-        `/todotasks/${id}`
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Görev bulunamadı";
-      throw new Error(message);
-    }
-  },
+  getTaskById: (id: number): Promise<ApiResponse<TodoTaskDto>> =>
+    apiClient.get<ApiResponse<TodoTaskDto>>(`/todotasks/${id}`).then(res => res.data),
 
-  /**
-   * Yeni görev oluşturur.
-   * @param task CreateTodoTaskDto
-   * @returns TodoTaskDto
-   */
-  createTask: async (
-    task: CreateTodoTaskDto
-  ): Promise<ApiResponse<TodoTaskDto>> => {
-    try {
-      const response = await apiClient.post<ApiResponse<TodoTaskDto>>(
-        "/todotasks",
-        task
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Görev oluşturulamadı";
-      throw new Error(message);
-    }
-  },
+  createTask: (taskData: CreateTodoTaskDto): Promise<ApiResponse<TodoTaskDto>> =>
+    apiClient.post<ApiResponse<TodoTaskDto>>("/todotasks", taskData).then(res => res.data),
 
-  /**
-   * Görevi ID'ye göre günceller.
-   * @param id number
-   * @param task UpdateTodoTaskDto
-   * @returns TodoTaskDto
-   */
-  updateTask: async (
+  updateTask: (
     id: number,
-    task: UpdateTodoTaskDto
-  ): Promise<ApiResponse<TodoTaskDto>> => {
-    try {
-      const response = await apiClient.put<ApiResponse<TodoTaskDto>>(
-        `/todotasks/${id}`,
-        task
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Görev güncellenemedi";
-      throw new Error(message);
-    }
-  },
+    taskData: UpdateTodoTaskDto
+  ): Promise<ApiResponse<TodoTaskDto>> =>
+    apiClient.put<ApiResponse<TodoTaskDto>>(`/todotasks/${id}`, taskData).then(res => res.data),
 
-  /**
-   * Görevi ID'ye göre siler.
-   * @param id number
-   * @returns object
-   */
-  deleteTask: async (id: number): Promise<ApiResponse<object>> => {
-    try {
-      const response = await apiClient.delete<ApiResponse<object>>(
-        `/todotasks/${id}`
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Görev silinemedi";
-      throw new Error(message);
-    }
-  },
+  deleteTask: (id: number): Promise<ApiResponse<object>> =>
+    apiClient.delete<ApiResponse<object>>(`/todotasks/${id}`).then(res => res.data),
 
-  /**
-   * Görev tamamlama durumunu günceller.
-   * @param id number
-   * @param isCompleted boolean
-   * @returns object
-   */
-  completeTask: async (
-    id: number,
-    isCompleted: boolean
-  ): Promise<ApiResponse<object>> => {
-    try {
-      const response = await apiClient.patch<ApiResponse<object>>(
-        `/todotasks/${id}/complete`,
-        { isCompleted }
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Görev tamamlama durumu güncellenemedi";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Görev ilerlemesini günceller.
-   * @param id number
-   * @param progress number
-   * @returns object
-   */
-  updateTaskProgress: async (
+  updateTaskProgress: (
     id: number,
     progress: number
-  ): Promise<ApiResponse<object>> => {
-    try {
-      const response = await apiClient.patch<ApiResponse<object>>(
-        `/todotasks/${id}/progress`,
-        { progress }
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Görev ilerlemesi güncellenemedi";
-      throw new Error(message);
-    }
-  },
+  ): Promise<ApiResponse<TodoTaskDto>> =>
+    apiClient.patch<ApiResponse<TodoTaskDto>>(
+      `/todotasks/${id}/progress/${progress}`,
+      {}
+    ).then(res => res.data),
 
-  /**
-   * Görev istatistiklerini getirir.
-   * @returns TaskStatsDto
-   */
-  getTaskStats: async (): Promise<ApiResponse<TaskStatsDto>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<TaskStatsDto>>(
-        "/todotasks/statistics"
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Görev istatistikleri alınamadı";
-      throw new Error(message);
-    }
-  },
+  completeTask: (
+    id: number,
+    isCompleted: boolean
+  ): Promise<ApiResponse<TodoTaskDto>> =>
+    apiClient.patch<ApiResponse<TodoTaskDto>>(
+      `/todotasks/${id}/complete/${isCompleted}`,
+      {}
+    ).then(res => res.data),
 
-  /**
-   * Önceliğe göre görev istatistiklerini getirir.
-   * @returns TaskPriorityStatsDto[]
-   */
-  getTaskPriorityStats: async (): Promise<
-    ApiResponse<TaskPriorityStatsDto[]>
-  > => {
-    try {
-      const response = await apiClient.get<
-        ApiResponse<TaskPriorityStatsDto[]>
-      >("/todotasks/priority-statistics");
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Görev öncelik istatistikleri alınamadı";
-      throw new Error(message);
-    }
-  },
+  bulkDeleteTasks: (data: BulkDeleteTaskDto): Promise<ApiResponse<object>> =>
+    apiClient.post<ApiResponse<object>>("/todotasks/bulk-delete", data).then(res => res.data),
 
-  /**
-   * Birden fazla görevü siler.
-   * @param tasks BulkDeleteTaskDto[]
-   * @returns ApiResponse<object>
-   */
-  bulkDeleteTasks: async (data: BulkDeleteTaskDto): Promise<ApiResponse<object>> => {
-    try {
-      const response = await apiClient.post<ApiResponse<object>>("/todotasks/bulk-delete", data);
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Görevler silinemedi";
-      throw new Error(message);
-    }
-  },
+  bulkCompleteTasks: (data: BulkCompleteTaskDto): Promise<ApiResponse<object>> =>
+    apiClient.post<ApiResponse<object>>("/todotasks/bulk-complete", data).then(res => res.data),
 
-  /**
-   * Birden fazla görevin tamamlama durumunu günceller.
-   * @param tasks BulkCompleteTaskDto[]
-   * @returns ApiResponse<object>
-   */
-  bulkCompleteTasks: async (data: BulkCompleteTaskDto): Promise<ApiResponse<object>> => {
-    try {
-      const response = await apiClient.post<ApiResponse<object>>("/todotasks/bulk-complete", data);
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Görevler tamamlanmadı";
-      throw new Error(message);
-    }
-  },
+  getAttachmentsForTask: (taskId: number): Promise<ApiResponse<AttachmentDto[]>> =>
+    apiClient.get<ApiResponse<AttachmentDto[]>>(`/files/tasks/${taskId}/attachments`).then(res => res.data),
 };
 
-/**
- * Search API Service
- *
- * Global ve gelişmiş arama işlemleri için fonksiyonlar.
- */
+// CATEGORIES API
+export const categoriesAPI = {
+  getCategories: (filter?: CategoryFilterDto): Promise<ApiResponse<CategoryDto[]>> =>
+    apiClient.get<ApiResponse<CategoryDto[]>>("/categories", { params: filter }).then(res => res.data),
+
+  getCategoryById: (id: number): Promise<ApiResponse<CategoryDto>> =>
+    apiClient.get<ApiResponse<CategoryDto>>(`/categories/${id}`).then(res => res.data),
+
+  createCategory: (categoryData: CreateCategoryDto): Promise<ApiResponse<CategoryDto>> =>
+    apiClient.post<ApiResponse<CategoryDto>>("/categories", categoryData).then(res => res.data),
+
+  updateCategory: (
+    id: number,
+    categoryData: UpdateCategoryDto
+  ): Promise<ApiResponse<CategoryDto>> =>
+    apiClient.put<ApiResponse<CategoryDto>>(`/categories/${id}`, categoryData).then(res => res.data),
+
+  deleteCategory: (id: number): Promise<ApiResponse<object>> =>
+    apiClient.delete<ApiResponse<object>>(`/categories/${id}`).then(res => res.data),
+};
+
+// SEARCH API
 export const searchAPI = {
-  /**
-   * Görevler üzerinde gelişmiş arama yapar.
-   * @param request TaskSearchRequest
-   * @returns TaskSearchResult[]
-   */
-  searchTasks: async (
-    request: TaskSearchRequest
-  ): Promise<ApiResponse<TaskSearchResult[]>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<TaskSearchResult[]>>(
-        "/search/tasks",
-        { params: request }
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Görev arama başarısız";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Arama önerilerini getirir (autocomplete için).
-   * @param query string
-   * @returns ApiResponse<SearchSuggestionsResponse>
-   */
-  getSearchSuggestions: async (query: string): Promise<ApiResponse<SearchSuggestionsResponse>> => {
-    try {
-      const response = await apiClient.get<ApiResponse<SearchSuggestionsResponse>>(
-        `/search/suggestions?query=${query}`
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Arama önerileri alınamadı";
-      throw new Error(message);
-    }
-  },
-
-  /**
-   * Global arama yapar.
-   * @param request GlobalSearchRequest
-   * @returns ApiResponse<GlobalSearchResponse>
-   */
-  globalSearch: async (request: GlobalSearchRequest): Promise<ApiResponse<GlobalSearchResponse>> => {
-    try {
-      const response = await apiClient.post<ApiResponse<GlobalSearchResponse>>(
-        "/search/global",
-        request
-      );
-      return response.data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Global arama başarısız";
-      throw new Error(message);
-    }
-  },
+  getSuggestions: (query: string): Promise<ApiResponse<SearchSuggestionsResponse>> =>
+    apiClient.get<ApiResponse<SearchSuggestionsResponse>>("/search/suggestions", { params: { query } }).then(res => res.data),
 };
 
-export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  errors?: string[];
-}
+// 2FA API Methods
+export const twoFactorAPI = {
+  // 2FA durumunu getir
+  getStatus: async (): Promise<ApiResponse<TwoFactorStatus>> => {
+    const response = await apiClient.get('/twofactorauth/status');
+    return response.data;
+  },
 
-// Profile Types (UserProfile ve UpdateProfileRequest daha önce tanımlanmış)
-export interface UserProfile {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber?: string; // Eklendi: Kullanıcının telefon numarası
-  profileImage?: string;
-  createdAt: string;
-  lastLoginAt?: string;
-  isEmailVerified: boolean; // Eklendi
-  stats: {
-    totalTasks: number;
-    completedTasks: number;
-    pendingTasks: number;
-    completionRate: number;
-  };
-}
+  // 2FA etkinleştir
+  enable: async (data: Enable2FARequest): Promise<ApiResponse<Enable2FAResponse>> => {
+    const response = await apiClient.post('/twofactorauth/enable', data);
+    return response.data;
+  },
 
-export interface UpdateProfileRequest {
-  firstName: string;
-  lastName: string;
-  profileImage?: string;
-  phoneNumber?: string; // Eklendi: Kullanıcının telefon numarası
-}
+  // 2FA doğrula
+  verify: async (data: Verify2FARequest): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post('/twofactorauth/verify', data);
+    return response.data;
+  },
 
-export interface UserStatsDto {
-  totalTasks: number;
-  completedTasks: number;
-  pendingTasks: number;
-  inProgressTasks: number; // Backend DTO'sundan eklendi
-  taskCompletionRate: number; // Backend DTO'sundan eklendi (completionRate olarak güncellendi)
-  averageCompletionDays: number; // Backend DTO'sundan eklendi
-  tasksCompletedThisMonth: number; // Backend DTO'sundan eklendi
-  tasksCompletedThisWeek: number; // Backend DTO'sundan eklendi
-}
+  // 2FA devre dışı bırak
+  disable: async (data: Disable2FARequest): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post('/twofactorauth/disable', data);
+    return response.data;
+  },
 
-export interface ChangePasswordRequest {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-}
+  // Kurtarma kodları oluştur
+  generateRecoveryCodes: async (): Promise<ApiResponse<RecoveryCodesResponse>> => {
+    const response = await apiClient.post('/twofactorauth/recovery-codes');
+    return response.data;
+  },
 
-export interface PasswordResetRequestDto {
-  email: string;
-}
+  // Kurtarma kodu kullan
+  useRecoveryCode: async (data: Verify2FARequest): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post('/twofactorauth/recovery', data);
+    return response.data;
+  }
+};
 
-export interface PasswordResetDto {
-  email: string;
-  token: string;
-  newPassword: string;
-  confirmPassword: string;
-}
+// Captcha API Methods
+export const captchaAPI = {
+  // Captcha konfigürasyonunu getir
+  getConfig: async (): Promise<ApiResponse<CaptchaConfig>> => {
+    const response = await apiClient.get('/captcha/config');
+    return response.data;
+  },
 
-export interface EmailVerificationRequestDto {
-  email: string;
-}
+  // Captcha doğrula
+  verify: async (data: CaptchaVerification): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post('/captcha/verify', data);
+    return response.data;
+  }
+};
 
-export interface EmailVerificationDto {
-  email: string;
-  token: string;
-}
+// WebAuthn API Methods
+export const webAuthnAPI = {
+  // WebAuthn durumunu getir
+  getStatus: async (): Promise<ApiResponse<WebAuthnStatus>> => {
+    const response = await apiClient.get('/webauthn/status');
+    return response.data;
+  },
 
-export interface TokenRefreshRequestDto {
-  refreshToken: string;
-}
+  // WebAuthn kayıt başlat
+  startRegistration: async (data: WebAuthnRegistrationRequest): Promise<ApiResponse<WebAuthnRegistrationResponse>> => {
+    const response = await apiClient.post('/webauthn/register/start', data);
+    return response.data;
+  },
 
-export interface TokenRefreshResponseDto {
-  token: string;
-  refreshToken: string;
-  user: User;
-}
+  // WebAuthn kayıt tamamla
+  completeRegistration: async (data: WebAuthnRegistrationComplete): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post('/webauthn/register/complete', data);
+    return response.data;
+  },
 
-export interface GlobalSearchRequest {
-  query: string;
-  includeUsers?: boolean;
-}
+  // WebAuthn giriş başlat
+  startAuthentication: async (data: WebAuthnAuthenticationRequest): Promise<ApiResponse<WebAuthnAuthenticationResponse>> => {
+    const response = await apiClient.post('/webauthn/authenticate/start', data);
+    return response.data;
+  },
 
-export interface TaskSearchResult {
-  id: number;
-  title: string;
-  description?: string;
-  dueDate?: string;
-  priority: "Low" | "Medium" | "High";
-  status: "Todo" | "InProgress" | "Completed" | "Cancelled";
-  isCompleted: boolean;
-  categoryId?: number;
-  categoryName?: string;
-  matchType: "Task";
-}
+  // WebAuthn giriş tamamla
+  completeAuthentication: async (data: WebAuthnAuthenticationComplete): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post('/webauthn/authenticate/complete', data);
+    return response.data;
+  },
 
-export interface CategorySearchResult {
-  id: number;
-  name: string;
-  description?: string;
-  matchType: "Category";
-}
+  // WebAuthn credential sil
+  deleteCredential: async (credentialId: string): Promise<ApiResponse<any>> => {
+    const response = await apiClient.delete(`/webauthn/credentials/${credentialId}`);
+    return response.data;
+  }
+};
 
-export interface UserSearchResult {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  matchType: "User";
-}
+// Export apiClient for direct use
+export { apiClient };
 
-export interface GlobalSearchResponse {
-  query: string;
-  totalResults: number;
-  tasks: TaskSearchResult[];
-  categories: CategorySearchResult[];
-  users: UserSearchResult[];
-  searchTime: string; // DateTime olarak alınacak, string olarak kullanılabilir
-}
-
-export interface TaskSearchRequest {
-  query?: string;
-  priority?: "Low" | "Medium" | "High";
-  isCompleted?: boolean;
-  categoryId?: number;
-  startDate?: string;
-  endDate?: string;
-  dueDateStart?: string;
-  dueDateEnd?: string;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-  page?: number;
-  pageSize?: number;
-}
-
-export interface AttachmentUploadRequestDto {
-  taskId: number;
-  file: File;
-}
-
-export interface UploadLimitsDto {
-  avatar: {
-    maxSizeBytes: number;
-    maxSizeFormatted: string;
-    allowedTypes: string[];
-  };
-  attachment: {
-    maxSizeBytes: number;
-    maxSizeFormatted: string;
-    allowedTypes: string[];
-  };
-}
-
-export interface CategoryDto {
-  id: number;
-  name: string;
-  description?: string;
-  colorCode?: string;
-  userId: number;
-  createdAt: string;
-  updatedAt: string;
-  taskCount: number;
-}
-
-export interface CreateCategoryDto {
-  name: string;
-  description?: string;
-  colorCode?: string;
-}
-
-export interface UpdateCategoryDto {
-  name?: string;
-  description?: string;
-  colorCode?: string;
-}
-
-export interface CategoryFilterDto {
-  name?: string;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-  pageNumber?: number;
-  pageSize?: number;
-}
-
-export interface CategorySummaryDto {
-  categoryName: string;
-  totalTasks: number;
-  completedTasks: number;
-  pendingTasks: number;
-  completionRate: number;
-}
-
-export interface TodoTaskDto {
-  id: number;
-  title: string;
-  description?: string;
-  dueDate?: string; // ISO 8601 formatında tarih
-  priority: "Low" | "Medium" | "High";
-  status: "Todo" | "InProgress" | "Completed" | "Cancelled";
-  isCompleted: boolean;
-  progress: number; // 0-100 arası
-  categoryId?: number;
-  categoryName?: string;
-  userId: number;
-  createdAt: string;
-  updatedAt: string;
-  parentTaskId?: number;
-  subTasks?: TodoTaskDto[]; // Alt görevler
-  creatorUserName?: string; // Oluşturan kullanıcının adı
-  assignedUserName?: string; // Atanan kullanıcının adı
-}
-
-export interface CreateTodoTaskDto {
-  title: string;
-  description?: string;
-  dueDate?: string;
-  priority?: "Low" | "Medium" | "High";
-  categoryId?: number;
-  parentTaskId?: number;
-}
-
-export interface UpdateTodoTaskDto {
-  title?: string;
-  description?: string;
-  dueDate?: string;
-  priority?: "Low" | "Medium" | "High";
-  status?: "Todo" | "InProgress" | "Completed" | "Cancelled";
-  categoryId?: number;
-  parentTaskId?: number;
-}
-
-export interface TodoTaskFilterDto {
-  searchQuery?: string;
-  categoryId?: number;
-  priority?: "Low" | "Medium" | "High";
-  status?: "Todo" | "InProgress" | "Completed" | "Cancelled";
-  dueDateStart?: string; // ISO 8601
-  dueDateEnd?: string; // ISO 8601
-  isCompleted?: boolean;
-  includeSubTasks?: boolean;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-  pageNumber?: number;
-  pageSize?: number;
-}
-
-export interface PaginationMetadata {
-  currentPage: number;
-  pageSize: number;
-  totalCount: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
-}
-
-export interface CompleteTaskDto {
-  isCompleted: boolean;
-}
-
-export interface UpdateTaskProgressDto {
-  progress: number;
-}
-
-export interface TaskStatsDto {
-  totalTasks: number;
-  completedTasks: number;
-  pendingTasks: number;
-  overdueTasks: number;
-  tasksDueToday: number;
-  tasksDueThisWeek: number;
-}
-
-export interface TaskPriorityStatsDto {
-  priority: "Low" | "Medium" | "High";
-  totalTasks: number;
-  completedTasks: number;
-  pendingTasks: number;
-}
+// Export types for external use
+export type {
+  UserStatsDto,
+  PasswordResetRequestDto,
+  PasswordResetDto,
+  TodoTaskDto,
+  CreateTodoTaskDto,
+  UpdateTodoTaskDto,
+  TodoTaskFilterDto,
+  CategoryDto,
+  CreateCategoryDto,
+  UpdateCategoryDto,
+  AttachmentDto,
+  UploadLimitsDto,
+};

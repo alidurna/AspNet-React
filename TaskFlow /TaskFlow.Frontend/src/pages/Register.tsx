@@ -42,17 +42,21 @@
  * @since 2024
  */
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Card from "../components/ui/Card";
 import Input from "../components/ui/Input";
-import Button from "../components/ui/Button";
+import { Button } from "../components/ui/Button";
 import { useAuth } from "../contexts/AuthContext";
 import type { RegisterRequest } from "../types/auth.types";
 import PasswordStrength from "../components/ui/PasswordStrength";
+import AuthLayout from "../components/layout/AuthLayout"; // AuthLayout import edildi
+import Captcha from "../components/security/Captcha";
+import type { CaptchaRef } from "../components/security/Captcha";
+import { captchaAPI } from "../services/api";
 
 /**
  * Register formu için Zod validation şeması
@@ -115,10 +119,15 @@ const Register: React.FC = () => {
   const navigate = useNavigate();
 
   // Authentication context
-  const { register: registerUser } = useAuth();
+  const { register: registerUser, isLoading: authIsLoading } = useAuth();
 
   // Error state
   const [error, setError] = useState<string>("");
+
+  // Captcha state'leri
+  const [captchaEnabled, setCaptchaEnabled] = useState(false);
+  const [captchaSiteKey, setCaptchaSiteKey] = useState("");
+  const captchaRef = useRef<CaptchaRef>(null);
 
   const {
     register,
@@ -129,10 +138,54 @@ const Register: React.FC = () => {
     resolver: zodResolver(registerSchema),
   });
 
+  // Captcha konfigürasyonunu yükle
+  React.useEffect(() => {
+    const loadCaptchaConfig = async () => {
+      try {
+        const response = await captchaAPI.getConfig();
+        if (response.success && response.data.enabled && 
+            response.data.siteKey && 
+            response.data.siteKey !== "your-recaptcha-site-key" &&
+            response.data.siteKey !== "6LcXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX") {
+          setCaptchaEnabled(true);
+          setCaptchaSiteKey(response.data.siteKey);
+        } else {
+          console.warn("Captcha devre dışı - geçersiz site key");
+          setCaptchaEnabled(false);
+        }
+      } catch (error) {
+        console.warn("Captcha konfigürasyonu yüklenemedi:", error);
+        setCaptchaEnabled(false);
+      }
+    };
+
+    loadCaptchaConfig();
+  }, []);
+
   const onSubmit = async (data: RegisterRequest) => {
     try {
       // Önceki hataları temizle
       setError("");
+
+      // Captcha doğrulaması (eğer etkinse)
+      if (captchaEnabled && captchaRef.current) {
+        try {
+          const captchaToken = await captchaRef.current.execute();
+          const captchaResponse = await captchaAPI.verify({
+            token: captchaToken,
+            action: "register"
+          });
+          
+          if (!captchaResponse.success) {
+            setError("Güvenlik doğrulaması başarısız. Lütfen tekrar deneyin.");
+            return;
+          }
+        } catch (captchaError) {
+          console.error("Captcha doğrulama hatası:", captchaError);
+          setError("Güvenlik doğrulaması sırasında hata oluştu. Lütfen tekrar deneyin.");
+          return;
+        }
+      }
 
       console.log("🚀 Register attempt:", data.email);
 
@@ -153,266 +206,158 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center gradient-bg py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        {/* Header */}
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 bg-white rounded-full flex items-center justify-center shadow-lg">
-            <svg
-              className="h-8 w-8 text-primary-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-              />
-            </svg>
+    <AuthLayout
+      title="TaskFlow'a Katılın"
+      description="Hesap oluşturun ve görev yönetimine başlayın"
+      showLogo={true}
+    >
+      <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+        {/* ===== ERROR MESSAGE ===== */}
+        {error && (
+          <p className="mt-2 text-center text-sm text-error-500 font-light">{error}</p>
+        )}
+        
+        {/* ===== NAME FIELDS - 2 COLUMNS ===== */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            id="firstName"
+            type="text"
+            autoComplete="given-name"
+            required
+            label="Adınız"
+            placeholder="Adınız"
+            {...register("firstName")}
+            disabled={isSubmitting}
+            error={errors.firstName?.message}
+          />
+          <Input
+            id="lastName"
+            type="text"
+            autoComplete="family-name"
+            required
+            label="Soyadınız"
+            placeholder="Soyadınız"
+            {...register("lastName")}
+            disabled={isSubmitting}
+            error={errors.lastName?.message}
+          />
+        </div>
+
+        {/* ===== EMAIL & PHONE ===== */}
+        <Input
+          id="email"
+          type="email"
+          autoComplete="email"
+          required
+          label="Email Adresi"
+          placeholder="ornek@email.com"
+          {...register("email")}
+          disabled={isSubmitting}
+          error={errors.email?.message}
+        />
+
+        <Input
+          id="phoneNumber"
+          type="tel"
+          autoComplete="tel"
+          label="Telefon Numarası (Opsiyonel)"
+          placeholder="+90 5xx xxx xx xx"
+          {...register("phoneNumber")}
+          disabled={isSubmitting}
+          error={errors.phoneNumber?.message}
+        />
+
+        {/* ===== PASSWORD FIELDS - 2 COLUMNS ===== */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            id="password"
+            type="password"
+            autoComplete="new-password"
+            required
+            label="Şifre"
+            placeholder="Şifrenizi girin"
+            {...register("password")}
+            disabled={isSubmitting}
+            showPasswordToggle
+            error={errors.password?.message}
+          />
+          <Input
+            id="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            required
+            label="Şifre Tekrarı"
+            placeholder="Şifrenizi tekrar girin"
+            {...register("confirmPassword")}
+            disabled={isSubmitting}
+            showPasswordToggle
+            error={errors.confirmPassword?.message}
+          />
+        </div>
+
+        {/* ===== TERMS CHECKBOX ===== */}
+        <div className="flex items-start">
+          <div className="flex items-center h-5">
+            <input
+              id="terms"
+              type="checkbox"
+              className="h-5 w-5 text-primary-500 focus:ring-primary-300 border-neutral-300 rounded-lg transition-all duration-200 hover:border-primary-400"
+              disabled={isSubmitting}
+            />
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-white">
-            TaskFlow'a Katılın
-          </h2>
-          <p className="mt-2 text-sm text-blue-100">
-            Hesap oluşturun ve görev yönetimine başlayın
-          </p>
+          <div className="ml-3 text-sm">
+            <label htmlFor="terms" className="font-light text-neutral-600 leading-relaxed">
+              <span className="text-neutral-500">
+                Kullanım Şartları ve Gizlilik Politikası'nı kabul ediyorum
+              </span>
+            </label>
+          </div>
         </div>
 
-        {/* Register Form */}
-        <Card className="animate-fade-in">
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            {/* ===== ERROR MESSAGE ===== */}
-            {error && (
-              <div className="bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded-lg">
-                <div className="flex items-center">
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  {error}
-                </div>
-              </div>
-            )}
+        {/* ===== CAPTCHA COMPONENT ===== */}
+        {captchaEnabled && (
+          <div className="mt-4">
+            <Captcha
+              ref={captchaRef}
+              siteKey={captchaSiteKey}
+              action="register"
+              className="w-full"
+              onVerify={(token) => {
+                console.log("Captcha token received:", token);
+              }}
+              onError={(error) => {
+                console.error("Captcha error:", error);
+                setError("Güvenlik doğrulaması yüklenemedi. Lütfen sayfayı yenileyin.");
+              }}
+            />
+          </div>
+        )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Input
-                  {...register("firstName")}
-                  type="text"
-                  label="Ad"
-                  placeholder="Adınız"
-                  error={errors.firstName?.message}
-                  icon={
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
-                  }
-                />
-              </div>
-              <div>
-                <Input
-                  {...register("lastName")}
-                  type="text"
-                  label="Soyad"
-                  placeholder="Soyadınız"
-                  error={errors.lastName?.message}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Input
-                {...register("email")}
-                type="email"
-                label="Email Adresi"
-                placeholder="ornek@email.com"
-                error={errors.email?.message}
-                icon={
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
-                    />
-                  </svg>
-                }
-              />
-            </div>
-
-            <div>
-              <Input
-                {...register("phoneNumber")}
-                type="tel"
-                label="Telefon Numarası (Opsiyonel)"
-                placeholder="+90 5xx xxx xx xx"
-                error={errors.phoneNumber?.message}
-                icon={
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                    />
-                  </svg>
-                }
-              />
-            </div>
-
-            <div>
-              <Input
-                {...register("password")}
-                type="password"
-                label="Şifre"
-                placeholder="••••••••"
-                error={errors.password?.message}
-                showPasswordToggle
-                icon={
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                    />
-                  </svg>
-                }
-              />
-              {/* Şifre gücü göstergesi ve kuralları */}
-              {typeof watch === "function" && watch("password") && watch("password").length > 0 && (
-                <div className="mt-2" data-testid="password-strength">
-                  <PasswordStrength 
-                    password={watch("password")}
-                    showFeedback={true}
-                    className="text-xs"
-                  />
-                </div>
-              )}
-            </div>
-
-            <div>
-              <Input
-                {...register("confirmPassword")}
-                type="password"
-                label="Şifre Tekrarı"
-                placeholder="••••••••"
-                error={errors.confirmPassword?.message}
-                showPasswordToggle
-                icon={
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                }
-              />
-            </div>
-
-            <div className="flex items-center">
-              <input
-                id="terms"
-                name="terms"
-                type="checkbox"
-                required
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-              />
-              <label
-                htmlFor="terms"
-                className="ml-2 block text-sm text-gray-700"
-              >
-                <Link
-                  to="/terms"
-                  className="text-primary-600 hover:text-primary-500"
-                >
-                  Kullanım Şartları
-                </Link>{" "}
-                ve{" "}
-                <Link
-                  to="/privacy"
-                  className="text-primary-600 hover:text-primary-500"
-                >
-                  Gizlilik Politikası
-                </Link>
-                'nı kabul ediyorum
-              </label>
-            </div>
-
-            <div>
-              <Button
-                type="submit"
-                isLoading={isSubmitting}
-                className="w-full"
-                size="lg"
-              >
-                Hesap Oluştur
-              </Button>
-            </div>
-
-            <div className="text-center">
-              <p className="text-sm text-gray-600">
-                Zaten hesabınız var mı?{" "}
-                <Link
-                  to="/login"
-                  className="font-medium text-primary-600 hover:text-primary-500 transition-colors"
-                >
-                  Giriş yapın
-                </Link>
-              </p>
-            </div>
-          </form>
-        </Card>
-
-        {/* Footer */}
-        <div className="text-center">
-          <p className="text-xs text-blue-100">
-            © 2024 TaskFlow. Tüm hakları saklıdır.
-          </p>
+        {/* ===== SUBMIT BUTTON ===== */}
+        <div>
+          <Button
+            type="submit"
+            variant="default"
+            isLoading={isSubmitting}
+            className="w-full py-4 text-lg font-medium"
+          >
+            Hesap Oluştur
+          </Button>
         </div>
+      </form>
+
+      <div className="mt-8 text-center">
+        <p className="text-base text-neutral-500 font-light">
+          Zaten hesabınız var mı?{" "}
+          <Link
+            to="/login"
+            className="font-medium text-primary-500 hover:text-primary-600 transition-all duration-200 hover:underline"
+          >
+            Giriş yapın
+          </Link>
+        </p>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

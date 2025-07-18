@@ -48,6 +48,7 @@
  */
 
 using TaskFlow.API.DTOs;
+using TaskFlow.API.Models;
 
 namespace TaskFlow.API.Interfaces
 {
@@ -67,5 +68,14 @@ namespace TaskFlow.API.Interfaces
         Task<TokenRefreshResponseDto> RefreshTokenAsync(TokenRefreshRequestDto model);
         Task<bool> RevokeRefreshTokenAsync(int userId);
         Task<bool> LogoutAllSessionsAsync(int userId);
+        
+        // Sosyal medya girişi için metodlar
+        Task<User?> GetUserByEmailAsync(string email);
+        Task<User> CreateUserAsync(User user);
+        Task<User> UpdateUserAsync(User user);
+        Task<bool> SaveRefreshTokenAsync(int userId, string refreshToken);
+        
+        // Şifre doğrulama metodu
+        Task<bool> VerifyPasswordAsync(string email, string password);
     }
 } 

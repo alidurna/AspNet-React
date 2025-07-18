@@ -2,14 +2,14 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import {
-  userAuthAPI,
+  authAPI, // userAuthAPI yerine authAPI kullanıldı
   type PasswordResetDto,
   type ApiResponse,
 } from "../services/api";
 import { useToast } from "../hooks/useToast";
 import Input from "../components/ui/Input";
-import Button from "../components/ui/Button";
-import Card from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import AuthLayout from "../components/layout/AuthLayout"; // AuthLayout import edildi
 
 const ResetPassword: React.FC = () => {
   const location = useLocation();
@@ -46,7 +46,7 @@ const ResetPassword: React.FC = () => {
     Error,
     PasswordResetDto
   >({
-    mutationFn: userAuthAPI.resetPassword,
+    mutationFn: authAPI.resetPassword, // userAuthAPI.resetPassword yerine authAPI.resetPassword kullanıldı
     onSuccess: (response) => {
       if (response.success) {
         toast.showSuccess(
@@ -96,68 +96,69 @@ const ResetPassword: React.FC = () => {
 
   if (!isTokenValid) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <p className="text-gray-600">Yükleniyor veya yönlendiriliyor...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-50 via-blue-50/30 to-indigo-50/20 py-12 px-4 sm:px-6 lg:px-8">
+        <p className="text-neutral-600 font-light">Yükleniyor veya yönlendiriliyor...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="max-w-md w-full space-y-8 p-8 border border-gray-200 rounded-xl shadow-lg">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-            Şifreni Sıfırla
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Yeni şifrenizi belirleyin.
-          </p>
+    <AuthLayout
+      title="Şifreni Sıfırla"
+      description="Yeni şifrenizi belirleyin."
+    >
+      <form className="mt-10 space-y-8" onSubmit={handleSubmit}>
+        <div className="space-y-6">
+          <Input
+            id="newPassword"
+            name="newPassword"
+            type="password"
+            autoComplete="new-password"
+            required
+            label="Yeni Şifre"
+            placeholder="Yeni şifrenizi girin"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            showPasswordToggle
+            disabled={isLoading}
+          />
+          <Input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            required
+            label="Yeni Şifre Tekrar"
+            placeholder="Yeni şifrenizi tekrar girin"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            showPasswordToggle
+            disabled={isLoading}
+          />
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <Input
-              id="newPassword"
-              name="newPassword"
-              type="password"
-              autoComplete="new-password"
-              required
-              label="Yeni Şifre"
-              placeholder="Yeni şifrenizi girin"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              showPasswordToggle
-              disabled={isLoading}
-              className="rounded-t-md"
-            />
-            <Input
-              id="confirmPassword"
-              name="confirmPassword"
-              type="password"
-              autoComplete="new-password"
-              required
-              label="Yeni Şifre Tekrar"
-              placeholder="Yeni şifrenizi tekrar girin"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              showPasswordToggle
-              disabled={isLoading}
-              className="rounded-b-md"
-            />
-          </div>
 
-          <div>
-            <Button
-              type="submit"
-              variant="primary"
-              className="w-full"
-              isLoading={isLoading}
-            >
-              Şifreyi Sıfırla
-            </Button>
-          </div>
-        </form>
-      </Card>
-    </div>
+        <div>
+          <Button
+            type="submit"
+            variant="default"
+            isLoading={isLoading}
+            className="w-full py-4 text-lg font-medium"
+          >
+            Şifreyi Sıfırla
+          </Button>
+        </div>
+      </form>
+      <div className="mt-10 text-center">
+        <p className="text-base text-neutral-500 font-light">
+          <Link
+            to="/login"
+            className="font-medium text-primary-500 hover:text-primary-600 transition-all duration-200 hover:underline"
+          >
+            Giriş sayfasına geri dön
+          </Link>
+        </p>
+      </div>
+    </AuthLayout>
   );
 };
 

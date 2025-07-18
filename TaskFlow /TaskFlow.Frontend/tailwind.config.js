@@ -35,32 +35,46 @@ module.exports = {
       // ===== CUSTOM COLORS =====
       // TaskFlow uygulaması için özel renk paleti
       colors: {
-        // Primary renk paleti - Ana marka rengi (mavi tonları)
+        // Primary renk paleti - Ana marka rengi (daha soft mavi tonları)
         primary: {
-          50: "#eff6ff", // En açık ton - background'lar için
-          100: "#dbeafe", // Açık ton - hover state'ler için
-          200: "#bfdbfe", // Orta açık ton
-          300: "#93c5fd", // Orta ton
-          400: "#60a5fa", // Orta koyu ton
-          500: "#3b82f6", // Ana renk - buttonlar için
-          600: "#2563eb", // Koyu ton - hover state'ler için
-          700: "#1d4ed8", // Daha koyu ton
-          800: "#1e40af", // Çok koyu ton
-          900: "#1e3a8a", // En koyu ton - text için
+          50: "#e0f2fe", // Çok açık soft mavi
+          100: "#bae6fd",
+          200: "#7dd3fc",
+          300: "#38bdf8",
+          400: "#0ea5e9",
+          500: "#0284c7", // Ana soft mavi
+          600: "#0369a1",
+          700: "#075985",
+          800: "#0c4a6e",
+          900: "#082f49",
         },
 
-        // Secondary renk paleti - İkincil vurgu rengi (mor tonları)
+        // Secondary renk paleti - İkincil vurgu rengi (pastel yeşil tonları)
         secondary: {
-          50: "#faf5ff", // En açık ton
-          100: "#f3e8ff", // Açık ton
-          200: "#e9d5ff", // Orta açık ton
-          300: "#d8b4fe", // Orta ton
-          400: "#c084fc", // Orta koyu ton
-          500: "#a855f7", // Ana renk
-          600: "#9333ea", // Koyu ton
-          700: "#7c3aed", // Daha koyu ton
-          800: "#6b21a8", // Çok koyu ton
-          900: "#581c87", // En koyu ton
+          50: "#ecfdf5", // Çok açık pastel yeşil
+          100: "#d1fae5",
+          200: "#a7f3d0",
+          300: "#6ee7b7",
+          400: "#34d399",
+          500: "#059669", // Ana soft yeşil
+          600: "#047857",
+          700: "#065f46",
+          800: "#064e3b",
+          900: "#022c22",
+        },
+
+        // Neutral renk paleti - Genel arka plan, metin ve kenarlıklar için soft gri tonları
+        neutral: {
+          50: "#fafafa", // Çok açık gri - neredeyse beyaz
+          100: "#f5f5f5",
+          200: "#e5e5e5",
+          300: "#d4d4d4",
+          400: "#a3a3a3",
+          500: "#737373", // Orta gri
+          600: "#525252",
+          700: "#404040",
+          800: "#262626",
+          900: "#171717", // Çok koyu gri
         },
 
         // Success renk paleti - Başarı mesajları için (yeşil tonları)

@@ -160,42 +160,82 @@ const uiSlice = createSlice({
 
     // Quick toast helpers
     showSuccessToast: (state, action: PayloadAction<string>) => {
+      // Aynı mesaj zaten varsa ekleme
+      const existingToast = state.toasts.find(t => t.message === action.payload && t.type === "success");
+      if (existingToast) {
+        return;
+      }
+      
       const toast: Toast = {
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         message: action.payload,
         type: "success",
         duration: 4000,
       };
+      // Eski toast'ları temizle (maksimum 3 toast tut)
+      if (state.toasts.length >= 3) {
+        state.toasts = state.toasts.slice(-2);
+      }
       state.toasts.push(toast);
     },
 
     showErrorToast: (state, action: PayloadAction<string>) => {
+      // Aynı mesaj zaten varsa ekleme
+      const existingToast = state.toasts.find(t => t.message === action.payload && t.type === "error");
+      if (existingToast) {
+        return;
+      }
+      
       const toast: Toast = {
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         message: action.payload,
         type: "error",
         duration: 6000,
       };
+      // Eski toast'ları temizle (maksimum 3 toast tut)
+      if (state.toasts.length >= 3) {
+        state.toasts = state.toasts.slice(-2);
+      }
       state.toasts.push(toast);
     },
 
     showWarningToast: (state, action: PayloadAction<string>) => {
+      // Aynı mesaj zaten varsa ekleme
+      const existingToast = state.toasts.find(t => t.message === action.payload && t.type === "warning");
+      if (existingToast) {
+        return;
+      }
+      
       const toast: Toast = {
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         message: action.payload,
         type: "warning",
         duration: 5000,
       };
+      // Eski toast'ları temizle (maksimum 3 toast tut)
+      if (state.toasts.length >= 3) {
+        state.toasts = state.toasts.slice(-2);
+      }
       state.toasts.push(toast);
     },
 
     showInfoToast: (state, action: PayloadAction<string>) => {
+      // Aynı mesaj zaten varsa ekleme
+      const existingToast = state.toasts.find(t => t.message === action.payload && t.type === "info");
+      if (existingToast) {
+        return;
+      }
+      
       const toast: Toast = {
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         message: action.payload,
         type: "info",
         duration: 4000,
       };
+      // Eski toast'ları temizle (maksimum 3 toast tut)
+      if (state.toasts.length >= 3) {
+        state.toasts = state.toasts.slice(-2);
+      }
       state.toasts.push(toast);
     },
 

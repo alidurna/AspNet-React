@@ -10,7 +10,7 @@ import {
 import { useToast } from "../hooks/useToast";
 import DashboardLayout from "../components/layout/DashboardLayout";
 import Card from "../components/ui/Card";
-import Button from "../components/ui/Button";
+import { Button } from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import ConfirmModal from "../components/ui/ConfirmModal";
 
@@ -208,7 +208,7 @@ const Categories: React.FC = () => {
       breadcrumbs={[{ name: "Kategoriler" }]}
     >
       <div className="flex justify-end mb-6">
-        <Button onClick={handleOpenCreateModal} variant="primary">
+        <Button onClick={handleOpenCreateModal} variant="default">
           Yeni Kategori Ekle
         </Button>
       </div>
@@ -324,7 +324,7 @@ const Categories: React.FC = () => {
                 </Button>
                 <Button
                   type="submit"
-                  variant="primary"
+                  variant="default"
                   isLoading={
                     createCategoryMutation.isPending ||
                     updateCategoryMutation.isPending

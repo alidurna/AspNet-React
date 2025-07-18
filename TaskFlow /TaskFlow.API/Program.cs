@@ -141,6 +141,16 @@ builder.Services.AddCors(options =>
 // ===== WEBSOCKET CONFIGURATION =====
 builder.Services.AddSignalR(); // WebSocket desteği için
 
+// ===== HTTP CLIENT FACTORY =====
+/*
+ * AddHttpClient() method'u:
+ * - HttpClient factory'yi DI container'a kaydeder
+ * - OAuth provider'ları ile iletişim için gerekli
+ * - Connection pooling ve timeout yönetimi sağlar
+ * - Named HttpClient'lar için hazırlık yapar
+ */
+builder.Services.AddHttpClient();
+
 // ===== API CONTROLLERS =====
 /*
  * AddControllers() method'u:
@@ -245,6 +255,15 @@ builder.Services.AddScoped<ITaskService, TaskService>();
 
 // File Upload Service - Dosya upload ve resim resize işlemleri için
 builder.Services.AddScoped<IFileUploadService, FileUploadService>();
+
+// Two-Factor Authentication Service - 2FA için
+builder.Services.AddScoped<ITwoFactorAuthService, TwoFactorAuthService>();
+
+// Captcha Service - ReCAPTCHA doğrulama için
+builder.Services.AddScoped<ICaptchaService, CaptchaService>();
+
+// WebAuthn Service - Biyometrik giriş için
+builder.Services.AddScoped<IWebAuthnService, WebAuthnService>();
 
 // ===== CACHE SERVICES CONFIGURATION =====
 /*

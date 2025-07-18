@@ -2,14 +2,14 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import {
-  userAuthAPI,
+  authAPI, // userAuthAPI yerine authAPI kullanıldı
   type PasswordResetRequestDto,
   type ApiResponse,
 } from "../services/api";
 import { useToast } from "../hooks/useToast";
 import Input from "../components/ui/Input";
-import Button from "../components/ui/Button";
-import Card from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import AuthLayout from "../components/layout/AuthLayout"; // AuthLayout import edildi
 
 const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -20,7 +20,7 @@ const ForgotPassword: React.FC = () => {
     Error,
     PasswordResetRequestDto
   >({
-    mutationFn: userAuthAPI.requestPasswordReset,
+    mutationFn: authAPI.requestPasswordReset, // userAuthAPI.requestPasswordReset yerine authAPI.requestPasswordReset kullanıldı
     onSuccess: (response) => {
       if (response.success) {
         toast.showSuccess(
@@ -53,54 +53,48 @@ const ForgotPassword: React.FC = () => {
   const isLoading = forgotPasswordMutation.isPending;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="max-w-md w-full space-y-8 p-8 border border-gray-200 rounded-xl shadow-lg">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-            Şifremi Unuttum
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Hesabınızla ilişkili e-posta adresinizi girin. Size şifrenizi
-            sıfırlamanız için bir bağlantı göndereceğiz.
-          </p>
+    <AuthLayout
+      title="Şifremi Unuttum"
+      description="Hesabınızla ilişkili e-posta adresinizi girin. Size şifrenizi sıfırlamanız için bir bağlantı göndereceğiz."
+    >
+      <form className="mt-10 space-y-8" onSubmit={handleSubmit}>
+        <div className="space-y-6">
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            label="E-posta Adresi"
+            placeholder="E-posta adresinizi girin"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={isLoading}
+          />
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="-space-y-px rounded-md shadow-sm">
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              label="E-posta Adresi"
-              placeholder="E-posta adresinizi girin"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
 
-          <div>
-            <Button
-              type="submit"
-              variant="primary"
-              className="w-full"
-              isLoading={isLoading}
-            >
-              Şifre Sıfırlama Bağlantısı Gönder
-            </Button>
-          </div>
-        </form>
-        <div className="text-sm text-center">
+        <div>
+          <Button
+            type="submit"
+            variant="default"
+            className="w-full py-4 text-lg font-medium"
+            isLoading={isLoading}
+          >
+            Şifre Sıfırlama Bağlantısı Gönder
+          </Button>
+        </div>
+      </form>
+      <div className="mt-10 text-center">
+        <p className="text-base text-neutral-500 font-light">
           <Link
             to="/login"
-            className="font-medium text-primary-600 hover:text-primary-500"
+            className="font-medium text-primary-500 hover:text-primary-600 transition-all duration-200 hover:underline"
           >
             Giriş sayfasına geri dön
           </Link>
-        </div>
-      </Card>
-    </div>
+        </p>
+      </div>
+    </AuthLayout>
   );
 };
 

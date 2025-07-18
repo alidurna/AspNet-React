@@ -105,6 +105,24 @@ namespace TaskFlow.API.Models
         
         public DateTime? RefreshTokenExpiry { get; set; }
         
+        // 2FA (İki Faktörlü Kimlik Doğrulama) Alanları
+        public bool TwoFactorEnabled { get; set; } = false;
+        
+        public string? TwoFactorSecret { get; set; }
+        
+        public DateTime? TwoFactorEnabledAt { get; set; }
+        
+        public DateTime? TwoFactorLastUsed { get; set; }
+        
+        public string? TwoFactorRecoveryCodes { get; set; } // JSON array olarak saklanacak
+        
+        // Biyometrik Giriş Alanları
+        public bool BiometricEnabled { get; set; } = false;
+        
+        public string? BiometricCredentialId { get; set; }
+        
+        public DateTime? BiometricEnabledAt { get; set; }
+        
         public virtual ICollection<TodoTask> Tasks { get; set; } = new List<TodoTask>();
         
         // Yeni eklenen alanlar: Atanan görevler ve yüklenen ekler
@@ -112,6 +130,9 @@ namespace TaskFlow.API.Models
         public virtual ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
         
         public virtual ICollection<Category> Categories { get; set; } = new List<Category>();
+        
+        // WebAuthn Kimlik Bilgileri
+        public virtual ICollection<WebAuthnCredential> WebAuthnCredentials { get; set; } = new List<WebAuthnCredential>();
         
         [NotMapped]
         public string FullName => $"{FirstName} {LastName}".Trim();

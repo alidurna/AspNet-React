@@ -51,7 +51,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import DashboardLayout from "../components/layout/DashboardLayout";
 import StatsCard from "../components/ui/StatsCard";
-import Button from "../components/ui/Button";
+import { Button } from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import LoadingSpinner from "../components/ui/LoadingSpinner"; // LoadingSpinner'ı import et
 import TaskCompletionChart from "../components/dashboard/TaskCompletionChart"; // TaskCompletionChart'ı import et
@@ -60,7 +60,7 @@ import {
   profileAPI,
   type UserStatsDto,
   type ApiResponse,
-} from "../services/api"; // profileAPI ve UserStatsDto'yu import et
+} from "../services/api"; // userStatsAPI kaldırıldı
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -73,7 +73,7 @@ const Dashboard: React.FC = () => {
     isError: isStatsError,
   } = useQuery<ApiResponse<UserStatsDto>, Error>({
     queryKey: ["userStats"],
-    queryFn: profileAPI.getUserStatistics,
+    queryFn: profileAPI.getUserStats, // userStatsAPI.getUserStats yerine profileAPI.getUserStats kullanıldı
   });
 
   // Mock data yerine gerçek istatistik verilerini kullan
@@ -305,13 +305,13 @@ const Dashboard: React.FC = () => {
     <DashboardLayout title="Dashboard" breadcrumbs={[{ name: "Dashboard" }]}>
       {/* Welcome Section */}
       <div className="mb-8">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
+        <div className="bg-gradient-to-r from-primary-50 to-secondary-50 rounded-2xl p-8 text-neutral-800 shadow-soft border border-primary-100/50">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-3xl font-bold mb-2">
+              <h2 className="text-3xl font-light mb-3 tracking-wide">
                 Hoş Geldiniz, {user?.firstName}! 👋
               </h2>
-              <p className="text-lg opacity-90">
+              <p className="text-lg font-light text-neutral-600">
                 Bugün{" "}
                 {new Date().toLocaleDateString("tr-TR", {
                   weekday: "long",
@@ -321,7 +321,21 @@ const Dashboard: React.FC = () => {
                 })}
               </p>
             </div>
-            {/* Yıldız Simgesi Kaldırıldı */}
+            <div className="h-16 w-16 bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <svg
+                className="h-8 w-8 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
           </div>
         </div>
       </div>
@@ -357,7 +371,7 @@ const Dashboard: React.FC = () => {
           </>
         ) : isStatsError ? (
           // Hata durumu
-          <div className="lg:col-span-4 text-center text-red-600 font-medium">
+          <div className="lg:col-span-4 text-center text-error-500 font-light">
             İstatistikler yüklenirken bir hata oluştu.
           </div>
         ) : (
@@ -379,8 +393,8 @@ const Dashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Görev Tamamlama Grafiği */}
-        <Card className="p-6 shadow-md rounded-lg h-full">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        <Card className="p-8 shadow-soft rounded-2xl h-full border-0 bg-white/95 backdrop-blur-sm">
+          <h3 className="text-xl font-light text-neutral-800 mb-6 tracking-wide">
             Görev Tamamlama Oranı
           </h3>
           {isStatsLoading ? (
@@ -388,7 +402,7 @@ const Dashboard: React.FC = () => {
               <LoadingSpinner />
             </div>
           ) : isStatsError || !statsResponse?.data ? (
-            <div className="flex items-center justify-center h-48 text-gray-500">
+            <div className="flex items-center justify-center h-48 text-neutral-500 font-light">
               İstatistikler yüklenirken bir hata oluştu.
             </div>
           ) : (
@@ -400,24 +414,27 @@ const Dashboard: React.FC = () => {
         </Card>
 
         {/* Son Aktiviteler */}
-        <Card title="Son Aktiviteler" className="p-6">
+        <Card className="p-8 shadow-soft rounded-2xl h-full border-0 bg-white/95 backdrop-blur-sm">
+          <h3 className="text-xl font-light text-neutral-800 mb-6 tracking-wide">
+            Son Aktiviteler
+          </h3>
           <div className="space-y-4">
             {recentActivities.length > 0 ? (
               recentActivities.map((activity) => (
                 <div
                   key={activity.id}
-                  className="flex items-center space-x-3"
+                  className="flex items-center space-x-4 p-3 rounded-xl hover:bg-neutral-50 transition-colors duration-200"
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${
                       activity.type === "completed"
-                        ? "bg-green-100 text-green-600"
-                        : "bg-blue-100 text-blue-600"
+                        ? "bg-success-100 text-success-600"
+                        : "bg-primary-100 text-primary-600"
                     }`}
                   >
                     {activity.type === "completed" ? (
                       <svg
-                        className="w-4 h-4"
+                        className="w-5 h-5"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -431,7 +448,7 @@ const Dashboard: React.FC = () => {
                       </svg>
                     ) : (
                       <svg
-                        className="w-4 h-4"
+                        className="w-5 h-5"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -445,41 +462,47 @@ const Dashboard: React.FC = () => {
                       </svg>
                     )}
                   </div>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-neutral-700 font-light">
                     <span className="font-medium">{activity.action}</span>:{" "}
                     {activity.task} -{" "}
-                    <span className="text-gray-500">{activity.time}</span>
+                    <span className="text-neutral-500">{activity.time}</span>
                   </p>
                 </div>
               ))
             ) : (
-              <p className="text-gray-500">Henüz bir aktivite yok.</p>
+              <p className="text-neutral-500 font-light">Henüz bir aktivite yok.</p>
             )}
           </div>
         </Card>
       </div>
 
       {/* Hızlı İşlemler */}
-      <h2 className="text-2xl font-bold text-gray-900 mb-6 mt-8">
+      <h2 className="text-2xl font-light text-neutral-800 mb-6 mt-8 tracking-wide">
         Hızlı İşlemler
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {quickActions.map((action, index) => (
           <Card
             key={index}
-            className="p-6 shadow-md rounded-lg flex flex-col items-start space-y-4 hover:shadow-lg transition-shadow duration-200"
+            className="p-8 shadow-soft rounded-2xl flex flex-col items-start space-y-4 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 bg-white/95 backdrop-blur-sm cursor-pointer"
             onClick={action.action}
           >
             <div
-              className={`w-12 h-12 rounded-lg flex items-center justify-center bg-${action.color}-100 text-${action.color}-600`}
+              className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-md ${
+                action.color === "blue"
+                  ? "bg-primary-100 text-primary-600"
+                  : action.color === "purple"
+                  ? "bg-secondary-100 text-secondary-600"
+                  : "bg-success-100 text-success-600"
+              }`}
             >
               {action.icon}
             </div>
-            <h3 className="text-lg font-semibold text-gray-800">
+            <h3 className="text-lg font-medium text-neutral-800">
               {action.title}
             </h3>
-            <p className="text-sm text-gray-600">{action.description}</p>
-            <Button variant="ghost" className="mt-2">
+            <p className="text-sm text-neutral-600 font-light">{action.description}</p>
+            <Button variant="ghost" className="mt-2 text-primary-500 hover:text-primary-600">
               Git <span aria-hidden="true">→</span>
             </Button>
           </Card>

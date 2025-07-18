@@ -2,93 +2,21 @@
  * Toast Notification Component
  *
  * Bu dosya, TaskFlow uygulaması için özelleştirilmiş toast bildirim
- * sistemini içerir. React Hot Toast ile entegre çalışarak kullanıcı
- * dostu bildirimler sağlar.
+ * sistemini içerir. Modern ve kullanıcı dostu bildirimler sağlar.
  *
  * Ana Özellikler:
  * - 4 farklı toast tipi (success, error, warning, info)
  * - Redux store entegrasyonu
  * - Otomatik kapanma
- * - Persistent toast desteği
- * - Custom styling
+ * - Modern tasarım
  * - Accessibility desteği
  *
- * Toast Tipleri:
- * - success: Başarı bildirimleri (yeşil)
- * - error: Hata bildirimleri (kırmızı)
- * - warning: Uyarı bildirimleri (sarı)
- * - info: Bilgi bildirimleri (mavi)
- *
- * Redux Entegrasyonu:
- * - Store'dan toast okuma
- * - Toast ekleme/çıkarma
- * - State management
- * - Persistence handling
- *
- * Kullanım Alanları:
- * - Form submit sonuçları
- * - API hata mesajları
- * - Başarı bildirimleri
- * - Sistem uyarıları
- * - Kullanıcı geri bildirimleri
- *
- * Styling:
- * - Tailwind CSS tabanlı
- * - Consistent design system
- * - Color-coded types
- * - Responsive design
- * - Custom icons
- *
- * Accessibility:
- * - ARIA labels
- * - Screen reader support
- * - Keyboard navigation
- * - Focus management
- * - Close button
- *
- * Performance:
- * - Efficient rendering
- * - Memory management
- * - Auto-cleanup
- * - Optimized animations
- *
- * Configuration:
- * - Position: top-right
- * - Duration: 4-6 saniye
- * - Gutter: 8px
- * - Reverse order: false
- *
- * Props Interface:
- * - message: Toast mesajı
- * - type: Toast tipi
- * - onClose: Kapatma fonksiyonu
- * - persistent: Kalıcı toast
- * - duration: Görünme süresi
- *
- * Animation:
- * - Smooth slide-in
- * - Fade effects
- * - Exit animations
- * - Performance optimized
- *
- * Error Handling:
- * - Graceful fallbacks
- * - Error boundaries
- * - Timeout handling
- * - State recovery
- *
- * Sürdürülebilirlik:
- * - TypeScript tip güvenliği
- * - Modüler component yapısı
- * - Açık ve anlaşılır kod
- * - Comprehensive documentation
- *
  * @author TaskFlow Development Team
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2024
  */
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import type { PropsWithChildren } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { useAppSelector, useAppDispatch } from "../../store";
@@ -100,7 +28,7 @@ import { selectToasts, removeToast } from "../../store/slices/uiSlice";
 const ToastIcons = {
   success: (
     <svg
-      className="w-5 h-5 text-green-600"
+      className="w-5 h-5 text-white"
       fill="currentColor"
       viewBox="0 0 20 20"
     >
@@ -113,7 +41,7 @@ const ToastIcons = {
   ),
   error: (
     <svg
-      className="w-5 h-5 text-red-600"
+      className="w-5 h-5 text-white"
       fill="currentColor"
       viewBox="0 0 20 20"
     >
@@ -126,7 +54,7 @@ const ToastIcons = {
   ),
   warning: (
     <svg
-      className="w-5 h-5 text-yellow-600"
+      className="w-5 h-5 text-white"
       fill="currentColor"
       viewBox="0 0 20 20"
     >
@@ -139,7 +67,7 @@ const ToastIcons = {
   ),
   info: (
     <svg
-      className="w-5 h-5 text-blue-600"
+      className="w-5 h-5 text-white"
       fill="currentColor"
       viewBox="0 0 20 20"
     >
@@ -167,44 +95,41 @@ const CustomToast: React.FC<CustomToastProps> = ({
   onClose,
 }) => {
   const bgColorClass = {
-    success: "bg-green-50 border-green-200",
-    error: "bg-red-50 border-red-200",
-    warning: "bg-yellow-50 border-yellow-200",
-    info: "bg-blue-50 border-blue-200",
-  }[type];
-
-  const textColorClass = {
-    success: "text-green-800",
-    error: "text-red-800",
-    warning: "text-yellow-800",
-    info: "text-blue-800",
+    success: "bg-gradient-to-r from-green-500 to-green-600",
+    error: "bg-gradient-to-r from-red-500 to-red-600",
+    warning: "bg-gradient-to-r from-yellow-500 to-yellow-600",
+    info: "bg-gradient-to-r from-blue-500 to-blue-600",
   }[type];
 
   return (
     <div
-      className={`max-w-sm w-full ${bgColorClass} border rounded-lg shadow-lg pointer-events-auto`}
+      className={`max-w-sm w-full ${bgColorClass} rounded-xl shadow-xl border-0 text-white pointer-events-auto transform transition-all duration-300 ease-out hover:scale-105`}
     >
       <div className="p-4">
-        <div className="flex items-start">
-          <div className="flex-shrink-0">{ToastIcons[type]}</div>
-          <div className="ml-3 w-0 flex-1">
-            <p className={`text-sm font-medium ${textColorClass}`}>{message}</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="flex-shrink-0 bg-white bg-opacity-20 rounded-full p-1">
+              {ToastIcons[type]}
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-white leading-relaxed">
+                {message}
+              </p>
+            </div>
           </div>
-          <div className="ml-4 flex-shrink-0 flex">
-            <button
-              className={`${textColorClass} hover:opacity-75 inline-flex rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
-              onClick={onClose}
-            >
-              <span className="sr-only">Kapat</span>
-              <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path
-                  fillRule="evenodd"
-                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </button>
-          </div>
+          <button
+            className="ml-4 flex-shrink-0 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full p-1 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent"
+            onClick={onClose}
+          >
+            <span className="sr-only">Kapat</span>
+            <svg className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                fillRule="evenodd"
+                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
         </div>
       </div>
     </div>
@@ -218,10 +143,27 @@ const CustomToast: React.FC<CustomToastProps> = ({
 export const ToastManager: React.FC = () => {
   const toasts = useAppSelector(selectToasts);
   const dispatch = useAppDispatch();
+  const processedToasts = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    // Redux store'daki her toast için react-hot-toast göster
+    // Yeni toast'ları işle
     toasts.forEach((toastItem) => {
+      // Eğer toast zaten işlenmişse atla
+      if (processedToasts.current.has(toastItem.id)) {
+        return;
+      }
+
+      // Aynı mesaj ve tip zaten gösteriliyorsa atla
+      const existingToastElement = document.querySelector(`[data-toast-id="${toastItem.id}"]`);
+      if (existingToastElement) {
+        processedToasts.current.add(toastItem.id);
+        return;
+      }
+
+      // Toast'u işlenmiş olarak işaretle
+      processedToasts.current.add(toastItem.id);
+
+      // react-hot-toast ile toast göster
       toast(
         (t) => (
           <CustomToast
@@ -230,6 +172,7 @@ export const ToastManager: React.FC = () => {
             onClose={() => {
               toast.dismiss(t.id);
               dispatch(removeToast(toastItem.id));
+              processedToasts.current.delete(toastItem.id);
             }}
           />
         ),
@@ -239,6 +182,13 @@ export const ToastManager: React.FC = () => {
             ? Infinity
             : toastItem.duration || 4000,
           position: "top-right",
+          style: {
+            background: 'transparent',
+            padding: 0,
+            margin: 0,
+            boxShadow: 'none',
+            border: 'none',
+          },
         }
       );
 
@@ -246,7 +196,16 @@ export const ToastManager: React.FC = () => {
       if (!toastItem.persistent && toastItem.duration) {
         setTimeout(() => {
           dispatch(removeToast(toastItem.id));
+          processedToasts.current.delete(toastItem.id);
         }, toastItem.duration);
+      }
+    });
+
+    // Redux store'dan silinen toast'ları temizle
+    const currentToastIds = new Set(toasts.map(t => t.id));
+    processedToasts.current.forEach(toastId => {
+      if (!currentToastIds.has(toastId)) {
+        processedToasts.current.delete(toastId);
       }
     });
   }, [toasts, dispatch]);
@@ -255,18 +214,19 @@ export const ToastManager: React.FC = () => {
 };
 
 /**
- * Toaster Provider Component
- * React Hot Toast'ın global konfigürasyonu
+ * Toast Provider Component
+ * Redux store ile entegre toast sistemi sağlar
  */
 export const ToastProvider: React.FC<PropsWithChildren<{}>> = ({ children }) => {
   return (
     <>
+      {children}
       <ToastManager />
       <Toaster
         position="top-right"
         reverseOrder={false}
-        gutter={8}
-        containerClassName=""
+        gutter={12}
+        containerClassName="!z-50"
         containerStyle={{}}
         toastOptions={{
           duration: 4000,
@@ -275,6 +235,7 @@ export const ToastProvider: React.FC<PropsWithChildren<{}>> = ({ children }) => 
             boxShadow: "none",
             padding: 0,
             margin: 0,
+            border: "none",
           },
           success: {
             duration: 4000,
@@ -284,7 +245,6 @@ export const ToastProvider: React.FC<PropsWithChildren<{}>> = ({ children }) => 
           },
         }}
       />
-      {children}
     </>
   );
 };

@@ -34,20 +34,26 @@
  * @since 2024
  */
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import Card from "../components/ui/Card";
-import Input from "../components/ui/Input";
-import Button from "../components/ui/Button";
-import ThemeToggle from "../components/ui/ThemeToggle";
-import PasswordStrength from "../components/ui/PasswordStrength";
 import { useAuth } from "../contexts/AuthContext";
-import { useTheme } from "../contexts/ThemeContext";
-import useRateLimit from "../hooks/useRateLimit";
+import { Button } from "../components/ui/Button";
+import Input from "../components/ui/Input";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
+import { useToast } from "../hooks/useToast";
+import AuthLayout from "../components/layout/AuthLayout";
 import type { LoginRequest } from "../types/auth.types";
+import { useTheme } from "../contexts/ThemeContext";
+import { useRateLimit } from "../hooks/useRateLimit";
+import ThemeToggle from "../components/ui/ThemeToggle";
+import SocialLogin from "../components/auth/SocialLogin";
+import Captcha from "../components/security/Captcha";
+import type { CaptchaRef } from "../components/security/Captcha";
+import { captchaAPI } from "../services/api";
+import TwoFactorLogin from "../components/auth/TwoFactorLogin";
 
 /**
  * Login formu için Zod validation şeması
@@ -93,11 +99,23 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState<string>("");
   const rateLimit = useRateLimit(email || "default");
 
+  // Beni hatırla state'i
+  const [rememberMe, setRememberMe] = useState(false);
+
   // Error state - API hatalarını göstermek için
   const [error, setError] = useState<string>("");
 
   // Security warning state - güvenlik uyarıları için
   const [securityWarning, setSecurityWarning] = useState<string>("");
+
+  // Captcha state'leri
+  const [captchaEnabled, setCaptchaEnabled] = useState(false);
+  const [captchaSiteKey, setCaptchaSiteKey] = useState("");
+  const captchaRef = useRef<CaptchaRef>(null);
+
+  // 2FA state'leri
+  const [show2FA, setShow2FA] = useState(false);
+  const [loginCredentials, setLoginCredentials] = useState<{ email: string; password: string } | null>(null);
 
   // React Hook Form kurulumu - form state yönetimi için
   const {
@@ -154,6 +172,30 @@ const Login: React.FC = () => {
     }
   }, [watchedFields.email, watchedFields.password, debouncedTrigger]);
 
+  // Captcha konfigürasyonunu yükle
+  React.useEffect(() => {
+    const loadCaptchaConfig = async () => {
+      try {
+        const response = await captchaAPI.getConfig();
+        if (response.success && response.data.enabled && 
+            response.data.siteKey && 
+            response.data.siteKey !== "your-recaptcha-site-key" &&
+            response.data.siteKey !== "6LcXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX") {
+          setCaptchaEnabled(true);
+          setCaptchaSiteKey(response.data.siteKey);
+        } else {
+          console.warn("Captcha devre dışı - geçersiz site key");
+          setCaptchaEnabled(false);
+        }
+      } catch (error) {
+        console.warn("Captcha konfigürasyonu yüklenemedi:", error);
+        setCaptchaEnabled(false);
+      }
+    };
+
+    loadCaptchaConfig();
+  }, []);
+
   /**
    * Form submit işlemi
    * @param data - Login form verisi (email, password)
@@ -174,6 +216,26 @@ const Login: React.FC = () => {
         return;
       }
 
+      // Captcha doğrulaması (eğer etkinse)
+      if (captchaEnabled && captchaRef.current) {
+        try {
+          const captchaToken = await captchaRef.current.execute();
+          const captchaResponse = await captchaAPI.verify({
+            token: captchaToken,
+            action: "login"
+          });
+          
+          if (!captchaResponse.success) {
+            setError("Güvenlik doğrulaması başarısız. Lütfen tekrar deneyin.");
+            return;
+          }
+        } catch (captchaError) {
+          console.error("Captcha doğrulama hatası:", captchaError);
+          setError("Güvenlik doğrulaması sırasında hata oluştu. Lütfen tekrar deneyin.");
+          return;
+        }
+      }
+
       // Güvenlik uyarısı göster
       if (rateLimitCheck.remainingAttempts <= 2) {
         setSecurityWarning(`Dikkat: ${rateLimitCheck.remainingAttempts} deneme hakkınız kaldı.`);
@@ -182,7 +244,7 @@ const Login: React.FC = () => {
       console.log("🚀 Login attempt:", data.email);
 
       // Authentication context üzerinden login işlemi
-      await login(data);
+      await login(data, rememberMe); // rememberMe parametresi eklendi
 
       // Başarılı login sonrası rate limit'i sıfırla
       rateLimit.recordSuccess();
@@ -190,8 +252,15 @@ const Login: React.FC = () => {
       // Başarılı login sonrası dashboard'a yönlendir
       console.log("✅ Login successful, redirecting to dashboard...");
       navigate("/dashboard");
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Login error:", error);
+
+      // 2FA kontrolü
+      if (error.message === "2FA_REQUIRED" || error.response?.data?.message === "2FA_REQUIRED") {
+        setLoginCredentials({ email: data.email, password: data.password });
+        setShow2FA(true);
+        return;
+      }
 
       // Başarısız deneme kaydet
       rateLimit.recordFailedAttempt();
@@ -212,368 +281,182 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center py-4 sm:py-8 lg:py-12 px-4 sm:px-6 lg:px-8 ${
-      isDark 
-        ? "bg-gradient-to-br from-gray-900 via-gray-800 to-black" 
-        : "gradient-bg"
-    }`}>
-      <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg space-y-6 sm:space-y-8">
-        {/* ===== THEME TOGGLE ===== */}
-        {/* Tema değiştirme butonu - sağ üst köşede */}
-        <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
-          <ThemeToggle size="sm" />
-        </div>
+    <AuthLayout
+      title="TaskFlow'a Hoş Geldiniz"
+      description="Hesabınıza giriş yapın ve görevlerinizi yönetin"
+    >
+      {/* 2FA Login Form */}
+      {show2FA && loginCredentials && (
+        <TwoFactorLogin
+          email={loginCredentials.email}
+          password={loginCredentials.password}
+          onSuccess={() => {
+            setShow2FA(false);
+            setLoginCredentials(null);
+            setError("");
+            setSecurityWarning("");
+            rateLimit.recordSuccess();
+          }}
+          onCancel={() => {
+            setShow2FA(false);
+            setLoginCredentials(null);
+            setError("");
+            setSecurityWarning("");
+          }}
+        />
+      )}
 
-        {/* ===== HEADER SECTION ===== */}
-        {/* Logo, başlık ve açıklama metni */}
-        <div className="text-center">
-          {/* TaskFlow Logo - Checkmark ikonu */}
-          <div className={`mx-auto h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center shadow-lg ${
-            isDark ? "bg-gray-800" : "bg-white"
-          }`}>
-            <svg
-              className="h-6 w-6 sm:h-8 sm:w-8 text-primary-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-
-          {/* Ana başlık */}
-          <h1 className="mt-4 sm:mt-6 text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
-            TaskFlow'a Hoş Geldiniz
-          </h1>
-
-          {/* Alt başlık / açıklama */}
-          <p className="mt-2 text-sm sm:text-base text-blue-100 max-w-sm mx-auto">
-            Hesabınıza giriş yapın ve görevlerinizi yönetin
-          </p>
-        </div>
-
-        {/* ===== LOGIN FORM SECTION ===== */}
-        {/* Ana login formu - Card component içinde */}
-        <Card className={`animate-fade-in p-4 sm:p-6 lg:p-8 shadow-xl ${
-          isDark ? "bg-gray-800 border-gray-700" : ""
-        }`}>
+      {/* Normal Login Form */}
+      {!show2FA && (
+        <>
           <form 
-            className="space-y-4 sm:space-y-6" 
+            className="mt-8 space-y-6" 
             onSubmit={handleSubmit(onSubmit)}
+            noValidate
             aria-label="Giriş formu"
-            role="form"
-            noValidate // HTML5 validation'ı devre dışı bırak, React Hook Form kullan
-            data-testid="login-form"
           >
-            {/* ===== ERROR MESSAGE ===== */}
-            {error && (
-              <div 
-                className={`px-3 py-2 sm:px-4 sm:py-3 rounded-lg text-sm sm:text-base ${
-                  isDark 
-                    ? "bg-red-900/50 border border-red-700 text-red-300" 
-                    : "bg-error-50 border border-error-200 text-error-700"
-                }`}
-                role="alert"
-                aria-live="assertive"
-                aria-atomic="true"
-              >
-                <div className="flex items-center">
-                  <svg
-                    className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span className="break-words">{error}</span>
-                </div>
-              </div>
-            )}
-
-            {/* ===== SECURITY WARNING ===== */}
-            {/* Güvenlik uyarıları ve rate limiting bilgileri */}
-            {securityWarning && (
-              <div 
-                className={`px-3 py-2 sm:px-4 sm:py-3 rounded-lg text-sm sm:text-base ${
-                  isDark 
-                    ? "bg-yellow-900/50 border border-yellow-700 text-yellow-300" 
-                    : "bg-yellow-50 border border-yellow-200 text-yellow-700"
-                }`}
-                role="alert"
-                aria-live="polite"
-                aria-atomic="true"
-              >
-                <div className="flex items-center">
-                  <svg
-                    className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span className="break-words">{securityWarning}</span>
-                </div>
-              </div>
-            )}
-
-            {/* ===== RATE LIMIT STATUS ===== */}
-            {/* Rate limiting durumu (sadece kilitliyse göster) */}
-            {rateLimit.isLocked && (
-              <div 
-                className={`px-3 py-2 sm:px-4 sm:py-3 rounded-lg text-sm sm:text-base ${
-                  isDark 
-                    ? "bg-orange-900/50 border border-orange-700 text-orange-300" 
-                    : "bg-orange-50 border border-orange-200 text-orange-700"
-                }`}
-                role="alert"
-                aria-live="assertive"
-                aria-atomic="true"
-              >
-                <div className="flex items-center">
-                  <svg
-                    className="w-4 h-4 sm:w-5 sm:h-5 mr-2 flex-shrink-0"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span className="break-words">
-                    Hesap geçici olarak kilitlendi. {rateLimit.formatRemainingTime(rateLimit.remainingTime)} sonra tekrar deneyin.
-                  </span>
-                </div>
-              </div>
-            )}
-            {/* Email Input Alanı */}
-            <div>
-              {/*
-                Email inputuna otomatik odak (autoFocus) eklenmiştir.
-                Erişilebilirlik için label ve id ilişkisi Input bileşeninde otomatik sağlanmaktadır.
-                Form submit sırasında input disable edilir.
-              */}
+            <div className="space-y-4">
               <Input
-                {...register("email")}
+                id="email-address"
                 type="email"
+                autoComplete="email"
+                required
                 label="Email Adresi"
                 placeholder="ornek@email.com"
+                {...register("email")}
+                disabled={isSubmitting}
                 error={errors.email?.message}
-                disabled={isSubmitting} // Form submit sırasında disable
-                autoFocus // Otomatik odak
-                data-testid="email-input"
-                aria-describedby={errors.email ? "email-error" : undefined}
-                icon={
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
-                    />
-                  </svg>
-                }
+                aria-describedby={errors.email?.message ? "email-error" : undefined}
+                aria-invalid={!!errors.email?.message}
               />
-              
-              {/* Email hata mesajı için aria-describedby */}
-              {errors.email && (
-                <div id="email-error" className="sr-only" aria-live="polite">
-                  Email hatası: {errors.email.message}
-                </div>
-              )}
-            </div>
-
-            {/* Şifre Input Alanı */}
-            <div>
-              {/*
-                Şifre input'u - showPasswordToggle özelliği ile şifre göster/gizle butonu
-                Form submit sırasında input disable edilir.
-              */}
               <Input
-                {...register("password")}
+                id="password"
                 type="password"
+                autoComplete="current-password"
+                required
                 label="Şifre"
-                placeholder="••••••••"
+                placeholder="Şifrenizi girin"
+                {...register("password")}
+                disabled={isSubmitting}
+                showPasswordToggle={true}
                 error={errors.password?.message}
-                showPasswordToggle // Şifre göster/gizle butonu
-                disabled={isSubmitting} // Form submit sırasında disable
-                data-testid="password-input"
-                aria-describedby={errors.password ? "password-error" : undefined}
-                icon={
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                    />
-                  </svg>
-                }
+                aria-describedby={errors.password?.message ? "password-error" : undefined}
+                aria-invalid={!!errors.password?.message}
               />
-
-              {/* Şifre hata mesajı için aria-describedby */}
-              {errors.password && (
-                <div id="password-error" className="sr-only" aria-live="polite">
-                  Şifre hatası: {errors.password.message}
-                </div>
-              )}
             </div>
 
-            {/* ===== ADDITIONAL OPTIONS ===== */}
-            {/* "Beni hatırla" ve "Şifremi unuttum" seçenekleri */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-              {/* Beni Hatırla Checkbox */}
+            <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
                   id="remember-me"
-                  name="remember-me"
                   type="checkbox"
-                  className={`h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed ${
-                    isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                  className="h-4 w-4 text-primary-500 focus:ring-primary-300 border-neutral-300 rounded transition-all duration-200 hover:border-primary-400"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  disabled={isSubmitting}
                   aria-describedby="remember-me-description"
-                  disabled={isSubmitting} // Form submit sırasında disable
-                  data-testid="remember-me-checkbox"
                 />
                 <label
                   htmlFor="remember-me"
-                  className={`ml-2 block text-sm cursor-pointer ${
-                    isDark ? "text-gray-300" : "text-gray-700"
-                  } ${
-                    isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                  id="remember-me-description"
-                  data-testid="remember-me-label"
+                  className="ml-3 block text-sm font-light text-neutral-600 hover:text-neutral-700 transition-colors duration-200 cursor-pointer"
                 >
                   Beni hatırla
                 </label>
+                <div id="remember-me-description" className="sr-only">
+                  Bu seçenek işaretlendiğinde, tarayıcınızda oturum bilgileriniz saklanır ve tekrar giriş yapmanız gerekmez.
+                </div>
               </div>
 
-              {/* Şifremi Unuttum Linki */}
               <div className="text-sm">
                 <Link
                   to="/forgot-password"
-                  className={`font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded ${
-                    isDark 
-                      ? "text-blue-400 hover:text-blue-300" 
-                      : "text-primary-600 hover:text-primary-500"
-                  } ${
-                    isSubmitting ? "pointer-events-none opacity-50" : ""
-                  }`}
-                  aria-label="Şifremi unuttum sayfasına git"
-                  tabIndex={isSubmitting ? -1 : 0} // Loading sırasında tab navigation'dan çıkar
-                  data-testid="forgot-password-link"
+                  className="font-medium text-primary-500 hover:text-primary-600 transition-all duration-200 hover:underline"
                 >
                   Şifremi unuttum
                 </Link>
               </div>
             </div>
 
-            {/* ===== SUBMIT BUTTON ===== */}
-            {/* Giriş yap butonu - loading state ile */}
-            <div className="pt-2">
+            {error && (
+              <p 
+                id="login-error"
+                className="mt-2 text-center text-sm text-error-500 font-light" 
+                role="alert"
+                aria-live="polite"
+              >
+                {error}
+              </p>
+            )}
+
+            {securityWarning && (
+              <p className="mt-2 text-center text-sm text-warning-500 font-light">
+                {securityWarning}
+              </p>
+            )}
+
+            {/* Captcha Component */}
+            {captchaEnabled && (
+              <div className="mt-4">
+                <Captcha
+                  ref={captchaRef}
+                  siteKey={captchaSiteKey}
+                  action="login"
+                  className="w-full"
+                  onVerify={(token) => {
+                    console.log("Captcha token received:", token);
+                  }}
+                  onError={(error) => {
+                    console.error("Captcha error:", error);
+                    setError("Güvenlik doğrulaması yüklenemedi. Lütfen sayfayı yenileyin.");
+                  }}
+                />
+              </div>
+            )}
+
+            <div>
               <Button
                 type="submit"
-                isLoading={isSubmitting} // Form submit edilirken loading göster
-                className="w-full text-sm sm:text-base"
-                size="lg"
-                aria-label={isSubmitting ? "Giriş yapılıyor..." : "Giriş yap"}
-                disabled={isSubmitting || rateLimit.isLocked} // Rate limit kilitliyse disable
-                data-testid="login-submit-button"
-                aria-describedby={rateLimit.isLocked ? "rate-limit-info" : undefined}
+                variant="default"
+                isLoading={isSubmitting}
+                className="w-full py-3 text-base font-medium"
+                aria-describedby={error ? "login-error" : undefined}
+                aria-busy={isSubmitting}
               >
-                {isSubmitting ? "Giriş Yapılıyor..." : "Giriş Yap"}
+                {isSubmitting ? "Giriş yapılıyor..." : "Giriş Yap"}
               </Button>
-              
-              {/* Rate limit durumu bilgisi */}
-              {rateLimit.isLocked && (
-                <p 
-                  id="rate-limit-info"
-                  className="mt-2 text-xs text-center text-gray-500 dark:text-gray-400"
-                  data-testid="rate-limit-info"
-                >
-                  Hesap kilitli: {rateLimit.formatRemainingTime(rateLimit.remainingTime)} sonra tekrar deneyin
-                </p>
-              )}
-
-              {/* Form durumu bilgisi (sadece development'ta) */}
-              {process.env.NODE_ENV === "development" && (
-                <div className="mt-2 text-xs text-gray-400 text-center" data-testid="form-status">
-                  Form Durumu: {isValid ? "Geçerli" : "Geçersiz"} | 
-                  Değişiklik: {isDirty ? "Var" : "Yok"} | 
-                  Deneme: {rateLimit.attempts}
-                </div>
-              )}
-            </div>
-
-            {/* ===== REGISTER LINK ===== */}
-            {/* Kayıt sayfasına yönlendirme */}
-            <div className="text-center pt-2">
-              <p className={`text-xs sm:text-sm ${
-                isDark ? "text-gray-400" : "text-gray-600"
-              }`}>
-                Hesabınız yok mu?{" "}
-                <Link
-                  to="/register"
-                  className={`font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded ${
-                    isDark 
-                      ? "text-blue-400 hover:text-blue-300" 
-                      : "text-primary-600 hover:text-primary-500"
-                  } ${
-                    isSubmitting ? "pointer-events-none opacity-50" : ""
-                  }`}
-                  aria-label="Kayıt ol sayfasına git"
-                  tabIndex={isSubmitting ? -1 : 0} // Loading sırasında tab navigation'dan çıkar
-                  data-testid="register-link"
-                >
-                  Kayıt olun
-                </Link>
-              </p>
             </div>
           </form>
-        </Card>
 
-        {/* ===== FOOTER ===== */}
-        {/* Copyright bilgisi */}
-        <div className="text-center">
-          <p className={`text-xs ${
-            isDark ? "text-gray-400" : "text-blue-100"
-          }`}>
-            © 2024 TaskFlow. Tüm hakları saklıdır.
-          </p>
-        </div>
+          {/* Sosyal Medya Giriş */}
+          <SocialLogin 
+            disabled={isSubmitting}
+            onSuccess={(provider, userData) => {
+              console.log(`${provider} login success:`, userData);
+              navigate("/dashboard");
+            }}
+            onError={(provider, error) => {
+              console.error(`${provider} login error:`, error);
+            }}
+          />
+
+          <div className="mt-8 text-center">
+            <p className="text-base text-neutral-500 font-light">
+              Hesabınız yok mu?{" "}
+              <Link
+                to="/register"
+                className="font-medium text-primary-500 hover:text-primary-600 transition-all duration-200 hover:underline"
+              >
+                Kayıt olun
+              </Link>
+            </p>
+          </div>
+        </>
+      )}
+
+      <div className="absolute bottom-4 right-4">
+        <ThemeToggle size="sm" />
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

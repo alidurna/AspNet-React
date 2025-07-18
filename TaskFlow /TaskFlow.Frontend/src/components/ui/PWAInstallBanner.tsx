@@ -93,6 +93,7 @@
 
 import React, { useState, useEffect } from "react";
 import usePWA from "../../hooks/usePWA";
+import { Button } from "./Button";
 
 interface PWAInstallBannerProps {
   className?: string;
@@ -161,29 +162,31 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
     <div
       id="pwa-install-banner"
       className={`
-        fixed bottom-4 left-4 right-4 z-50 
-        bg-gradient-to-r from-blue-600 to-purple-600 
-        text-white rounded-lg shadow-2xl
-        transform transition-all duration-500 ease-out
+        fixed bottom-6 left-4 right-4 z-50 
+        bg-white/95 backdrop-blur-xl border border-white/20
+        text-gray-800 rounded-3xl shadow-soft
+        transform transition-all duration-700 ease-out
         ${
-          isVisible ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
+          isVisible ? "translate-y-0 opacity-100 scale-100" : "translate-y-full opacity-0 scale-95"
         }
-        md:left-auto md:right-4 md:max-w-sm
+        md:left-auto md:right-6 md:max-w-sm
         ${className}
       `}
     >
-      <div className="p-4">
+      <div className="p-6">
         {/* Header */}
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center space-x-3">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center space-x-4">
             <div className="flex-shrink-0">
-              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                <span className="text-2xl">📱</span>
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl flex items-center justify-center border border-blue-100/50">
+                <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
               </div>
             </div>
             <div>
-              <h3 className="font-bold text-lg">TaskFlow Uygulaması</h3>
-              <p className="text-blue-100 text-sm">
+              <h3 className="font-semibold text-lg text-gray-900 mb-1">TaskFlow Uygulaması</h3>
+              <p className="text-gray-600 text-sm font-light">
                 Daha hızlı erişim için yükle
               </p>
             </div>
@@ -192,7 +195,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
           {/* Close Button */}
           <button
             onClick={handleDismiss}
-            className="text-white/70 hover:text-white transition-colors p-1"
+            className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-xl hover:bg-gray-50"
             aria-label="Kapat"
           >
             <svg
@@ -204,7 +207,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
+                strokeWidth={1.5}
                 d="M6 18L18 6M6 6l12 12"
               />
             </svg>
@@ -212,80 +215,54 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
         </div>
 
         {/* Benefits */}
-        <div className="mb-4 space-y-2">
-          <div className="flex items-center space-x-2 text-sm text-blue-100">
-            <svg
-              className="w-4 h-4 text-green-300"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span>Offline çalışma</span>
+        <div className="mb-6 space-y-3">
+          <div className="flex items-center space-x-3 text-sm">
+            <div className="w-6 h-6 bg-green-50 rounded-full flex items-center justify-center">
+              <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <span className="text-gray-700 font-light">Offline çalışma</span>
           </div>
-          <div className="flex items-center space-x-2 text-sm text-blue-100">
-            <svg
-              className="w-4 h-4 text-green-300"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span>Anlık bildirimler</span>
+          <div className="flex items-center space-x-3 text-sm">
+            <div className="w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center">
+              <svg className="w-3 h-3 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <span className="text-gray-700 font-light">Anlık bildirimler</span>
           </div>
-          <div className="flex items-center space-x-2 text-sm text-blue-100">
-            <svg
-              className="w-4 h-4 text-green-300"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span>Daha hızlı yükleme</span>
+          <div className="flex items-center space-x-3 text-sm">
+            <div className="w-6 h-6 bg-purple-50 rounded-full flex items-center justify-center">
+              <svg className="w-3 h-3 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <span className="text-gray-700 font-light">Daha hızlı yükleme</span>
           </div>
         </div>
 
         {/* Action Buttons */}
         <div className="flex space-x-3">
-          <button
+          <Button
             onClick={handleInstall}
-            className="
-              flex-1 bg-white text-blue-600 font-semibold py-2 px-4 rounded-lg
-              hover:bg-blue-50 transition-colors duration-200
-              focus:outline-none focus:ring-2 focus:ring-white/20
-            "
+            variant="default"
+            className="flex-1"
           >
             Yükle
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleDismiss}
-            className="
-              px-4 py-2 text-white/80 hover:text-white font-medium
-              hover:bg-white/10 rounded-lg transition-colors duration-200
-              focus:outline-none focus:ring-2 focus:ring-white/20
-            "
+            variant="outline"
+            className="flex-1"
           >
             Şimdi değil
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* Progress bar animation */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 rounded-b-lg overflow-hidden">
-        <div className="h-full bg-white/40 rounded-b-lg animate-pulse" />
-      </div>
+      {/* Subtle progress indicator */}
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-b-3xl opacity-20" />
     </div>
   );
 };

@@ -7,4 +7,17 @@ export interface AttachmentDto {
   uploadedAt: string;
   taskId: number;
   userId: number;
+}
+
+export interface UploadLimitsDto {
+  avatar: {
+    maxSizeBytes: number;
+    maxSizeFormatted: string;
+    allowedTypes: string[];
+  };
+  attachment: {
+    maxSizeBytes: number;
+    maxSizeFormatted: string;
+    allowedTypes: string[];
+  };
 } 

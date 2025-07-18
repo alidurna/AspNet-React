@@ -76,15 +76,18 @@ import {
   Routes,
   Route,
   Navigate,
+  createBrowserRouter,
+  RouterProvider,
 } from "react-router-dom";
 import { Provider } from "react-redux";
 import { store } from "./store";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext"; // useAuth eklendi
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { ToastProvider } from "./components/ui/Toast";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import PWAInstallBanner from "./components/ui/PWAInstallBanner";
 import usePWA from "./hooks/usePWA";
-import useSignalR from "./hooks/useSignalR"; // Eklendi
+import useSignalR from "./hooks/useSignalR";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -93,6 +96,73 @@ import ProtectedRoute from "./components/common/ProtectedRoute";
 import Tasks from "./pages/Tasks";
 import Categories from "./pages/Categories";
 import Statistics from "./pages/Statistics";
+import LoadingSpinner from "./components/ui/LoadingSpinner"; // LoadingSpinner eklendi
+import ForgotPassword from "./pages/ForgotPassword"; // Eklendi
+import ResetPassword from "./pages/ResetPassword"; // Eklendi
+import Security from "./pages/Security"; // Eklendi
+
+/**
+ * AuthAppRoutes
+ *
+ * Kimlik doğrulama durumuna (isLoading ve isAuthenticated) bağlı olarak rotaları işler.
+ * Yükleme durumunda bir LoadingSpinner gösterir, aksi takdirde doğru sayfaya yönlendirme yapar.
+ *
+ * @returns {JSX.Element}
+ */
+function AuthAppRoutes() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Kimlik doğrulama durumu yüklenirken bir yükleme spinner'ı göster
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  return (
+    <Routes>
+      {/* Ana sayfa - kullanıcıyı kimlik doğrulama durumuna göre yönlendirir */}
+      <Route
+        path="/"
+        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />}
+      />
+
+      {/* Kimlik doğrulama rotaları - kullanıcı zaten giriş yapmışsa dashboard'a yönlendir */}
+      <Route
+        path="/login"
+        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />}
+      />
+      <Route
+        path="/register"
+        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />}
+      />
+      <Route
+        path="/forgot-password"
+        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <ForgotPassword />}
+      />
+      <Route
+        path="/reset-password"
+        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <ResetPassword />}
+      />
+
+      {/* Korumalı rotalar - ProtectedRoute bileşeni aracılığıyla kimlik doğrulaması gerektirir */}
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      <Route path="/security" element={<ProtectedRoute><Security /></ProtectedRoute>} />
+      <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+      <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
+      <Route path="/statistics" element={<ProtectedRoute><Statistics /></ProtectedRoute>} />
+
+      {/* Tüm diğer bilinmeyen rotalar için - kullanıcıyı kimlik doğrulama durumuna göre yönlendirir */}
+      <Route
+        path="*"
+        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />}
+      />
+    </Routes>
+  );
+}
 
 /**
  * App
@@ -108,10 +178,11 @@ function App() {
 
   return (
     <Provider store={store}>
-      <Router>
-        <AuthProvider>
-          <ThemeProvider>
-            <ToastProvider />
+      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ""}>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <AuthProvider>
+            <ThemeProvider>
+              <ToastProvider />
 
             {/* PWA Update Banner */}
             {updateAvailable && (
@@ -134,64 +205,14 @@ function App() {
             )}
 
             {/* ===== MAIN ROUTING CONFIGURATION ===== */}
-            <Routes>
-              {/* ===== HOME ROUTE ===== */}
-              {/* Ana sayfa - kullanıcıyı login sayfasına yönlendirir */}
-              <Route path="/" element={<Navigate to="/login" replace />} />
-
-              {/* ===== AUTHENTICATION ROUTES ===== */}
-              {/* Login sayfası - kullanıcı girişi için */}
-              <Route path="/login" element={<Login />} />
-
-              {/* Register sayfası - yeni kullanıcı kaydı için */}
-              <Route path="/register" element={<Register />} />
-
-              {/* Dashboard sayfası - ana kontrol paneli */}
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
-
-              {/* Profile sayfası - kullanıcı profili */}
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              } />
-
-              {/* Görevler sayfası - kullanıcının görevlerini yönetir */}
-              <Route path="/tasks" element={
-                <ProtectedRoute>
-                  <Tasks />
-                </ProtectedRoute>
-              } />
-
-              {/* Kategoriler sayfası - kullanıcının kategorilerini yönetir */}
-              <Route path="/categories" element={
-                <ProtectedRoute>
-                  <Categories />
-                </ProtectedRoute>
-              } />
-
-              {/* İstatistikler sayfası - kullanıcının istatistiklerini gösterir */}
-              <Route path="/statistics" element={
-                <ProtectedRoute>
-                  <Statistics />
-                </ProtectedRoute>
-              } />
-
-              {/* ===== CATCH-ALL ROUTE ===== */}
-              {/* 404 durumları ve geçersiz URL'ler için */}
-              {/* Kullanıcıyı login sayfasına yönlendirir */}
-              <Route path="*" element={<Navigate to="/login" replace />} />
-            </Routes>
+            <AuthAppRoutes /> {/* Yeni oluşturulan rota bileşeni kullanılıyor */}
 
             {/* PWA Install Banner */}
             <PWAInstallBanner />
           </ThemeProvider>
         </AuthProvider>
       </Router>
+        </GoogleOAuthProvider>
     </Provider>
   );
 }

@@ -139,13 +139,13 @@ const Card: React.FC<CardProps> = ({
 
   // Hover efekti sınıfları
   const hoverClasses = hover
-    ? "hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+    ? "hover:shadow-soft hover:-translate-y-0.5 transition-all duration-200"
     : "";
 
   return (
     <div
       className={`
-        bg-white rounded-lg border border-gray-200 
+        bg-white/95 backdrop-blur-xl rounded-3xl border border-white/20 
         ${paddingClasses[padding]} // Seçilen padding boyutu
         ${shadowClasses[shadow]} // Seçilen gölge boyutu
         ${hoverClasses} // Hover efekti (varsa)
@@ -154,7 +154,7 @@ const Card: React.FC<CardProps> = ({
       onClick={onClick} // onClick eventi eklendi
       style={{ cursor: onClick ? "pointer" : "default" }} // onClick varsa cursor pointer yap
     >
-      {title && <h3 className="text-lg font-semibold mb-4">{title}</h3>} {/* Başlık */}
+      {title && <h3 className="text-xl font-light mb-6 text-neutral-800">{title}</h3>} {/* Başlık */}
       {/* Card içeriği - children prop'u ile gelen tüm içerik */}
       {children}
     </div>

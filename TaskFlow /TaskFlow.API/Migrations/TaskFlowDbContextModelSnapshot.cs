@@ -202,6 +202,15 @@ namespace TaskFlow.API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("BiometricCredentialId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("BiometricEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("BiometricEnabledAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT")
@@ -268,6 +277,21 @@ namespace TaskFlow.API.Migrations
                     b.Property<DateTime?>("RefreshTokenExpiry")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("TwoFactorEnabledAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("TwoFactorLastUsed")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TwoFactorRecoveryCodes")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TwoFactorSecret")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT")
@@ -279,6 +303,64 @@ namespace TaskFlow.API.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("TaskFlow.API.Models.WebAuthnCredential", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("CredentialId")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
+                    b.Property<DateTime?>("LastUsedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PublicKey")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SignCount")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Transports")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Type")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CredentialId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("WebAuthnCredentials");
                 });
 
             modelBuilder.Entity("TaskFlow.API.Models.Attachment", b =>
@@ -343,6 +425,17 @@ namespace TaskFlow.API.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("TaskFlow.API.Models.WebAuthnCredential", b =>
+                {
+                    b.HasOne("TaskFlow.API.Models.User", "User")
+                        .WithMany("WebAuthnCredentials")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("TaskFlow.API.Models.Category", b =>
                 {
                     b.Navigation("Tasks");
@@ -364,6 +457,8 @@ namespace TaskFlow.API.Migrations
                     b.Navigation("Categories");
 
                     b.Navigation("Tasks");
+
+                    b.Navigation("WebAuthnCredentials");
                 });
 #pragma warning restore 612, 618
         }

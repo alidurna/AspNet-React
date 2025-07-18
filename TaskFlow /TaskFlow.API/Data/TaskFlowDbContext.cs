@@ -122,6 +122,12 @@ public class TaskFlowDbContext : DbContext
     /// </summary>
     public DbSet<Attachment> Attachments { get; set; } = null!;
 
+    /// <summary>
+    /// WebAuthnCredentials tablosu - Biyometrik giriş kimlik bilgileri
+    /// Her kullanıcının birden fazla biyometrik credential'ı olabilir
+    /// </summary>
+    public DbSet<WebAuthnCredential> WebAuthnCredentials { get; set; } = null!;
+
     // ===== MODEL YAPILANDIRMASI (FLUENT API) =====
     /// <summary>
     /// Model konfigürasyonu - Fluent API
@@ -251,6 +257,28 @@ public class TaskFlowDbContext : DbContext
                 .WithMany(e => e.Attachments)
                 .HasForeignKey(e => e.TodoTaskId)
                 .OnDelete(DeleteBehavior.Cascade); // Görev silindiğinde ekleri de sileriz
+        });
+
+        // WebAuthnCredential entity configuration
+        modelBuilder.Entity<WebAuthnCredential>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.UserId).IsRequired();
+            entity.Property(e => e.CredentialId).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.PublicKey).IsRequired();
+            entity.Property(e => e.SignCount).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.Type).HasMaxLength(50);
+            entity.Property(e => e.Transports).HasMaxLength(100);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+
+            entity.HasOne(e => e.User)
+                .WithMany(e => e.WebAuthnCredentials)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.CredentialId).IsUnique();
         });
 
         SeedData(modelBuilder); // Seed data çağrısı
