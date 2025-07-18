@@ -15,6 +15,7 @@
 ## 📋 İçindekiler
 
 - [🎯 Proje Hakkında](#-proje-hakkında)
+- [🖼️ Ekran Görüntüleri](#️-ekran-görüntüleri)
 - [✨ Özellikler](#-özellikler)
 - [🛠️ Teknolojiler](#️-teknolojiler)
 - [🚀 Kurulum](#-kurulum)
@@ -32,6 +33,26 @@
 ## 🎯 Proje Hakkında
 
 TaskFlow, modern web uygulamaları için geliştirilmiş, React + TypeScript frontend ve ASP.NET Core 9 backend ile tam özellikli bir görev yönetimi platformudur. Kurumsal seviyede güvenlik, performans ve ölçeklenebilirlik sağlar.
+
+---
+
+## 🖼️ Ekran Görüntüleri
+
+### 🔐 Giriş Ekranı
+![TaskFlow Giriş Ekranı](https://github.com/user-attachments/assets/009ce77c-f645-44a8-b191-d7e8d21393a6)
+*Modern ve kullanıcı dostu giriş arayüzü - Email/şifre ile giriş ve sosyal medya entegrasyonu*
+
+### 📝 Kayıt Olma
+![TaskFlow Kayıt Olma](https://github.com/user-attachments/assets/eb83c738-e32b-41bd-97d5-7d58d5f04468)
+*Kapsamlı kullanıcı kayıt formu - Ad, soyad, email, telefon ve güvenlik onayları*
+
+### 🔑 Şifre Sıfırlama
+![TaskFlow Şifre Sıfırlama](https://github.com/user-attachments/assets/c559b3b3-5fd6-4826-b0d7-8493181e99aa)
+*Güvenli şifre sıfırlama süreci - Email tabanlı doğrulama sistemi*
+
+### 🏠 Ana Sayfa
+![TaskFlow Ana Sayfa](./TaskFlow.Frontend/public/dashboard-screenshot.png)
+*Dashboard ve görev yönetimi arayüzü - Modern ve responsive tasarım*
 
 ---
 
