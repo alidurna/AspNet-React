@@ -125,7 +125,7 @@ cd AspNet-React
 #### 2. Backend Kurulumu
 ```bash
 # TaskFlow Backend
-cd TaskFlow/TaskFlow.API
+cd TaskFlow.API
 dotnet restore
 dotnet ef database update
 dotnet run
@@ -134,7 +134,7 @@ dotnet run
 #### 3. Frontend Kurulumu
 ```bash
 # TaskFlow Frontend
-cd TaskFlow/TaskFlow.Frontend
+cd TaskFlow.Frontend
 npm install
 npm run dev
 ```
@@ -158,9 +158,9 @@ npm run dev
 - **Postman Collection**: [TaskFlow Collection](./TaskFlow/TaskFlow-Postman-Collection.json)
 
 ### Proje Dokümantasyonu
-- [TaskFlow Backend](./TaskFlow/TaskFlow.API/README.md)
-- [TaskFlow Frontend](./TaskFlow/TaskFlow.Frontend/README.md)
-- [TaskFlow Tests](./TaskFlow/TaskFlow.Tests/README.md)
+- [TaskFlow Backend](./TaskFlow.API/README.md)
+- [TaskFlow Frontend](./TaskFlow.Frontend/README.md)
+- [TaskFlow Tests](./TaskFlow.Tests/README.md)
 
 ---
 
@@ -168,14 +168,14 @@ npm run dev
 
 ### Backend Tests
 ```bash
-cd TaskFlow/TaskFlow.API
+cd TaskFlow.API
 dotnet test --verbosity normal
 dotnet test --collect:"XPlat Code Coverage"
 ```
 
 ### Frontend Tests
 ```bash
-cd TaskFlow/TaskFlow.Frontend
+cd TaskFlow.Frontend
 npm run test
 npm run test:coverage
 npm run test:ui
@@ -183,7 +183,7 @@ npm run test:ui
 
 ### E2E Tests
 ```bash
-cd TaskFlow/TaskFlow.Frontend
+cd TaskFlow.Frontend
 npm run test:e2e
 ```
 
