@@ -1,268 +1,262 @@
-# 🎯 TaskFlow
+# 🚀 AspNet-React Collection
 
-**Modern Fullstack Görev Yönetimi Uygulaması**
+**Modern Fullstack Development Portfolio**
 
 [![.NET](https://img.shields.io/badge/.NET-9.0-blue.svg)](https://dotnet.microsoft.com/)
 [![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-9.0-purple.svg)](https://docs.microsoft.com/en-us/aspnet/core/)
 [![React](https://img.shields.io/badge/React-18.3-blue.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg)](https://www.typescriptlang.org/)
+[![C#](https://img.shields.io/badge/C%23-13.0-green.svg)](https://docs.microsoft.com/en-us/dotnet/csharp/)
 [![SQLite](https://img.shields.io/badge/Database-SQLite-lightblue.svg)](https://sqlite.org/)
 [![Redux](https://img.shields.io/badge/State-Redux%20Toolkit-purple.svg)](https://redux-toolkit.js.org/)
-[![Swagger](https://img.shields.io/badge/API%20Docs-Swagger-brightgreen.svg)](https://swagger.io/)
+[![Tailwind](https://img.shields.io/badge/Styling-Tailwind%20CSS-38B2AC.svg)](https://tailwindcss.com/)
 
 ---
 
 ## 📋 İçindekiler
 
-- [🎯 Proje Hakkında](#-proje-hakkında)
-- [🖼️ Ekran Görüntüleri](#️-ekran-görüntüleri)
-- [✨ Özellikler](#-özellikler)
-- [🛠️ Teknolojiler](#️-teknolojiler)
-- [🚀 Kurulum](#-kurulum)
-- [📁 Proje Yapısı](#-proje-yapısı)
-- [📖 API Dokümantasyonu](#-api-dokümantasyonu)
+- [🎯 Hakkında](#-hakkında)
+- [🛠️ Teknoloji Stack'i](#️-teknoloji-stacki)
+- [📁 Projeler](#-projeler)
+- [🚀 Başlangıç](#-başlangıç)
+- [📖 Dokümantasyon](#-dokümantasyon)
 - [🧪 Test Etme](#-test-etme)
-- [🔐 Authentication](#-authentication)
-- [📊 API Endpoints](#-api-endpoints)
+- [🔐 Güvenlik](#-güvenlik)
+- [📊 Performans](#-performans)
 - [🤝 Katkıda Bulunma](#-katkıda-bulunma)
 - [📄 Lisans](#-lisans)
-- [📞 İletişim & Destek](#-iletişim--destek)
+- [📞 İletişim](#-iletişim)
 
 ---
 
-## 🎯 Proje Hakkında
+## 🎯 Hakkında
 
-TaskFlow, modern web uygulamaları için geliştirilmiş, React + TypeScript frontend ve ASP.NET Core 9 backend ile tam özellikli bir görev yönetimi platformudur. Kurumsal seviyede güvenlik, performans ve ölçeklenebilirlik sağlar.
+Bu repository, modern web geliştirme teknolojilerini kullanarak oluşturulmuş **ASP.NET Core** ve **React** projelerinin koleksiyonudur. Her proje, enterprise seviyesinde güvenlik, performans ve ölçeklenebilirlik standartlarında geliştirilmiştir.
 
----
+### 🌟 Öne Çıkan Özellikler
 
-## 🖼️ Ekran Görüntüleri
-
-### 🔐 Giriş Ekranı
-![TaskFlow Giriş Ekranı](https://github.com/user-attachments/assets/009ce77c-f645-44a8-b191-d7e8d21393a6)
-*Modern ve kullanıcı dostu giriş arayüzü - Email/şifre ile giriş ve sosyal medya entegrasyonu*
-
-### 📝 Kayıt Olma
-![TaskFlow Kayıt Olma](https://github.com/user-attachments/assets/eb83c738-e32b-41bd-97d5-7d58d5f04468)
-*Kapsamlı kullanıcı kayıt formu - Ad, soyad, email, telefon ve güvenlik onayları*
-
-### 🔑 Şifre Sıfırlama
-![TaskFlow Şifre Sıfırlama](https://github.com/user-attachments/assets/c559b3b3-5fd6-4826-b0d7-8493181e99aa)
-*Güvenli şifre sıfırlama süreci - Email tabanlı doğrulama sistemi*
-
-### 🏠 Ana Sayfa
-![TaskFlow Ana Sayfa](./TaskFlow.Frontend/public/dashboard-screenshot.png)
-*Dashboard ve görev yönetimi arayüzü - Modern ve responsive tasarım*
+- **🔐 Enterprise Güvenlik**: JWT, 2FA, WebAuthn, Captcha
+- **⚡ Yüksek Performans**: Optimized queries, caching, lazy loading
+- **📱 Responsive Design**: Mobile-first approach
+- **🧪 Comprehensive Testing**: Unit, integration, e2e tests
+- **📊 Real-time Features**: SignalR integration
+- **🎨 Modern UI/UX**: Tailwind CSS, Material Design principles
 
 ---
 
-## ✨ Özellikler
+## 🛠️ Teknoloji Stack'i
 
-- JWT tabanlı authentication
-- Kullanıcı, görev, kategori yönetimi
-- Gelişmiş arama ve filtreleme
-- Otomatik mapping (AutoMapper)
-- Soft delete, audit trail, validation
-- Swagger/OpenAPI dokümantasyonu
-- Responsive ve modern UI/UX (React + Tailwind)
-- Redux Toolkit ile global state
-- Zod ile form validation
-- Toast notification sistemi
-- Vitest ile unit testler
+### Backend Technologies
+| Teknoloji | Versiyon | Açıklama |
+|-----------|----------|----------|
+| **ASP.NET Core** | 9.0 | Modern web framework |
+| **C#** | 13.0 | Type-safe programming language |
+| **Entity Framework** | 9.0 | ORM for database operations |
+| **SQLite** | 3.x | Lightweight database |
+| **AutoMapper** | 12.x | Object mapping |
+| **JWT Bearer** | - | Authentication |
+| **BCrypt.Net** | - | Password hashing |
+| **Swagger/OpenAPI** | - | API documentation |
 
----
-
-## 🛠️ Teknolojiler
-
-### Backend
-
-- ASP.NET Core 9, C# 13
-- Entity Framework Core 9
-- SQLite (development DB)
-- AutoMapper
-- JWT Bearer, BCrypt.Net
-- Swagger/OpenAPI
-
-### Frontend
-
-- React 18, TypeScript 5
-- Vite 6, Redux Toolkit 2.4
-- React Router 7, Tailwind CSS 3.4
-- Zod, React Hot Toast, Vitest
+### Frontend Technologies
+| Teknoloji | Versiyon | Açıklama |
+|-----------|----------|----------|
+| **React** | 18.3 | UI library |
+| **TypeScript** | 5.6 | Type-safe JavaScript |
+| **Vite** | 6.x | Build tool |
+| **Redux Toolkit** | 2.4 | State management |
+| **React Router** | 7.x | Client-side routing |
+| **Tailwind CSS** | 3.4 | Utility-first CSS |
+| **Zod** | - | Schema validation |
+| **React Hot Toast** | - | Notifications |
 
 ### DevOps & Tools
-
-- Git, GitHub, ESLint, Prettier
-- Postman, Docker (yakında)
+| Araç | Açıklama |
+|------|----------|
+| **Git** | Version control |
+| **GitHub** | Code hosting |
+| **ESLint** | Code linting |
+| **Prettier** | Code formatting |
+| **Postman** | API testing |
+| **Vitest** | Unit testing |
 
 ---
 
-## 🚀 Kurulum
+## 📁 Projeler
 
-### Backend
+### 🎯 TaskFlow - Görev Yönetimi Sistemi
+**Modern task management platform with enterprise security**
 
+![TaskFlow Giriş Ekranı](https://github.com/user-attachments/assets/009ce77c-f645-44a8-b191-d7e8d21393a6)
+
+#### ✨ Özellikler
+- 🔐 **Gelişmiş Güvenlik**: 2FA, WebAuthn, Captcha, Rate Limiting
+- 📊 **Dashboard**: Real-time statistics and charts
+- 🔍 **Gelişmiş Arama**: Global search with filters
+- 📱 **Responsive Design**: Mobile-first approach
+- 🎨 **Modern UI**: Tailwind CSS with dark/light themes
+- ⚡ **Real-time**: SignalR integration for live updates
+
+#### 🛠️ Teknolojiler
+- **Backend**: ASP.NET Core 9, Entity Framework, JWT
+- **Frontend**: React 18, TypeScript, Redux Toolkit
+- **Database**: SQLite with migrations
+- **Testing**: Unit tests, Integration tests, E2E tests
+
+#### 📖 [TaskFlow Detayları →](./TaskFlow/README.md)
+
+---
+
+## 🚀 Başlangıç
+
+### Gereksinimler
+- **.NET 9.0 SDK**
+- **Node.js 18+**
+- **Git**
+
+### Kurulum
+
+#### 1. Repository'yi Klonlayın
 ```bash
-cd TaskFlow.API
+git clone https://github.com/alidurna/AspNet-React.git
+cd AspNet-React
+```
+
+#### 2. Backend Kurulumu
+```bash
+# TaskFlow Backend
+cd TaskFlow/TaskFlow.API
 dotnet restore
 dotnet ef database update
 dotnet run
 ```
 
-### Frontend
-
+#### 3. Frontend Kurulumu
 ```bash
-cd TaskFlow.Frontend
+# TaskFlow Frontend
+cd TaskFlow/TaskFlow.Frontend
 npm install
 npm run dev
 ```
 
----
+### 🏃‍♂️ Hızlı Başlangıç
+```bash
+# Tüm projeleri aynı anda çalıştır
+./scripts/start-all.sh
 
-## 📁 Proje Yapısı
-
-```
-TaskFlow/
-├── README.md                       # Ana proje dokümantasyonu
-├── TaskFlow.sln                    # Visual Studio solution
-├── TaskFlow-Postman-Collection.json # API test collection
-│
-├── TaskFlow.API/                   # ASP.NET Core Backend
-│   ├── Controllers/                # API Controllers
-│   ├── Models/                     # Entity models
-│   ├── Services/                   # Business logic
-│   ├── Profiles/                   # AutoMapper profiles
-│   ├── DTOs/                       # Data Transfer Objects
-│   ├── Data/                       # DbContext & migrations
-│   ├── Middleware/                 # Custom middleware
-│   ├── Extensions/                 # Extension methods
-│   ├── Hubs/                       # SignalR real-time hub
-│   └── README.md                   # Backend dokümantasyonu
-│
-├── TaskFlow.Frontend/              # React TypeScript Frontend
-│   ├── src/
-│   │   ├── components/             # UI components
-│   │   ├── pages/                  # Route pages
-│   │   ├── store/                  # Redux store & slices
-│   │   ├── schemas/                # Zod validation schemas
-│   │   ├── hooks/                  # Custom React hooks
-│   │   ├── services/               # API servisleri
-│   │   ├── contexts/               # React context'leri
-│   │   └── assets/                 # Statik dosyalar
-│   ├── public/                     # Statik public dosyalar
-│   └── README.md                   # Frontend dokümantasyonu
-│
-└── TaskFlow.Tests/                 # Test projects
-    ├── Controllers/                # Controller tests
-    ├── Services/                   # Service tests
-    ├── Helpers/                    # Test yardımcıları
-    └── README.md                   # Test dokümantasyonu
+# Sadece TaskFlow'u çalıştır
+./scripts/start-taskflow.sh
 ```
 
 ---
 
-## 📖 API Dokümantasyonu
+## 📖 Dokümantasyon
 
-- **Swagger UI:** http://localhost:5280/swagger
-- **API Base URL:** http://localhost:5280/api
-- **Postman Collection:** `TaskFlow-Postman-Collection.json`
+### API Dokümantasyonu
+- **Swagger UI**: http://localhost:5280/swagger
+- **API Base URL**: http://localhost:5280/api
+- **Postman Collection**: [TaskFlow Collection](./TaskFlow/TaskFlow-Postman-Collection.json)
 
-Tüm API response'ları standardized format kullanır:
-
-```json
-{
-  "success": true,
-  "message": "İşlem başarıyla tamamlandı",
-  "data": {
-    /* ... */
-  },
-  "errors": null,
-  "timestamp": "2024-12-08T10:30:00Z"
-}
-```
+### Proje Dokümantasyonu
+- [TaskFlow Backend](./TaskFlow/TaskFlow.API/README.md)
+- [TaskFlow Frontend](./TaskFlow/TaskFlow.Frontend/README.md)
+- [TaskFlow Tests](./TaskFlow/TaskFlow.Tests/README.md)
 
 ---
 
 ## 🧪 Test Etme
 
-### Backend
-
+### Backend Tests
 ```bash
-cd TaskFlow.API
+cd TaskFlow/TaskFlow.API
 dotnet test --verbosity normal
+dotnet test --collect:"XPlat Code Coverage"
 ```
 
-### Frontend
-
+### Frontend Tests
 ```bash
-cd TaskFlow.Frontend
+cd TaskFlow/TaskFlow.Frontend
 npm run test
 npm run test:coverage
 npm run test:ui
 ```
 
-### API Testing (Postman)
-
-1. `TaskFlow-Postman-Collection.json` dosyasını import et
-2. Environment ayarlarını yap
-3. Koleksiyonu çalıştır
-
----
-
-## 🔐 Authentication
-
-- JWT tabanlı authentication
-- Tüm /api/todotasks ve /api/categories endpointleri JWT gerektirir
-- Token: `Authorization: Bearer <token>`
+### E2E Tests
+```bash
+cd TaskFlow/TaskFlow.Frontend
+npm run test:e2e
+```
 
 ---
 
-## 📊 API Endpoints (Örnekler)
+## 🔐 Güvenlik
 
-### Authentication
+### Implemented Security Features
+- ✅ **JWT Authentication** - Secure token-based auth
+- ✅ **Two-Factor Authentication (2FA)** - Additional security layer
+- ✅ **WebAuthn (Biometric)** - Passwordless authentication
+- ✅ **Captcha Protection** - Bot prevention
+- ✅ **Rate Limiting** - DDoS protection
+- ✅ **Password Hashing** - BCrypt with salt
+- ✅ **CORS Configuration** - Cross-origin security
+- ✅ **Input Validation** - XSS and injection prevention
 
-| Method | Endpoint            | Açıklama          | Auth |
-| ------ | ------------------- | ----------------- | ---- |
-| POST   | /api/users/register | Kullanıcı kaydı   | ❌   |
-| POST   | /api/users/login    | Kullanıcı girişi  | ❌   |
-| GET    | /api/users/profile  | Profil bilgileri  | ✅   |
-| PUT    | /api/users/profile  | Profil güncelleme | ✅   |
+### Security Best Practices
+- 🔒 HTTPS enforcement
+- 🔒 Secure headers configuration
+- 🔒 SQL injection prevention
+- 🔒 XSS protection
+- 🔒 CSRF protection
 
-### Categories
+---
 
-| Method | Endpoint             | Açıklama          | Auth |
-| ------ | -------------------- | ----------------- | ---- |
-| GET    | /api/categories      | Kategori listesi  | ✅   |
-| POST   | /api/categories      | Kategori oluştur  | ✅   |
-| PUT    | /api/categories/{id} | Kategori güncelle | ✅   |
-| DELETE | /api/categories/{id} | Kategori sil      | ✅   |
+## 📊 Performans
 
-### Tasks
+### Backend Optimizations
+- ⚡ **Caching**: Redis-like caching system
+- ⚡ **Database**: Optimized queries with indexes
+- ⚡ **Compression**: Response compression
+- ⚡ **Async/Await**: Non-blocking operations
 
-| Method | Endpoint                 | Açıklama       | Auth |
-| ------ | ------------------------ | -------------- | ---- |
-| GET    | /api/tasks               | Görev listesi  | ✅   |
-| POST   | /api/tasks               | Görev oluştur  | ✅   |
-| GET    | /api/tasks/{id}          | Görev detayı   | ✅   |
-| PUT    | /api/tasks/{id}          | Görev güncelle | ✅   |
-| DELETE | /api/tasks/{id}          | Görev sil      | ✅   |
-| PATCH  | /api/tasks/{id}/complete | Görev tamamla  | ✅   |
+### Frontend Optimizations
+- ⚡ **Code Splitting**: Lazy loading of components
+- ⚡ **Bundle Optimization**: Tree shaking and minification
+- ⚡ **Image Optimization**: WebP format support
+- ⚡ **Caching**: Service worker for offline support
 
 ---
 
 ## 🤝 Katkıda Bulunma
 
-1. Forkla
-2. Branch oluştur (`git checkout -b feature/yenilik`)
-3. Commit yap (`git commit -m 'feat: yenilik'`)
-4. Push et (`git push origin feature/yenilik`)
-5. Pull Request aç
+Bu projeye katkıda bulunmak istiyorsanız:
 
-### Katkı Kuralları
+### 1. Fork Yapın
+```bash
+git clone https://github.com/your-username/AspNet-React.git
+```
 
-- Kod standartlarına uy
-- Yeni özellik için test ekle
-- Dokümantasyonu güncelle
-- Conventional commit mesajı kullan
+### 2. Branch Oluşturun
+```bash
+git checkout -b feature/amazing-feature
+```
+
+### 3. Değişikliklerinizi Commit Edin
+```bash
+git commit -m 'feat: add amazing feature'
+```
+
+### 4. Push Edin
+```bash
+git push origin feature/amazing-feature
+```
+
+### 5. Pull Request Açın
+
+### 📋 Katkı Kuralları
+- ✅ Kod standartlarına uyun
+- ✅ Test yazın
+- ✅ Dokümantasyonu güncelleyin
+- ✅ Conventional commit mesajları kullanın
 
 ---
 
@@ -272,13 +266,36 @@ Bu proje **MIT** lisansı altında lisanslanmıştır. Detaylar için [LICENSE](
 
 ---
 
-## 📞 İletişim & Destek
+## 📞 İletişim
 
-- 👨‍💻 Geliştirici: [Ali Durna](https://github.com/alidurna)
-- 📧 Email: alidurna@example.com
-- 🐛 Issues: [GitHub Issues](https://github.com/alidurna/TaskFlow/issues)
-- 💬 Discussions: [GitHub Discussions](https://github.com/alidurna/TaskFlow/discussions)
+- 👨‍💻 **Geliştirici**: [Ali Durna](https://github.com/alidurna)
+- 📧 **Email**: alidurna@example.com
+- 🌐 **Website**: [Portfolio](https://alidurna.dev)
+- 💼 **LinkedIn**: [Ali Durna](https://linkedin.com/in/alidurna)
+- 🐦 **Twitter**: [@alidurna](https://twitter.com/alidurna)
+
+### 🐛 Issues & Discussions
+- 🐛 [GitHub Issues](https://github.com/alidurna/AspNet-React/issues)
+- 💬 [GitHub Discussions](https://github.com/alidurna/AspNet-React/discussions)
 
 ---
 
-**⭐ Bu projeyi beğendiyseniz, lütfen yıldız verin!**
+## ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=alidurna/AspNet-React&type=Date)](https://star-history.com/#alidurna/AspNet-React&Date)
+
+---
+
+**⭐ Bu repository'yi beğendiyseniz, lütfen yıldız verin!**
+
+---
+
+<div align="center">
+
+**Made with ❤️ by [Ali Durna](https://github.com/alidurna)**
+
+[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/alidurna)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/alidurna)
+[![Twitter](https://img.shields.io/badge/Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white)](https://twitter.com/alidurna)
+
+</div>
