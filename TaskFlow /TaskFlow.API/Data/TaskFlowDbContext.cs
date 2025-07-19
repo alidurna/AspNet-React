@@ -128,6 +128,32 @@ public class TaskFlowDbContext : DbContext
     /// </summary>
     public DbSet<WebAuthnCredential> WebAuthnCredentials { get; set; } = null!;
 
+    // ===== ANALYTICS TABLOLARI =====
+    
+    /// <summary>
+    /// AnalyticsEvents tablosu - Kullanıcı davranışlarını takip eden events
+    /// Page views, button clicks, form submissions vb.
+    /// </summary>
+    public DbSet<AnalyticsEvent> AnalyticsEvents { get; set; } = null!;
+
+    /// <summary>
+    /// UserSessions tablosu - Kullanıcı oturumlarını takip eden sessions
+    /// Session lifecycle, user engagement metrics vb.
+    /// </summary>
+    public DbSet<UserSession> UserSessions { get; set; } = null!;
+
+    /// <summary>
+    /// ErrorReports tablosu - Hata raporlarını takip eden reports
+    /// JavaScript errors, network errors, React errors vb.
+    /// </summary>
+    public DbSet<ErrorReport> ErrorReports { get; set; } = null!;
+
+    /// <summary>
+    /// PerformanceMetrics tablosu - Performans metriklerini takip eden metrics
+    /// Web Vitals, Core Web Vitals, custom metrics vb.
+    /// </summary>
+    public DbSet<PerformanceMetric> PerformanceMetrics { get; set; } = null!;
+
     // ===== MODEL YAPILANDIRMASI (FLUENT API) =====
     /// <summary>
     /// Model konfigürasyonu - Fluent API
@@ -279,6 +305,214 @@ public class TaskFlowDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(e => e.CredentialId).IsUnique();
+        });
+
+        // ===== ANALYTICS ENTITY CONFIGURATIONS =====
+
+        // AnalyticsEvent entity configuration
+        modelBuilder.Entity<AnalyticsEvent>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EventType).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.EventName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.SessionId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Page).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.UserAgent).HasMaxLength(500);
+            entity.Property(e => e.ScreenResolution).HasMaxLength(20);
+            entity.Property(e => e.Language).HasMaxLength(10);
+            entity.Property(e => e.IpAddress).HasMaxLength(45);
+            entity.Property(e => e.Location).HasMaxLength(100);
+            entity.Property(e => e.DeviceType).HasMaxLength(20);
+            entity.Property(e => e.Browser).HasMaxLength(100);
+            entity.Property(e => e.OperatingSystem).HasMaxLength(50);
+            entity.Property(e => e.Referrer).HasMaxLength(500);
+            entity.Property(e => e.Duration);
+            entity.Property(e => e.IsSuccessful).HasDefaultValue(true);
+            entity.Property(e => e.ErrorMessage).HasMaxLength(500);
+            entity.Property(e => e.Fingerprint).HasMaxLength(100);
+            entity.Property(e => e.Priority).HasMaxLength(20).HasDefaultValue("medium");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+
+            // Indexes for performance
+            entity.HasIndex(e => e.SessionId);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.EventType);
+            entity.HasIndex(e => e.Timestamp);
+            entity.HasIndex(e => e.Fingerprint);
+            entity.HasIndex(e => e.IsDeleted);
+
+            // Relationships
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Session)
+                .WithMany(s => s.AnalyticsEvents)
+                .HasForeignKey(e => e.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // UserSession entity configuration
+        modelBuilder.Entity<UserSession>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasMaxLength(100);
+            entity.Property(e => e.StartTime).IsRequired();
+            entity.Property(e => e.EndTime);
+            entity.Property(e => e.Duration);
+            entity.Property(e => e.LastActivity).IsRequired();
+            entity.Property(e => e.PageViews).HasDefaultValue(0);
+            entity.Property(e => e.Events).HasDefaultValue(0);
+            entity.Property(e => e.UserAgent).HasMaxLength(500);
+            entity.Property(e => e.IpAddress).HasMaxLength(45);
+            entity.Property(e => e.Location).HasMaxLength(100);
+            entity.Property(e => e.DeviceType).HasMaxLength(20);
+            entity.Property(e => e.Browser).HasMaxLength(100);
+            entity.Property(e => e.OperatingSystem).HasMaxLength(50);
+            entity.Property(e => e.ScreenResolution).HasMaxLength(20);
+            entity.Property(e => e.Language).HasMaxLength(10);
+            entity.Property(e => e.Referrer).HasMaxLength(500);
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValue("active");
+            entity.Property(e => e.SessionType).IsRequired().HasMaxLength(20).HasDefaultValue("web");
+            entity.Property(e => e.IsAuthenticated).HasDefaultValue(false);
+            entity.Property(e => e.AuthenticationMethod).HasMaxLength(50);
+            entity.Property(e => e.Fingerprint).HasMaxLength(100);
+            entity.Property(e => e.IsSuccessful).HasDefaultValue(true);
+            entity.Property(e => e.ErrorMessage).HasMaxLength(500);
+            entity.Property(e => e.Priority).HasMaxLength(20).HasDefaultValue("medium");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+
+            // Indexes for performance
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.StartTime);
+            entity.HasIndex(e => e.LastActivity);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.Fingerprint);
+            entity.HasIndex(e => e.IsDeleted);
+
+            // Relationships
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ErrorReport entity configuration
+        modelBuilder.Entity<ErrorReport>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Message).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Severity).IsRequired().HasMaxLength(20).HasDefaultValue("medium");
+            entity.Property(e => e.Category).IsRequired().HasMaxLength(50).HasDefaultValue("unknown");
+            entity.Property(e => e.SessionId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Url).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.UserAgent).HasMaxLength(500);
+            entity.Property(e => e.Fingerprint).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Occurrences).HasDefaultValue(1);
+            entity.Property(e => e.FirstSeen).IsRequired();
+            entity.Property(e => e.LastSeen).IsRequired();
+            entity.Property(e => e.Resolved).HasDefaultValue(false);
+            entity.Property(e => e.ResolvedAt);
+            entity.Property(e => e.ResolvedBy);
+            entity.Property(e => e.ResolutionNotes).HasMaxLength(1000);
+            entity.Property(e => e.UserImpact).IsRequired().HasMaxLength(20).HasDefaultValue("low");
+            entity.Property(e => e.RecoverySuggestion).HasMaxLength(500);
+            entity.Property(e => e.StackTrace).HasColumnType("text");
+            entity.Property(e => e.ComponentStack).HasColumnType("text");
+            entity.Property(e => e.IpAddress).HasMaxLength(45);
+            entity.Property(e => e.Location).HasMaxLength(100);
+            entity.Property(e => e.DeviceType).HasMaxLength(20);
+            entity.Property(e => e.Browser).HasMaxLength(100);
+            entity.Property(e => e.OperatingSystem).HasMaxLength(50);
+            entity.Property(e => e.Priority).HasMaxLength(20).HasDefaultValue("medium");
+            entity.Property(e => e.IsMonitored).HasDefaultValue(true);
+            entity.Property(e => e.Trend).HasMaxLength(20).HasDefaultValue("stable");
+            entity.Property(e => e.TrendPercentage);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+
+            // Indexes for performance
+            entity.HasIndex(e => e.SessionId);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.Fingerprint);
+            entity.HasIndex(e => e.Severity);
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.Resolved);
+            entity.HasIndex(e => e.LastSeen);
+            entity.HasIndex(e => e.IsDeleted);
+
+            // Relationships
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.ResolvedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.ResolvedBy)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Session)
+                .WithMany(s => s.ErrorReports)
+                .HasForeignKey(e => e.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // PerformanceMetric entity configuration
+        modelBuilder.Entity<PerformanceMetric>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.SessionId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Url).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.MetricType).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Value).IsRequired();
+            entity.Property(e => e.Unit).IsRequired().HasMaxLength(10).HasDefaultValue("ms");
+            entity.Property(e => e.Score);
+            entity.Property(e => e.MeetsThreshold).HasDefaultValue(true);
+            entity.Property(e => e.Threshold);
+            entity.Property(e => e.UserAgent).HasMaxLength(500);
+            entity.Property(e => e.DeviceType).HasMaxLength(20);
+            entity.Property(e => e.Browser).HasMaxLength(100);
+            entity.Property(e => e.OperatingSystem).HasMaxLength(50);
+            entity.Property(e => e.ConnectionType).HasMaxLength(20);
+            entity.Property(e => e.EffectiveType).HasMaxLength(20);
+            entity.Property(e => e.ScreenResolution).HasMaxLength(20);
+            entity.Property(e => e.IpAddress).HasMaxLength(45);
+            entity.Property(e => e.Location).HasMaxLength(100);
+            entity.Property(e => e.Priority).HasMaxLength(20).HasDefaultValue("medium");
+            entity.Property(e => e.IsMonitored).HasDefaultValue(true);
+            entity.Property(e => e.Trend).HasMaxLength(20).HasDefaultValue("stable");
+            entity.Property(e => e.TrendPercentage);
+            entity.Property(e => e.Timestamp).IsRequired();
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+
+            // Indexes for performance
+            entity.HasIndex(e => e.SessionId);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.MetricType);
+            entity.HasIndex(e => e.Timestamp);
+            entity.HasIndex(e => e.Score);
+            entity.HasIndex(e => e.IsDeleted);
+
+            // Relationships
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Session)
+                .WithMany(s => s.PerformanceMetrics)
+                .HasForeignKey(e => e.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         SeedData(modelBuilder); // Seed data çağrısı

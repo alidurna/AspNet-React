@@ -433,6 +433,191 @@ public class TaskFlowHub : Hub
 
     #endregion
 
+    #region Real-time Dashboard Updates
+
+    /// <summary>
+    /// Dashboard'a real-time bağlan
+    /// </summary>
+    [HubMethodName("ConnectToDashboard")]
+    public async Task ConnectToDashboard()
+    {
+        try
+        {
+            var userId = GetUserId();
+            if (userId == null) return;
+
+            // Kullanıcıyı dashboard grubuna ekle
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"Dashboard_{userId}");
+
+            // Bağlantı onayı gönder
+            await Clients.Caller.SendAsync("DashboardConnected", new
+            {
+                UserId = userId,
+                ConnectionId = Context.ConnectionId,
+                Timestamp = DateTime.UtcNow,
+                Message = "Real-time dashboard bağlantısı kuruldu"
+            });
+
+            _logger.LogInformation("User {UserId} connected to real-time dashboard", userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error connecting to dashboard for user");
+        }
+    }
+
+    /// <summary>
+    /// Dashboard'dan ayrıl
+    /// </summary>
+    [HubMethodName("DisconnectFromDashboard")]
+    public async Task DisconnectFromDashboard()
+    {
+        try
+        {
+            var userId = GetUserId();
+            if (userId == null) return;
+
+            // Kullanıcıyı dashboard grubundan çıkar
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"Dashboard_{userId}");
+
+            await Clients.Caller.SendAsync("DashboardDisconnected", new
+            {
+                UserId = userId,
+                Timestamp = DateTime.UtcNow,
+                Message = "Real-time dashboard bağlantısı kesildi"
+            });
+
+            _logger.LogInformation("User {UserId} disconnected from real-time dashboard", userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error disconnecting from dashboard for user");
+        }
+    }
+
+    /// <summary>
+    /// Analytics stream'e bağlan
+    /// </summary>
+    [HubMethodName("ConnectToAnalyticsStream")]
+    public async Task ConnectToAnalyticsStream(string streamType)
+    {
+        try
+        {
+            var userId = GetUserId();
+            if (userId == null) return;
+
+            // Kullanıcıyı analytics grubuna ekle
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"Analytics_{userId}");
+
+            await Clients.Caller.SendAsync("AnalyticsStreamConnected", new
+            {
+                UserId = userId,
+                StreamType = streamType,
+                ConnectionId = Context.ConnectionId,
+                Timestamp = DateTime.UtcNow,
+                Message = $"Analytics stream '{streamType}' bağlantısı kuruldu"
+            });
+
+            _logger.LogInformation("User {UserId} connected to analytics stream: {StreamType}", userId, streamType);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error connecting to analytics stream for user");
+        }
+    }
+
+    /// <summary>
+    /// Analytics stream'den ayrıl
+    /// </summary>
+    [HubMethodName("DisconnectFromAnalyticsStream")]
+    public async Task DisconnectFromAnalyticsStream()
+    {
+        try
+        {
+            var userId = GetUserId();
+            if (userId == null) return;
+
+            // Kullanıcıyı analytics grubundan çıkar
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"Analytics_{userId}");
+
+            await Clients.Caller.SendAsync("AnalyticsStreamDisconnected", new
+            {
+                UserId = userId,
+                Timestamp = DateTime.UtcNow,
+                Message = "Analytics stream bağlantısı kesildi"
+            });
+
+            _logger.LogInformation("User {UserId} disconnected from analytics stream", userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error disconnecting from analytics stream for user");
+        }
+    }
+
+    /// <summary>
+    /// Real-time dashboard güncellemesi gönder
+    /// </summary>
+    [HubMethodName("SendDashboardUpdate")]
+    public async Task SendDashboardUpdate(string updateType, object data)
+    {
+        try
+        {
+            var userId = GetUserId();
+            if (userId == null) return;
+
+            var update = new
+            {
+                UserId = userId,
+                UpdateType = updateType,
+                Data = data,
+                Timestamp = DateTime.UtcNow
+            };
+
+            // Dashboard grubuna gönder
+            await Clients.Group($"Dashboard_{userId}").SendAsync("DashboardUpdated", update);
+
+            _logger.LogDebug("Dashboard update sent for user {UserId}: {UpdateType}", userId, updateType);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending dashboard update for user");
+        }
+    }
+
+    /// <summary>
+    /// Real-time analytics data gönder
+    /// </summary>
+    [HubMethodName("SendAnalyticsData")]
+    public async Task SendAnalyticsData(string dataType, object data)
+    {
+        try
+        {
+            var userId = GetUserId();
+            if (userId == null) return;
+
+            var analyticsData = new
+            {
+                UserId = userId,
+                DataType = dataType,
+                Data = data,
+                Timestamp = DateTime.UtcNow,
+                IsRealTime = true
+            };
+
+            // Analytics grubuna gönder
+            await Clients.Group($"Analytics_{userId}").SendAsync("AnalyticsDataReceived", analyticsData);
+
+            _logger.LogDebug("Analytics data sent for user {UserId}: {DataType}", userId, dataType);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending analytics data for user");
+        }
+    }
+
+    #endregion
+
     #region Helper Methods
 
     /// <summary>

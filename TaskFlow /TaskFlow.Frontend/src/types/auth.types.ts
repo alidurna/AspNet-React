@@ -414,3 +414,77 @@ export interface LoginRecoveryRequest {
   password: string;
   recoveryCode: string;
 }
+
+/**
+ * WebAuthn Types - Biyometrik Giriş
+ */
+
+/**
+ * WebAuthn durumu
+ */
+export interface WebAuthnStatus {
+  isSupported: boolean;
+  isEnabled: boolean;
+  credentials: WebAuthnCredential[];
+}
+
+/**
+ * WebAuthn kimlik bilgisi
+ */
+export interface WebAuthnCredential {
+  id: string;
+  name: string;
+  createdAt: string;
+  lastUsedAt?: string;
+  type: string;
+  transports: string;
+}
+
+/**
+ * WebAuthn kayıt başlatma isteği
+ */
+export interface WebAuthnRegistrationRequest {
+  username: string;
+  displayName?: string;
+}
+
+/**
+ * WebAuthn kayıt başlatma yanıtı
+ */
+export interface WebAuthnRegistrationResponse {
+  challenge: string;
+  publicKeyCredentialCreationOptions: any;
+  sessionId: string;
+}
+
+/**
+ * WebAuthn kayıt tamamlama isteği
+ */
+export interface WebAuthnRegistrationComplete {
+  sessionId: string;
+  attestationResponse: any;
+}
+
+/**
+ * WebAuthn giriş başlatma isteği
+ */
+export interface WebAuthnAuthenticationRequest {
+  username: string;
+}
+
+/**
+ * WebAuthn giriş başlatma yanıtı
+ */
+export interface WebAuthnAuthenticationResponse {
+  challenge: string;
+  publicKeyCredentialRequestOptions: any;
+  sessionId: string;
+}
+
+/**
+ * WebAuthn giriş tamamlama isteği
+ */
+export interface WebAuthnAuthenticationComplete {
+  sessionId: string;
+  assertionResponse: any;
+}

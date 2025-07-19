@@ -52,11 +52,13 @@ import Input from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { useAuth } from "../contexts/AuthContext";
 import type { RegisterRequest } from "../types/auth.types";
-import PasswordStrength from "../components/ui/PasswordStrength";
+import PasswordStrengthIndicator from "../components/ui/PasswordStrength";
 import AuthLayout from "../components/layout/AuthLayout"; // AuthLayout import edildi
 import Captcha from "../components/security/Captcha";
 import type { CaptchaRef } from "../components/security/Captcha";
 import { captchaAPI } from "../services/api";
+import ProgressiveDisclosure from "../components/ui/ProgressiveDisclosure";
+import { useHoverAnimation, useClickAnimation } from "../hooks/useAnimations";
 
 /**
  * Register formu için Zod validation şeması
@@ -128,6 +130,10 @@ const Register: React.FC = () => {
   const [captchaEnabled, setCaptchaEnabled] = useState(false);
   const [captchaSiteKey, setCaptchaSiteKey] = useState("");
   const captchaRef = useRef<CaptchaRef>(null);
+
+  // Animation hooks
+  const submitButtonHover = useHoverAnimation({ duration: 200 });
+  const submitButtonClick = useClickAnimation({ duration: 150 });
 
   const {
     register,
@@ -295,6 +301,48 @@ const Register: React.FC = () => {
           />
         </div>
 
+        {/* ===== PASSWORD STRENGTH INDICATOR ===== */}
+        <PasswordStrengthIndicator
+          password={watch("password") || ""}
+          showSuggestions={false}
+          className="mt-2"
+        />
+
+        {/* ===== PASSWORD SECURITY TIPS ===== */}
+        <ProgressiveDisclosure
+          title="🔐 Şifre Güvenlik İpuçları"
+          defaultExpanded={false}
+          variant="card"
+          className="mt-4"
+        >
+          <div className="space-y-3 text-sm text-gray-600">
+            <div className="flex items-start space-x-2">
+              <span className="text-green-500 mt-0.5">✓</span>
+              <span>En az 8 karakter uzunluğunda olmalı</span>
+            </div>
+            <div className="flex items-start space-x-2">
+              <span className="text-green-500 mt-0.5">✓</span>
+              <span>Büyük ve küçük harfler içermeli</span>
+            </div>
+            <div className="flex items-start space-x-2">
+              <span className="text-green-500 mt-0.5">✓</span>
+              <span>En az bir rakam içermeli</span>
+            </div>
+            <div className="flex items-start space-x-2">
+              <span className="text-green-500 mt-0.5">✓</span>
+              <span>Özel karakterler (!@#$%^&*) ekleyebilirsiniz</span>
+            </div>
+            <div className="flex items-start space-x-2">
+              <span className="text-red-500 mt-0.5">✗</span>
+              <span>Kişisel bilgilerinizi (ad, doğum tarihi) kullanmayın</span>
+            </div>
+            <div className="flex items-start space-x-2">
+              <span className="text-red-500 mt-0.5">✗</span>
+              <span>Yaygın şifrelerden (123456, password) kaçının</span>
+            </div>
+          </div>
+        </ProgressiveDisclosure>
+
         {/* ===== TERMS CHECKBOX ===== */}
         <div className="flex items-start">
           <div className="flex items-center h-5">
@@ -339,7 +387,10 @@ const Register: React.FC = () => {
             type="submit"
             variant="default"
             isLoading={isSubmitting}
-            className="w-full py-4 text-lg font-medium"
+            className="w-full py-4 text-lg font-medium transition-all duration-200"
+            onMouseEnter={submitButtonHover.handleMouseEnter}
+            onMouseLeave={submitButtonHover.handleMouseLeave}
+            onClick={submitButtonClick.handleClick}
           >
             Hesap Oluştur
           </Button>

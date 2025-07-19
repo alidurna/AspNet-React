@@ -14,9 +14,13 @@ import { Button } from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import Card from "../components/ui/Card";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
+import { Skeleton, SkeletonGroup } from "../components/ui/Skeleton";
 import ConfirmModal from "../components/ui/ConfirmModal";
 import TaskDetailModal from "../components/tasks/TaskDetailModal";
 import { useToast } from "../hooks/useToast";
+import { useOptimisticUpdate, useOptimisticList } from "../hooks/useOptimisticUpdate";
+import { useOfflineFirst } from "../hooks/useOfflineFirst";
+import { useAnalytics } from "../hooks/useAnalytics";
 import { format } from "date-fns";
 import useSignalR from "../hooks/useSignalR";
 
@@ -45,6 +49,12 @@ const Tasks: React.FC = () => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToast();
 
+  // Analytics tracking
+  const analytics = useAnalytics({
+    debug: import.meta.env.DEV,
+    endpoint: '/api/analytics'
+  });
+
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
@@ -67,8 +77,13 @@ const Tasks: React.FC = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
 
-  // SignalR bağlantısını başlat
+  // SignalR bağlantısı
   const { connection } = useSignalR();
+
+  // Page view tracking
+  useEffect(() => {
+    analytics.trackPageView('Tasks Page');
+  }, [analytics]);
 
   // Görevleri çekmek için React Query kullanımı
   const {
@@ -87,6 +102,37 @@ const Tasks: React.FC = () => {
       });
     },
   });
+
+  // Offline-first yaklaşımı için hook
+  const offlineTasks = useOfflineFirst<TodoTaskDto[]>(
+    tasksData?.data || [],
+    {
+      cacheKey: 'tasks-cache',
+      cacheExpiry: 10 * 60 * 1000, // 10 dakika
+      strategy: 'stale-while-revalidate',
+      onSync: (data) => {
+        console.log('Tasks synced:', data);
+      },
+      onError: (error) => {
+        showError(`Senkronizasyon hatası: ${error.message}`);
+      }
+    }
+  );
+
+  // Optimistic updates için hook
+  const optimisticTasks = useOptimisticList<TodoTaskDto>(
+    tasksData?.data || [],
+    {
+      getId: (task) => task.id,
+      onSuccess: (data) => {
+        console.log('Optimistic update successful:', data);
+      },
+      onError: (error, originalData) => {
+        showError(`Optimistic update failed: ${error.message}`);
+        console.log('Rolling back to:', originalData);
+      }
+    }
+  );
 
   // Kategorileri çekmek için React Query kullanımı
   const {
@@ -271,45 +317,88 @@ const Tasks: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     const taskData = {
-      ...taskForm,
-      dueDate: taskForm.dueDate
-        ? new Date(taskForm.dueDate).toISOString()
-        : undefined,
+      title: taskForm.title,
+      description: taskForm.description,
+      dueDate: taskForm.dueDate,
+      priority: taskForm.priority,
       categoryId: taskForm.categoryId || undefined,
     };
 
+    // Analytics tracking
     if (currentTask) {
+      analytics.trackEvent('user_action', 'task_updated', {
+        taskId: currentTask.id,
+        priority: taskForm.priority,
+        hasCategory: !!taskForm.categoryId,
+        hasDueDate: !!taskForm.dueDate
+      });
       updateTaskMutation.mutate({
         id: currentTask.id,
         ...taskData,
       } as UpdateTodoTaskDto & { id: number });
     } else {
+      analytics.trackEvent('user_action', 'task_created', {
+        priority: taskForm.priority,
+        hasCategory: !!taskForm.categoryId,
+        hasDueDate: !!taskForm.dueDate
+      });
       createTaskMutation.mutate(taskData as CreateTodoTaskDto);
     }
   };
 
   const handleDelete = () => {
     if (taskToDelete !== null) {
+      analytics.trackEvent('user_action', 'task_deleted', {
+        taskId: taskToDelete
+      });
       deleteTaskMutation.mutate(taskToDelete);
     }
   };
 
   const handleSearch = () => {
+    analytics.trackEvent('search', 'task_search', {
+      query: searchQuery,
+      category: selectedCategory
+    });
     setPage(1);
     queryClient.invalidateQueries({ queryKey: ["tasks"] });
   };
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    analytics.trackEvent('filter', 'category_filter', {
+      category: e.target.value || 'all'
+    });
     setSelectedCategory(e.target.value === "" ? null : e.target.value);
     setPage(1);
   };
 
   const handleToggleComplete = (taskId: number, isCompleted: boolean) => {
-    const updateProgressDto: UpdateTaskProgressDto = {
-      progress: isCompleted ? 100 : 0,
-    };
-    updateTaskProgressMutation.mutate({ taskId, updateProgressDto });
+    // Analytics tracking
+    analytics.trackEvent('user_action', 'task_completed', {
+      taskId,
+      isCompleted,
+      action: isCompleted ? 'complete' : 'uncomplete'
+    });
+
+    // Optimistic update
+    optimisticTasks.updateItem(
+      taskId,
+      (task) => ({ ...task, isCompleted }),
+      async () => {
+        // Backend call - progress ile güncelle
+        await tasksAPI.updateTaskProgress(taskId, isCompleted ? 100 : 0);
+        // Return updated tasks list
+        const response = await tasksAPI.getTasks({
+          pageNumber: page,
+          pageSize: pageSize,
+          searchQuery: searchQuery,
+          categoryId: selectedCategory ? Number(selectedCategory) : undefined,
+        });
+        return response.data;
+      }
+    );
   };
 
   const handleSelectTask = (taskId: number, isSelected: boolean) => {
@@ -321,7 +410,7 @@ const Tasks: React.FC = () => {
   const handleSelectAllTasks = (event: React.ChangeEvent<HTMLInputElement>) => {
     const isChecked = event.target.checked;
     if (isChecked) {
-      const allTaskIds = tasksData?.data?.map((task) => task.id) || [];
+      const allTaskIds = optimisticTasks.data?.map((task) => task.id) || [];
       setSelectedTaskIds(allTaskIds);
     } else {
       setSelectedTaskIds([]);
@@ -330,6 +419,10 @@ const Tasks: React.FC = () => {
 
   const handleBulkDelete = () => {
     if (selectedTaskIds.length > 0) {
+      analytics.trackEvent('bulk_action', 'bulk_delete', {
+        count: selectedTaskIds.length,
+        taskIds: selectedTaskIds
+      });
       bulkDeleteTasksMutation.mutate(selectedTaskIds);
     } else {
       showError("Lütfen silmek için en az bir görev seçin.");
@@ -338,6 +431,10 @@ const Tasks: React.FC = () => {
 
   const handleBulkComplete = () => {
     if (selectedTaskIds.length > 0) {
+      analytics.trackEvent('bulk_action', 'bulk_complete', {
+        count: selectedTaskIds.length,
+        taskIds: selectedTaskIds
+      });
       bulkCompleteTasksMutation.mutate(selectedTaskIds);
     } else {
       showError("Lütfen tamamlamak için en az bir görev seçin.");
@@ -345,13 +442,35 @@ const Tasks: React.FC = () => {
   };
 
   const isAllTasksSelected = (
-    tasksData?.data?.length ?? 0
-  ) > 0 && selectedTaskIds.length === (tasksData?.data?.length ?? 0);
+    optimisticTasks.data?.length ?? 0
+  ) > 0 && selectedTaskIds.length === (optimisticTasks.data?.length ?? 0);
 
   const isAnyTaskSelected = selectedTaskIds.length > 0;
 
   if (isLoadingTasks || isLoadingCategories) {
-    return <LoadingSpinner />;
+    return (
+      <div className="p-6">
+        <h1 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white">
+          Görevler
+        </h1>
+        
+        {/* Skeleton Loading */}
+        <SkeletonGroup>
+          {/* Search Bar Skeleton */}
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <Skeleton variant="input" className="flex-grow" />
+            <Skeleton variant="button" size="md" />
+            <Skeleton variant="input" className="w-48" />
+            <Skeleton variant="button" size="md" />
+          </div>
+          
+          {/* Task Cards Skeleton */}
+          {Array.from({ length: 5 }).map((_, index) => (
+            <Skeleton key={index} variant="card" className="h-24" />
+          ))}
+        </SkeletonGroup>
+      </div>
+    );
   }
 
   if (tasksError) {
@@ -436,10 +555,26 @@ const Tasks: React.FC = () => {
         <div className="flex justify-center items-center h-64">
           <LoadingSpinner />
         </div>
-      ) : (tasksData?.data?.length ?? 0) === 0 ? (
-        <p className="text-center text-gray-500">Henüz görev bulunmamaktadır.</p>
+      ) : (optimisticTasks.data?.length ?? 0) === 0 ? (
+        <div className="text-center">
+          <p className="text-gray-500 mb-4">Henüz görev bulunmamaktadır.</p>
+          {offlineTasks.isOffline && (
+            <p className="text-gray-400 text-sm">
+              Çevrimdışı mod - Veriler cache'den yükleniyor
+            </p>
+          )}
+        </div>
       ) : (
         <div className="space-y-4">
+          {/* Offline Status */}
+          {offlineTasks.isOffline && (
+            <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
+              <p className="text-gray-600 text-sm">
+                Çevrimdışı mod - Değişiklikler senkronize edilecek
+              </p>
+            </div>
+          )}
+          
           <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-md shadow-sm mb-2">
             <input
               type="checkbox"
@@ -451,7 +586,7 @@ const Tasks: React.FC = () => {
               Tümünü Seç / Seçimi Kaldır
             </label>
           </div>
-          {tasksData?.data.map((task) => (
+          {optimisticTasks.data?.map((task) => (
             <Card key={task.id} className="p-4 flex items-center justify-between shadow-sm">
               <div className="flex items-center flex-1">
                 <input
@@ -518,12 +653,12 @@ const Tasks: React.FC = () => {
         </Button>
         <span className="text-gray-700 dark:text-gray-300">
           Sayfa {page} /{" "}
-          {Math.ceil((tasksData?.data.length || 0) / pageSize)}
+          {Math.ceil((optimisticTasks.data?.length || 0) / pageSize)}
         </span>
         <Button
           onClick={() => setPage((prev) => prev + 1)}
           disabled={
-            page * pageSize >= (tasksData?.data.length || 0)
+            page * pageSize >= (optimisticTasks.data?.length || 0)
           }
           className="bg-gray-300 dark:bg-gray-700 dark:text-white"
         >

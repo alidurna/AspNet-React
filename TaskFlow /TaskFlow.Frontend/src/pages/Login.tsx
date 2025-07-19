@@ -54,6 +54,9 @@ import Captcha from "../components/security/Captcha";
 import type { CaptchaRef } from "../components/security/Captcha";
 import { captchaAPI } from "../services/api";
 import TwoFactorLogin from "../components/auth/TwoFactorLogin";
+import WebAuthnLogin from "../components/auth/WebAuthnLogin";
+import { FaFingerprint } from "react-icons/fa";
+import { FaFingerprint } from "react-icons/fa";
 
 /**
  * Login formu için Zod validation şeması
@@ -116,6 +119,9 @@ const Login: React.FC = () => {
   // 2FA state'leri
   const [show2FA, setShow2FA] = useState(false);
   const [loginCredentials, setLoginCredentials] = useState<{ email: string; password: string } | null>(null);
+
+  // WebAuthn state'leri
+  const [showWebAuthn, setShowWebAuthn] = useState(false);
 
   // React Hook Form kurulumu - form state yönetimi için
   const {
@@ -306,8 +312,27 @@ const Login: React.FC = () => {
         />
       )}
 
+      {/* WebAuthn Login Form */}
+      {showWebAuthn && (
+        <WebAuthnLogin
+          username={email}
+          onSuccess={() => {
+            setShowWebAuthn(false);
+            setError("");
+            setSecurityWarning("");
+            rateLimit.recordSuccess();
+            navigate("/dashboard");
+          }}
+          onCancel={() => {
+            setShowWebAuthn(false);
+            setError("");
+            setSecurityWarning("");
+          }}
+        />
+      )}
+
       {/* Normal Login Form */}
-      {!show2FA && (
+      {!show2FA && !showWebAuthn && (
         <>
           <form 
             className="mt-8 space-y-6" 
@@ -423,6 +448,20 @@ const Login: React.FC = () => {
                 aria-busy={isSubmitting}
               >
                 {isSubmitting ? "Giriş yapılıyor..." : "Giriş Yap"}
+              </Button>
+            </div>
+
+            {/* WebAuthn Butonu */}
+            <div className="mt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowWebAuthn(true)}
+                disabled={isSubmitting || !email}
+                className="w-full py-3 text-base font-medium"
+              >
+                <FaFingerprint className="w-5 h-5 mr-2" />
+                Biyometrik Giriş
               </Button>
             </div>
           </form>

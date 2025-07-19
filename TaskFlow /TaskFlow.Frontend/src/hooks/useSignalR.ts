@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import * as signalR from '@microsoft/signalr';
 import { tokenManager } from '../services/api';
 import { useToast } from './useToast'; // useToast hookunu import et
@@ -129,7 +129,77 @@ const useSignalR = () => {
     };
   }, [connection, showSuccess, showError, showInfo]); // useToast bağımlılıklarını ekle
 
-  return { isConnected, connection };
+  // Real-time task updates
+  const sendTaskUpdate = useCallback((taskId: number, taskTitle: string, isCompleted: boolean) => {
+    if (connection) {
+      connection.invoke("TaskUpdated", taskId, taskTitle, isCompleted);
+    }
+  }, [connection]);
+
+  const sendTaskCreated = useCallback((taskId: number, taskTitle: string, categoryId: number) => {
+    if (connection) {
+      connection.invoke("TaskCreated", taskId, taskTitle, categoryId);
+    }
+  }, [connection]);
+
+  const sendTaskDeleted = useCallback((taskId: number, taskTitle: string) => {
+    if (connection) {
+      connection.invoke("TaskDeleted", taskId, taskTitle);
+    }
+  }, [connection]);
+
+  // Real-time dashboard updates
+  const connectToDashboard = useCallback(() => {
+    if (connection) {
+      connection.invoke("ConnectToDashboard");
+    }
+  }, [connection]);
+
+  const disconnectFromDashboard = useCallback(() => {
+    if (connection) {
+      connection.invoke("DisconnectFromDashboard");
+    }
+  }, [connection]);
+
+  const connectToAnalyticsStream = useCallback((streamType: string) => {
+    if (connection) {
+      connection.invoke("ConnectToAnalyticsStream", streamType);
+    }
+  }, [connection]);
+
+  const disconnectFromAnalyticsStream = useCallback(() => {
+    if (connection) {
+      connection.invoke("DisconnectFromAnalyticsStream");
+    }
+  }, [connection]);
+
+  const sendDashboardUpdate = useCallback((updateType: string, data: any) => {
+    if (connection) {
+      connection.invoke("SendDashboardUpdate", updateType, data);
+    }
+  }, [connection]);
+
+  const sendAnalyticsData = useCallback((dataType: string, data: any) => {
+    if (connection) {
+      connection.invoke("SendAnalyticsData", dataType, data);
+    }
+  }, [connection]);
+
+  return { 
+    isConnected, 
+    connection,
+    // Task updates
+    sendTaskUpdate,
+    sendTaskCreated,
+    sendTaskDeleted,
+    // Dashboard updates
+    connectToDashboard,
+    disconnectFromDashboard,
+    connectToAnalyticsStream,
+    disconnectFromAnalyticsStream,
+    sendDashboardUpdate,
+    sendAnalyticsData
+  };
 };
 
 export default useSignalR; 

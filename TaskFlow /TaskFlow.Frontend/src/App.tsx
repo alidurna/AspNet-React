@@ -88,6 +88,9 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import PWAInstallBanner from "./components/ui/PWAInstallBanner";
 import usePWA from "./hooks/usePWA";
 import useSignalR from "./hooks/useSignalR";
+import { useAnalytics } from "./hooks/useAnalytics";
+import { useErrorMonitoring } from "./hooks/useErrorMonitoring";
+import { usePerformanceMetrics } from "./hooks/usePerformanceMetrics";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -175,6 +178,23 @@ function AuthAppRoutes() {
 function App() {
   const { isOnline, updateAvailable, updateServiceWorker } = usePWA();
   useSignalR(); // SignalR bağlantısını başlat
+  
+  // Analytics, Error Monitoring ve Performance Metrics
+  const analytics = useAnalytics({
+    debug: import.meta.env.DEV,
+    endpoint: '/api/analytics'
+  });
+  
+  const errorMonitoring = useErrorMonitoring({
+    debug: import.meta.env.DEV,
+    endpoint: '/api/errors'
+  });
+  
+  const performanceMetrics = usePerformanceMetrics({
+    debug: import.meta.env.DEV,
+    endpoint: '/api/performance',
+    sampleRate: 0.1 // 10% of users
+  });
 
   return (
     <Provider store={store}>
@@ -199,8 +219,10 @@ function App() {
 
             {/* Offline Indicator */}
             {!isOnline && (
-              <div className="fixed top-0 left-0 right-0 z-40 bg-red-600 text-white p-2 text-center">
-                <span>🔴 Offline - İnternet bağlantınızı kontrol edin</span>
+              <div className="fixed top-0 left-0 right-0 z-40 bg-gray-50 border-b border-gray-200 p-3 text-center">
+                <span className="text-gray-600 text-sm">
+                  Çevrimdışı mod - İnternet bağlantınızı kontrol edin
+                </span>
               </div>
             )}
 
