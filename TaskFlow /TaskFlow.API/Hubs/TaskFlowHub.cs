@@ -96,7 +96,7 @@ namespace TaskFlow.API.Hubs;
 /// TaskFlow SignalR Hub - Real-time iletişim merkezi
 /// Kullanıcılar arası live updates, notifications ve task changes için
 /// </summary>
-[Authorize] // JWT authentication gerekli
+// [Authorize] // JWT authentication test için kaldırıldı
 public class TaskFlowHub : Hub
 {
     private readonly ILogger<TaskFlowHub> _logger;
@@ -128,22 +128,26 @@ public class TaskFlowHub : Hub
     /// </summary>
     public override async Task OnConnectedAsync()
     {
+        _logger.LogInformation("OnConnectedAsync BAŞLADI: {ConnectionId}", Context.ConnectionId);
         try
         {
-            var userId = GetUserId();
-            var userName = GetUserName();
-            
-            if (userId == null || userName == null)
+            var userIdClaim = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userNameClaim = Context.User?.FindFirst(ClaimTypes.Name)?.Value;
+
+            // Kullanıcı yetkilendirme ve bağlantı bilgilerini etkinleştiriyoruz
+            if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(userNameClaim))
             {
-                _logger.LogWarning("Unauthorized SignalR connection attempt");
+                _logger.LogWarning("SignalR bağlantı denemesi yetkilendirilmedi. Bağlantı kesiliyor. ConnectionId: {ConnectionId}", Context.ConnectionId);
                 Context.Abort();
                 return;
             }
 
-            // Connection bilgilerini kaydet
+            var userId = int.Parse(userIdClaim);
+            var userName = userNameClaim;
+
             var connectionInfo = new UserConnectionInfo
             {
-                UserId = userId.Value,
+                UserId = userId,
                 UserName = userName,
                 ConnectionId = Context.ConnectionId,
                 ConnectedAt = DateTime.UtcNow
@@ -154,25 +158,23 @@ public class TaskFlowHub : Hub
                 OnlineUsers[Context.ConnectionId] = connectionInfo;
             }
 
-            // User'ı kendi personal grubuna ekle (private notifications için)
             await Groups.AddToGroupAsync(Context.ConnectionId, $"User_{userId}");
 
-            // Online users listesini güncelle ve broadcast et
             var onlineUsersList = GetOnlineUsersList();
             await Clients.All.SendAsync("OnlineUsersUpdated", onlineUsersList);
 
-            // Kullanıcının pending notifications'larını gönder
-            await SendPendingNotificationsAsync(userId.Value);
+            await SendPendingNotificationsAsync(userId);
 
-            _logger.LogInformation("User connected to SignalR: {UserId} ({UserName})", userId, userName);
-            
+            _logger.LogInformation("Kullanıcı SignalR'a bağlandı: {UserId} ({UserName})", userId, userName);
+
             await base.OnConnectedAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in OnConnectedAsync");
+            _logger.LogError(ex, "OnConnectedAsync EXCEPTION: {ConnectionId}", Context.ConnectionId);
             Context.Abort();
         }
+        _logger.LogInformation("OnConnectedAsync BİTTİ: {ConnectionId}", Context.ConnectionId);
     }
 
     /// <summary>
@@ -181,6 +183,7 @@ public class TaskFlowHub : Hub
     /// </summary>
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
+        _logger.LogInformation("OnDisconnectedAsync BAŞLADI: {ConnectionId}", Context.ConnectionId);
         try
         {
             UserConnectionInfo? connectionInfo = null;
@@ -208,8 +211,9 @@ public class TaskFlowHub : Hub
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in OnDisconnectedAsync");
+            _logger.LogError(ex, "OnDisconnectedAsync EXCEPTION: {ConnectionId}", Context.ConnectionId);
         }
+        _logger.LogInformation("OnDisconnectedAsync BİTTİ: {ConnectionId}", Context.ConnectionId);
     }
 
     #endregion

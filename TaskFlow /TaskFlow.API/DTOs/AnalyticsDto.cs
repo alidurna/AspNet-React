@@ -111,7 +111,7 @@ public class AnalyticsEventRequestDto
     /// <summary>
     /// Event properties
     /// </summary>
-    public JsonDocument? Properties { get; set; }
+    public string? Properties { get; set; }
 
     /// <summary>
     /// Event timestamp
@@ -157,7 +157,7 @@ public class AnalyticsEventRequestDto
     /// <summary>
     /// UTM parameters
     /// </summary>
-    public JsonDocument? UtmParameters { get; set; }
+    public string? UtmParameters { get; set; }
 
     /// <summary>
     /// Event duration in milliseconds
@@ -190,7 +190,7 @@ public class AnalyticsEventRequestDto
     /// <summary>
     /// Event tags
     /// </summary>
-    public JsonDocument? Tags { get; set; }
+    public string? Tags { get; set; }
 }
 
 /// <summary>
@@ -357,12 +357,12 @@ public class UserSessionRequestDto
     /// <summary>
     /// UTM parameters
     /// </summary>
-    public JsonDocument? UtmParameters { get; set; }
+    public string? UtmParameters { get; set; }
 
     /// <summary>
     /// Session properties
     /// </summary>
-    public JsonDocument? Properties { get; set; }
+    public string? Properties { get; set; }
 
     /// <summary>
     /// Session status
@@ -390,17 +390,17 @@ public class UserSessionRequestDto
     /// <summary>
     /// Security events
     /// </summary>
-    public JsonDocument? SecurityEvents { get; set; }
+    public string? SecurityEvents { get; set; }
 
     /// <summary>
     /// Performance metrics
     /// </summary>
-    public JsonDocument? PerformanceMetrics { get; set; }
+    public string? PerformanceMetrics { get; set; }
 
     /// <summary>
     /// Session tags
     /// </summary>
-    public JsonDocument? Tags { get; set; }
+    public string? Tags { get; set; }
 
     /// <summary>
     /// Session fingerprint
@@ -567,7 +567,7 @@ public class ErrorReportRequestDto
     /// <summary>
     /// Error context
     /// </summary>
-    public JsonDocument? Context { get; set; }
+    public string? Context { get; set; }
 
     /// <summary>
     /// Error fingerprint
@@ -617,27 +617,27 @@ public class ErrorReportRequestDto
     /// <summary>
     /// User actions leading to error
     /// </summary>
-    public JsonDocument? UserActions { get; set; }
+    public string? UserActions { get; set; }
 
     /// <summary>
     /// Performance metrics at error time
     /// </summary>
-    public JsonDocument? PerformanceMetrics { get; set; }
+    public string? PerformanceMetrics { get; set; }
 
     /// <summary>
     /// Network information at error time
     /// </summary>
-    public JsonDocument? NetworkInfo { get; set; }
+    public string? NetworkInfo { get; set; }
 
     /// <summary>
     /// Error tags
     /// </summary>
-    public JsonDocument? Tags { get; set; }
+    public string? Tags { get; set; }
 
     /// <summary>
     /// Error properties
     /// </summary>
-    public JsonDocument? Properties { get; set; }
+    public string? Properties { get; set; }
 
     /// <summary>
     /// IP address (anonymized)
@@ -885,42 +885,42 @@ public class PerformanceMetricRequestDto
     /// <summary>
     /// Memory usage information
     /// </summary>
-    public JsonDocument? MemoryInfo { get; set; }
+    public string? MemoryInfo { get; set; }
 
     /// <summary>
     /// Navigation timing information
     /// </summary>
-    public JsonDocument? NavigationTiming { get; set; }
+    public string? NavigationTiming { get; set; }
 
     /// <summary>
     /// Resource timing information
     /// </summary>
-    public JsonDocument? ResourceTiming { get; set; }
+    public string? ResourceTiming { get; set; }
 
     /// <summary>
     /// Paint timing information
     /// </summary>
-    public JsonDocument? PaintTiming { get; set; }
+    public string? PaintTiming { get; set; }
 
     /// <summary>
     /// Custom performance data
     /// </summary>
-    public JsonDocument? CustomData { get; set; }
+    public string? CustomData { get; set; }
 
     /// <summary>
     /// Performance alerts triggered
     /// </summary>
-    public JsonDocument? Alerts { get; set; }
+    public string? Alerts { get; set; }
 
     /// <summary>
     /// Performance tags
     /// </summary>
-    public JsonDocument? Tags { get; set; }
+    public string? Tags { get; set; }
 
     /// <summary>
     /// Performance properties
     /// </summary>
-    public JsonDocument? Properties { get; set; }
+    public string? Properties { get; set; }
 
     /// <summary>
     /// IP address (anonymized)
@@ -1278,7 +1278,7 @@ public class DashboardUpdateRequestDto
     /// <summary>
     /// Update data
     /// </summary>
-    public JsonDocument? Data { get; set; }
+    public string? Data { get; set; }
 
     /// <summary>
     /// Update priority
@@ -1323,7 +1323,7 @@ public class AnalyticsStreamRequestDto
     /// <summary>
     /// Stream filters
     /// </summary>
-    public JsonDocument? Filters { get; set; }
+    public string? Filters { get; set; }
 
     /// <summary>
     /// Whether to include real-time data
@@ -1350,7 +1350,7 @@ public class AnalyticsStreamRequestDto
     /// <summary>
     /// Stream tags
     /// </summary>
-    public JsonDocument? Tags { get; set; }
+    public string? Tags { get; set; }
 }
 
 /// <summary>
@@ -1368,7 +1368,7 @@ public class RealTimeAnalyticsDto
     /// <summary>
     /// Data value
     /// </summary>
-    public JsonDocument? Value { get; set; }
+    public string? Value { get; set; }
 
     /// <summary>
     /// Data timestamp
@@ -1395,7 +1395,7 @@ public class RealTimeAnalyticsDto
     /// <summary>
     /// Data tags
     /// </summary>
-    public JsonDocument? Tags { get; set; }
+    public string? Tags { get; set; }
 }
 
 /// <summary>

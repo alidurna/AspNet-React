@@ -126,7 +126,7 @@ public class AnalyticsEvent
     /// Event properties as JSON
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? Properties { get; set; }
+    public string? Properties { get; set; }
 
     /// <summary>
     /// Timestamp when the event occurred
@@ -174,7 +174,7 @@ public class AnalyticsEvent
     /// UTM parameters
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? UtmParameters { get; set; }
+    public string? UtmParameters { get; set; }
 
     /// <summary>
     /// Event duration in milliseconds
@@ -208,7 +208,7 @@ public class AnalyticsEvent
     /// Tags for categorization
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? Tags { get; set; }
+    public string? Tags { get; set; }
 
     /// <summary>
     /// Created timestamp

@@ -13,7 +13,7 @@ export default defineConfig({
     port: 3001,
     proxy: {
       "/api": {
-        target: "http://localhost:5281",
+        target: "http://localhost:5000", // Backend API portu 5000 olarak ayarlandı
         changeOrigin: true,
         secure: false,
       },

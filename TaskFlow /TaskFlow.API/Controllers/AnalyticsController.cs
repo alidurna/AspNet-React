@@ -223,7 +223,7 @@ public class AnalyticsController : ControllerBase
     /// <param name="pageSize">Page size</param>
     /// <returns>Paginated analytics events</returns>
     [HttpGet("events")]
-    public async Task<ActionResult<ApiResponseModel<AnalyticsEventResponseDto>>> GetEvents(
+    public async Task<ActionResult<ApiResponseModel<List<AnalyticsEventResponseDto>>>> GetEvents(
         [FromQuery] string? sessionId = null,
         [FromQuery] string? eventType = null,
         [FromQuery] int page = 1,
@@ -269,14 +269,13 @@ public class AnalyticsController : ControllerBase
                 })
                 .ToListAsync();
 
-            var response = new ApiResponseModel<AnalyticsEventResponseDto>
+            var response = new ApiResponseModel<List<AnalyticsEventResponseDto>>
             {
                 Success = true,
                 Data = events,
-                TotalCount = totalCount,
-                PageNumber = page,
-                PageSize = pageSize,
-                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+                Message = "Analytics events fetched successfully",
+                Errors = null,
+                Timestamp = DateTime.UtcNow
             };
 
             return Ok(response);
@@ -507,7 +506,6 @@ public class AnalyticsController : ControllerBase
                     IsAuthenticated = request.IsAuthenticated,
                     AuthenticationMethod = request.AuthenticationMethod,
                     SecurityEvents = request.SecurityEvents,
-                    PerformanceMetrics = request.PerformanceMetrics,
                     Tags = request.Tags,
                     Fingerprint = request.Fingerprint,
                     IsSuccessful = request.IsSuccessful,

@@ -128,7 +128,7 @@ public class ErrorReport
     /// Error context as JSON
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? Context { get; set; }
+    public string? Context { get; set; }
 
     /// <summary>
     /// Error fingerprint for deduplication
@@ -204,31 +204,31 @@ public class ErrorReport
     /// User actions leading to the error
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? UserActions { get; set; }
+    public string? UserActions { get; set; }
 
     /// <summary>
     /// Performance metrics at error time
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? PerformanceMetrics { get; set; }
+    public string? PerformanceMetrics { get; set; }
 
     /// <summary>
     /// Network information at error time
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? NetworkInfo { get; set; }
+    public string? NetworkInfo { get; set; }
 
     /// <summary>
     /// Error tags for categorization
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? Tags { get; set; }
+    public string? Tags { get; set; }
 
     /// <summary>
     /// Error properties as JSON
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? Properties { get; set; }
+    public string? Properties { get; set; }
 
     /// <summary>
     /// IP address of the user (anonymized)

@@ -83,6 +83,7 @@ namespace TaskFlow.API.Services
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
         private readonly ICacheService _cacheService;
+        private readonly MailService _mailService;
 
         #endregion
 
@@ -95,7 +96,8 @@ namespace TaskFlow.API.Services
             ILogger<UserService> logger,
             IConfiguration configuration,
             IMapper mapper,
-            ICacheService cacheService)
+            ICacheService cacheService,
+            MailService mailService)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _passwordService = passwordService ?? throw new ArgumentNullException(nameof(passwordService));
@@ -104,6 +106,7 @@ namespace TaskFlow.API.Services
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _cacheService = cacheService ?? throw new ArgumentNullException(nameof(cacheService));
+            _mailService = mailService ?? throw new ArgumentNullException(nameof(mailService));
         }
 
         #endregion
@@ -458,7 +461,6 @@ namespace TaskFlow.API.Services
                 var user = await GetUserByEmailAsync(passwordResetRequestDto.Email);
                 if (user == null)
                 {
-                    // Güvenlik için kullanıcı bulunamadığında da başarı döndürüyoruz
                     _logger.LogWarning("Password reset requested for non-existent email: {Email}", passwordResetRequestDto.Email);
                     return true;
                 }
@@ -469,18 +471,17 @@ namespace TaskFlow.API.Services
                     return true;
                 }
 
-                // Reset token oluştur
                 var resetToken = Guid.NewGuid().ToString("N");
                 user.PasswordResetToken = resetToken;
-                user.PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(1); // 1 saat geçerli
+                user.PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(1);
                 user.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
 
-                // TODO: Email gönderme servisi eklenecek
-                // await _emailService.SendPasswordResetEmailAsync(user.Email, resetToken);
+                // Şifre sıfırlama maili gönder
+                await _mailService.SendPasswordResetEmailAsync(user.Email, resetToken);
 
-                _logger.LogInformation("Password reset token generated for user: {Email}", passwordResetRequestDto.Email);
+                _logger.LogInformation("Password reset token generated and email sent for user: {Email}", passwordResetRequestDto.Email);
                 return true;
             }
             catch (Exception ex)

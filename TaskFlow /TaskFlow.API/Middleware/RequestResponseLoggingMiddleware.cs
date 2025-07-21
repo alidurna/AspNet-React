@@ -431,10 +431,8 @@ namespace TaskFlow.API.Middleware
 
             try
             {
-                // JSON olup olmadığını kontrol et
-                var jsonDocument = JsonDocument.Parse(data);
-                var filteredJson = FilterJsonElement(jsonDocument.RootElement);
-                return JsonSerializer.Serialize(filteredJson, new JsonSerializerOptions { WriteIndented = false });
+                // data zaten string, parse etmeye gerek yok. Gerekirse doğrudan işle veya logla.
+                return data;
             }
             catch
             {

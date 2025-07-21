@@ -73,7 +73,7 @@ export interface ApiResponse<T> {
  *
  * Tüm istekler bu base URL üzerinden yönlendirilir.
  */
-const API_BASE_URL = "/api"; // Frontend, istekleri Vite proxy'sine göndermeli
+const API_BASE_URL = "http://localhost:5281/api"; // Doğrudan backend'e istek at
 
 /**
  * Axios Instance Oluşturma
@@ -324,7 +324,7 @@ export const authAPI = {
     apiClient.post<ApiResponse<object>>("/auth/verify-email", verificationData).then(res => res.data),
 
   requestPasswordReset: (data: PasswordResetRequestDto): Promise<ApiResponse<object>> =>
-    apiClient.post<ApiResponse<object>>("/auth/password-reset-request", data).then(res => res.data),
+    apiClient.post<ApiResponse<object>>("/v1.0/users/password-reset-request", data).then(res => res.data),
 
   resetPassword: (data: PasswordResetDto): Promise<ApiResponse<object>> =>
     apiClient.post<ApiResponse<object>>("/auth/reset-password", data).then(res => res.data),

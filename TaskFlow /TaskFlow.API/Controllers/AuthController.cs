@@ -42,6 +42,7 @@ namespace TaskFlow.API.Controllers
         /// Normal kullanıcı girişi
         /// </summary>
         [HttpPost("login")]
+        [AllowAnonymous] // Giriş endpoint'i kimlik doğrulama gerektirmez
         public async Task<ActionResult<ApiResponseModel<AuthResponseDto>>> Login([FromBody] LoginDto loginDto)
         {
             try
@@ -349,6 +350,19 @@ namespace TaskFlow.API.Controllers
                     Message = "Sosyal medya girişi sırasında bir hata oluştu"
                 });
             }
+        }
+
+        /// <summary>
+        /// Kullanıcı çıkış (logout) endpoint'i
+        /// </summary>
+        [HttpPost("logout")]
+        [Authorize]
+        public IActionResult Logout()
+        {
+            // Burada refresh token veya session iptali yapılabilir.
+            // Şimdilik sadece başarılı yanıt dönüyoruz.
+            _logger.LogInformation("User logged out: {UserId}", User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            return Ok(new { success = true, message = "Çıkış başarılı" });
         }
 
         /// <summary>

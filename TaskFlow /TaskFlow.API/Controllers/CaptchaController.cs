@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using TaskFlow.API.DTOs;
 using TaskFlow.API.Interfaces;
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TaskFlow.API.Controllers
 {
@@ -11,6 +12,7 @@ namespace TaskFlow.API.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [ApiVersion("1.0")]
+    [AllowAnonymous] // Tüm captcha endpoint'leri anonim erişime açık
     public class CaptchaController : ControllerBase
     {
         private readonly ICaptchaService _captchaService;
@@ -27,7 +29,6 @@ namespace TaskFlow.API.Controllers
         /// <summary>
         /// Captcha konfigürasyonunu getir
         /// </summary>
-        /// <returns>Captcha ayarları</returns>
         [HttpGet("config")]
         public ActionResult<ApiResponseModel<CaptchaConfigDto>> GetConfig()
         {

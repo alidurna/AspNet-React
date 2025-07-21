@@ -166,13 +166,13 @@ public class UserSession
     /// UTM parameters
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? UtmParameters { get; set; }
+    public string? UtmParameters { get; set; }
 
     /// <summary>
     /// Session properties as JSON
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? Properties { get; set; }
+    public string? Properties { get; set; }
 
     /// <summary>
     /// Session status (active, ended, expired)
@@ -203,19 +203,13 @@ public class UserSession
     /// Security events during session
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? SecurityEvents { get; set; }
-
-    /// <summary>
-    /// Performance metrics for the session
-    /// </summary>
-    [Column(TypeName = "jsonb")]
-    public JsonDocument? PerformanceMetrics { get; set; }
+    public string? SecurityEvents { get; set; }
 
     /// <summary>
     /// Session tags for categorization
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? Tags { get; set; }
+    public string? Tags { get; set; }
 
     /// <summary>
     /// Session fingerprint for deduplication

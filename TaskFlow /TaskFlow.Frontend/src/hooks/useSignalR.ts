@@ -4,21 +4,15 @@ import { tokenManager } from '../services/api';
 import { useToast } from './useToast'; // useToast hookunu import et
 
 /**
- * useSignalR Hook
- * 
- * Bu özel React Hook'u, SignalR hub'ına bağlantıyı yönetir ve gerçek zamanlı bildirimleri dinler.
- * Kullanıcının kimlik doğrulama durumuna göre bağlantıyı kurar veya keser.
- * 
- * Özellikler:
- * - SignalR bağlantısının başlatılması ve yönetimi.
- * - JWT token ile kimlik doğrulama.
- * - Sunucudan gelen "ReceiveNotification" ve "TaskUpdate" olaylarını dinleme.
- * - Bağlantı durumu (bağlandı/bağlanmadı) takibi.
- * - Otomatik yeniden bağlanma mekanizması (belirtilen bir gecikmeyle).
- * - useToast hook'u ile bildirim gösterimi.
- * 
- * @returns {Object} SignalR bağlantı durumu.
- * @returns {boolean} .isConnected - SignalR bağlantısının aktif olup olmadığını gösterir.
+ * useSignalR Hook (Gelişmiş)
+ *
+ * - SignalR bağlantısı kurulmadan önce JWT token'ın varlığını ve geçerliliğini kontrol eder.
+ * - Token yoksa veya geçersizse kullanıcıya toast ile uyarı gösterir ve bağlantı kurulmaz.
+ * - Bağlantı kurulurken kullanılan token'ı konsola yazar (debug için).
+ * - Otomatik yeniden bağlanma ve event dinleme özellikleri içerir.
+ *
+ * @author TaskFlow Development Team
+ * @version 2025
  */
 const useSignalR = () => {
   const [isConnected, setIsConnected] = useState(false);
@@ -28,14 +22,21 @@ const useSignalR = () => {
   useEffect(() => {
     const connect = async () => {
       const token = tokenManager.getToken();
+      const isValid = tokenManager.isTokenValid();
       if (!token) {
-        console.warn("SignalR: JWT token bulunamadı, bağlantı kurulamadı.");
+        showError("SignalR: Oturum bulunamadı. Lütfen tekrar giriş yapın.");
         setIsConnected(false);
         return;
       }
+      if (!isValid) {
+        showError("SignalR: Oturum süresi doldu. Lütfen tekrar giriş yapın.");
+        setIsConnected(false);
+        return;
+      }
+      // console.log("[SignalR] Kullanılan JWT token:", token); // Debug amaçlı log kaldırıldı
 
       // SignalR bağlantısı için backend URL'si (Proxy kullanılıyorsa /api ile başlamalı)
-      const hubUrl = '/api/hubs/taskflow'; 
+      const hubUrl = 'http://localhost:5281/api/v1.0/hubs/taskflow'; 
 
       const newConnection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {
@@ -127,7 +128,7 @@ const useSignalR = () => {
         console.log("SignalR: Bağlantı durduruldu.");
       }
     };
-  }, [connection, showSuccess, showError, showInfo]); // useToast bağımlılıklarını ekle
+  }, [showSuccess, showError, showInfo]); // useToast bağımlılıklarını ekle, connection bağımlılığı kaldırıldı.
 
   // Real-time task updates
   const sendTaskUpdate = useCallback((taskId: number, taskTitle: string, isCompleted: boolean) => {

@@ -56,7 +56,6 @@ import { captchaAPI } from "../services/api";
 import TwoFactorLogin from "../components/auth/TwoFactorLogin";
 import WebAuthnLogin from "../components/auth/WebAuthnLogin";
 import { FaFingerprint } from "react-icons/fa";
-import { FaFingerprint } from "react-icons/fa";
 
 /**
  * Login formu için Zod validation şeması

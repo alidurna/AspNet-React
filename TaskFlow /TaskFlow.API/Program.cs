@@ -81,6 +81,7 @@ using TaskFlow.API.Services;
 using TaskFlow.API.Interfaces;
 using TaskFlow.API.Extensions;
 using Asp.Versioning;
+using System.Text.Json;
 
 // ===== WEB APPLICATION BUILDER =====
 /*
@@ -127,14 +128,12 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowReactApp", policy =>
     {
         policy.WithOrigins(
-                "http://localhost:3000",  // React development server
-                "https://localhost:3000", // React HTTPS (if needed)
-                "http://localhost:5173",  // Vite development server
-                "https://localhost:5173"  // Vite HTTPS (if needed)
-              )
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+            "http://localhost:3000",
+            "http://localhost:3001"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
     });
 });
 
@@ -265,6 +264,9 @@ builder.Services.AddScoped<ICaptchaService, CaptchaService>();
 // WebAuthn Service - Biyometrik giriş için
 builder.Services.AddScoped<IWebAuthnService, WebAuthnService>();
 
+// Mail Service - E-posta gönderme için
+builder.Services.AddTransient<MailService>();
+
 // ===== CACHE SERVICES CONFIGURATION =====
 /*
  * Caching Layer - Performance optimizasyonu için önbellek servisleri
@@ -360,7 +362,10 @@ builder.Services.AddSignalR(options =>
         options.EnableDetailedErrors = true;
     }
 })
-.AddMessagePackProtocol(); // MessagePack protocol - daha hızlı serialization
+.AddJsonProtocol(options => { // JSON protokolünü açıkça kullan
+    options.PayloadSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    options.PayloadSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+});
 
 // JWT Authentication configuration
 builder.Services.AddAuthentication(options =>
@@ -434,6 +439,19 @@ builder.Services.AddAuthentication(options =>
             // Unauthorized response dönülürken
             var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
             logger.LogWarning("JWT Challenge triggered for path: {Path}", context.Request.Path);
+            return Task.CompletedTask;
+        },
+        // SignalR bağlantıları için query string'den token'ı oku
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+
+            if (!string.IsNullOrEmpty(accessToken) &&
+                (path.StartsWithSegments("/api/v1.0/hubs/taskflow")))
+            {
+                context.Token = accessToken; // Token'ı context'e set et
+            }
             return Task.CompletedTask;
         }
     };
@@ -665,7 +683,23 @@ app.MapControllers();
  * - Achievement notifications
  * - Typing indicators
  */
-app.MapHub<TaskFlow.API.Hubs.TaskFlowHub>("/api/v1.0/hubs/taskflow"); // Değiştirildi
+app.MapHub<TaskFlow.API.Hubs.TaskFlowHub>("/api/v1.0/hubs/taskflow").RequireCors("AllowReactApp"); // CORS policy uygulandı
+
+// Debug amaçlı: SignalR bağlantı kesilmelerini dinle
+app.Use(async (context, next) =>
+{
+    var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+    if (context.Request.Path.StartsWithSegments("/api/v1.0/hubs/taskflow") && context.WebSockets.IsWebSocketRequest)
+    {
+        logger.LogDebug("SignalR WebSocket bağlantısı kuruluyor: {Path}", context.Request.Path);
+        // Bağlantı kesildiğinde tetiklenecek bir olay dinleyicisi ekle
+        context.Response.OnCompleted(async () =>
+        {
+            logger.LogDebug("SignalR WebSocket bağlantısı kesildi veya handshake tamamlanamadı. ConnectionId: {ConnectionId}", context.Connection.Id);
+        });
+    }
+    await next();
+});
 
 // ===== ROOT ENDPOINT =====
 /*

@@ -171,49 +171,49 @@ public class PerformanceMetric
     /// Memory usage information
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? MemoryInfo { get; set; }
+    public string? MemoryInfo { get; set; }
 
     /// <summary>
     /// Navigation timing information
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? NavigationTiming { get; set; }
+    public string? NavigationTiming { get; set; }
 
     /// <summary>
     /// Resource timing information
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? ResourceTiming { get; set; }
+    public string? ResourceTiming { get; set; }
 
     /// <summary>
     /// Paint timing information
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? PaintTiming { get; set; }
+    public string? PaintTiming { get; set; }
 
     /// <summary>
     /// Custom performance data
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? CustomData { get; set; }
+    public string? CustomData { get; set; }
 
     /// <summary>
     /// Performance alerts triggered
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? Alerts { get; set; }
+    public string? Alerts { get; set; }
 
     /// <summary>
     /// Performance tags for categorization
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? Tags { get; set; }
+    public string? Tags { get; set; }
 
     /// <summary>
     /// Performance properties as JSON
     /// </summary>
     [Column(TypeName = "jsonb")]
-    public JsonDocument? Properties { get; set; }
+    public string? Properties { get; set; }
 
     /// <summary>
     /// IP address of the user (anonymized)
