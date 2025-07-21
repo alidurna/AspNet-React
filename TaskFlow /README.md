@@ -111,7 +111,7 @@ Bu repository, modern web geliştirme teknolojilerini kullanarak oluşturulmuş 
 ## 📸 TaskFlow UI Screenshots
 
 ### 🔐 Giriş Ekranı
-![TaskFlow Giriş Ekranı](https://github.com/user-attachments/assets/009ce77c-f645-44a8-b191-d7e8d21393a6)
+![TaskFlow Giriş Ekranı](https://github.com/user-attachments/assets/c07a75d1-5041-4acc-8782-4ba108303e39)
 *Modern ve kullanıcı dostu giriş arayüzü - Email/şifre ile giriş ve sosyal medya entegrasyonu*
 
 ### 📝 Kayıt Olma
