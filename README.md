@@ -2,16 +2,6 @@
 
 Bu repository, **ASP.NET Core** backend ve **React** frontend teknolojilerini birleştiren modern web uygulamaları koleksiyonudur.
 
-## 📋 İçindekiler
-
-- [Genel Bakış](#genel-bakış)
-- [Projeler](#projeler)
-- [Teknoloji Stack](#teknoloji-stack)
-- [Kurulum](#kurulum)
-- [Geliştirme](#geliştirme)
-- [Deployment](#deployment)
-- [Katkıda Bulunma](#katkıda-bulunma)
-
 ## 🎯 Genel Bakış
 
 Bu repository, modern web geliştirme pratiklerini kullanarak **full-stack** uygulamalar geliştirmek için tasarlanmıştır. Her proje, **ASP.NET Core** backend API'si ve **React** frontend uygulamasından oluşur.
