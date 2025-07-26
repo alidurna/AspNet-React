@@ -315,29 +315,29 @@ const Register: React.FC = () => {
           variant="card"
           className="mt-4"
         >
-          <div className="space-y-3 text-sm text-gray-600">
+          <div className="space-y-3 text-sm text-gray-600 dark:text-neutral-300">
             <div className="flex items-start space-x-2">
-              <span className="text-green-500 mt-0.5">✓</span>
+              <span className="text-green-500 mt-0.5 dark:text-green-400">✓</span>
               <span>En az 8 karakter uzunluğunda olmalı</span>
             </div>
             <div className="flex items-start space-x-2">
-              <span className="text-green-500 mt-0.5">✓</span>
+              <span className="text-green-500 mt-0.5 dark:text-green-400">✓</span>
               <span>Büyük ve küçük harfler içermeli</span>
             </div>
             <div className="flex items-start space-x-2">
-              <span className="text-green-500 mt-0.5">✓</span>
+              <span className="text-green-500 mt-0.5 dark:text-green-400">✓</span>
               <span>En az bir rakam içermeli</span>
             </div>
             <div className="flex items-start space-x-2">
-              <span className="text-green-500 mt-0.5">✓</span>
+              <span className="text-green-500 mt-0.5 dark:text-green-400">✓</span>
               <span>Özel karakterler (!@#$%^&*) ekleyebilirsiniz</span>
             </div>
             <div className="flex items-start space-x-2">
-              <span className="text-red-500 mt-0.5">✗</span>
+              <span className="text-red-500 mt-0.5 dark:text-red-400">✗</span>
               <span>Kişisel bilgilerinizi (ad, doğum tarihi) kullanmayın</span>
             </div>
             <div className="flex items-start space-x-2">
-              <span className="text-red-500 mt-0.5">✗</span>
+              <span className="text-red-500 mt-0.5 dark:text-red-400">✗</span>
               <span>Yaygın şifrelerden (123456, password) kaçının</span>
             </div>
           </div>
@@ -349,13 +349,13 @@ const Register: React.FC = () => {
             <input
               id="terms"
               type="checkbox"
-              className="h-5 w-5 text-primary-500 focus:ring-primary-300 border-neutral-300 rounded-lg transition-all duration-200 hover:border-primary-400"
+              className="h-5 w-5 text-primary-500 focus:ring-primary-300 border-neutral-300 rounded-lg transition-all duration-200 hover:border-primary-400 dark:border-neutral-600 dark:bg-neutral-700 dark:checked:bg-primary-600 dark:checked:border-primary-600 dark:focus:ring-offset-neutral-800"
               disabled={isSubmitting}
             />
           </div>
           <div className="ml-3 text-sm">
-            <label htmlFor="terms" className="font-light text-neutral-600 leading-relaxed">
-              <span className="text-neutral-500">
+            <label htmlFor="terms" className="font-light text-neutral-600 leading-relaxed dark:text-neutral-300">
+              <span className="text-neutral-500 dark:text-neutral-400">
                 Kullanım Şartları ve Gizlilik Politikası'nı kabul ediyorum
               </span>
             </label>
@@ -402,7 +402,7 @@ const Register: React.FC = () => {
           Zaten hesabınız var mı?{" "}
           <Link
             to="/login"
-            className="font-medium text-primary-500 hover:text-primary-600 transition-all duration-200 hover:underline"
+            className="font-medium text-primary-500 hover:text-primary-600 transition-all duration-200 hover:underline dark:text-primary-400 dark:hover:text-primary-300"
           >
             Giriş yapın
           </Link>

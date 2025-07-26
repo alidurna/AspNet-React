@@ -121,18 +121,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   // Loading state
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center dark:bg-transparent">
         {/* Loading Spinner */}
         <div className="flex flex-col items-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
-          <p className="text-neutral-600">Yükleniyor...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 dark:border-primary-400"></div>
+          <p className="text-neutral-600 dark:text-neutral-300">Yükleniyor...</p>
         </div>
       </div>
     );
   }
-
+                                             
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-neutral-50 dark:bg-transparent">
       {/* Sidebar */}
       <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
 

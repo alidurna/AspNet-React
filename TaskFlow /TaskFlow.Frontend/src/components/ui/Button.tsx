@@ -57,11 +57,11 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg hover:from-primary-600 hover:to-primary-700 focus:from-primary-600 focus:to-primary-700 hover:shadow-xl hover:-translate-y-0.5",
+        default: "bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg hover:from-primary-600 hover:to-primary-700 focus:from-primary-600 focus:to-primary-700 hover:shadow-xl hover:-translate-y-0.5 dark:from-primary-600 dark:to-primary-700 dark:hover:from-primary-700 dark:hover:to-primary-800",
         destructive: "bg-gradient-to-r from-error-500 to-error-600 text-white shadow-lg hover:from-error-600 hover:to-error-700 focus:from-error-600 focus:to-error-700 hover:shadow-xl hover:-translate-y-0.5",
-        outline: "border-2 border-neutral-200 bg-white text-neutral-700 shadow-sm hover:bg-neutral-50 hover:text-neutral-900 hover:border-neutral-300 hover:shadow-md hover:-translate-y-0.5",
+        outline: "border-2 border-neutral-100 bg-white text-neutral-700 shadow-sm hover:bg-neutral-50 hover:text-neutral-900 hover:border-neutral-200 hover:shadow-md hover:-translate-y-0.5 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:hover:border-neutral-600",
         secondary: "bg-gradient-to-r from-secondary-500 to-secondary-600 text-white shadow-lg hover:from-secondary-600 hover:to-secondary-700 focus:from-secondary-600 focus:to-secondary-700 hover:shadow-xl hover:-translate-y-0.5",
-        ghost: "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 hover:shadow-sm",
+        ghost: "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 hover:shadow-sm dark:text-neutral-200 dark:hover:bg-neutral-700 dark:hover:text-neutral-50",
         link: "text-primary-500 underline-offset-4 hover:underline",
       },
       size: {

@@ -123,7 +123,7 @@ const ProgressiveDisclosure: React.FC<ProgressiveDisclosureProps> = ({
     <svg
       className={`w-5 h-5 transition-transform duration-${animationDuration} ease-out ${
         isExpanded ? 'rotate-180' : ''
-      }`}
+      } text-gray-400 dark:text-neutral-500`}
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -143,20 +143,20 @@ const ProgressiveDisclosure: React.FC<ProgressiveDisclosureProps> = ({
     switch (variant) {
       case 'card':
         return {
-          container: 'bg-white border border-gray-200 rounded-lg shadow-sm',
-          header: 'px-4 py-3 hover:bg-gray-50 cursor-pointer',
-          content: 'px-4 pb-3 border-t border-gray-100'
+          container: 'bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-neutral-800 dark:border-neutral-700 dark:shadow-none',
+          header: 'px-4 py-3 hover:bg-gray-50 cursor-pointer dark:hover:bg-neutral-700',
+          content: 'px-4 pb-3 border-t border-gray-100 dark:border-neutral-800'
         };
       case 'minimal':
         return {
-          container: 'border-b border-gray-200',
-          header: 'py-2 hover:bg-gray-50 cursor-pointer',
+          container: 'border-b border-gray-200 dark:border-neutral-700',
+          header: 'py-2 hover:bg-gray-50 cursor-pointer dark:hover:bg-neutral-700',
           content: 'pb-2'
         };
       default:
         return {
-          container: 'bg-gray-50 rounded-lg',
-          header: 'px-4 py-3 hover:bg-gray-100 cursor-pointer',
+          container: 'bg-gray-50 rounded-lg dark:bg-neutral-800',
+          header: 'px-4 py-3 hover:bg-gray-100 cursor-pointer dark:hover:bg-neutral-700',
           content: 'px-4 pb-3'
         };
     }
@@ -178,15 +178,15 @@ const ProgressiveDisclosure: React.FC<ProgressiveDisclosureProps> = ({
       >
         <div className="flex items-center space-x-3">
           {icon && showIcon && (
-            <div className="text-gray-500">{icon}</div>
+            <div className="text-gray-500 dark:text-neutral-400">{icon}</div>
           )}
-          <h3 className="text-sm font-medium text-gray-900 leading-relaxed">
+          <h3 className="text-sm font-medium text-gray-900 leading-relaxed dark:text-neutral-200">
             {title}
           </h3>
         </div>
         
         {showIcon && (
-          <div className="text-gray-400 hover:text-gray-600 transition-colors duration-200">
+          <div className="text-gray-400 hover:text-gray-600 transition-colors duration-200 dark:text-neutral-500 dark:hover:text-neutral-400">
             {defaultIcon}
           </div>
         )}

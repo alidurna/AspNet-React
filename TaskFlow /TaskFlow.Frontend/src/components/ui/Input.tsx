@@ -124,7 +124,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-light text-neutral-600 mb-2 leading-relaxed"
+            className="block text-sm font-light text-neutral-600 mb-2 leading-relaxed dark:text-neutral-300"
           >
             {label}
           </label>
@@ -136,7 +136,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           {/* Sol Taraf İkon */}
           {/* Opsiyonel - varsa input'un sol tarafında göster */}
           {icon && (
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 group-focus-within:text-primary-500 transition-colors duration-200">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 group-focus-within:text-primary-500 transition-colors duration-200 dark:text-neutral-500 dark:group-focus-within:text-primary-400">
               {icon}
             </div>
           )}
@@ -148,19 +148,22 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             type={inputType} // Dynamic type (password toggle için)
             className={`
               w-full px-4 py-3 border-2 border-neutral-100 rounded-xl shadow-sm
-              placeholder-neutral-400 text-neutral-700 text-base
-              focus:outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-300
+              placeholder-neutral-400 text-neutral-700 text-base bg-white
+              focus:outline-none focus:ring-4 focus:ring-primary-50 focus:border-primary-200
               hover:border-neutral-200 hover:shadow-md
               transition-all duration-300 ease-out
+              dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-400
+              dark:focus:ring-primary-900 dark:focus:border-primary-600
+              dark:hover:border-neutral-500 dark:hover:shadow-none
               ${icon ? "pl-10" : ""} // Sol ikon varsa padding ekle
               ${
                 showPasswordToggle ? "pr-10" : ""
               } // Şifre toggle varsa sağ padding
               ${
-                error ? "border-error-200 focus:ring-error-100 focus:border-error-300" : ""
+                error ? "border-error-200 focus:ring-error-100 focus:border-error-300 dark:border-error-500 dark:focus:ring-error-900 dark:focus:border-error-600" : ""
               } // Hata durumunda kırmızı border
               ${
-                isFocused ? "ring-4 ring-primary-100 border-primary-300 shadow-lg" : ""
+                isFocused ? "ring-4 ring-primary-50 border-primary-200 shadow-lg dark:ring-primary-900 dark:border-primary-600 dark:shadow-none" : ""
               } // Focus durumunda mavi ring
               ${className} // Dışarıdan gelen ek class'lar
             `}
@@ -182,7 +185,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           {showPasswordToggle && type === "password" && (
             <button
               type="button"
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:ring-offset-2 rounded-lg p-1.5 transition-all duration-200 hover:bg-neutral-50"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:ring-offset-2 rounded-lg p-1.5 transition-all duration-200 hover:bg-neutral-50 dark:text-neutral-500 dark:hover:text-neutral-400 dark:focus:ring-primary-900 dark:focus:ring-offset-neutral-800 dark:hover:bg-neutral-700"
               onClick={() => setShowPassword(!showPassword)} // Şifre görünürlüğünü toggle et
               aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
               aria-pressed={showPassword}

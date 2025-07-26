@@ -100,6 +100,7 @@ import ConfirmModal from "../ui/ConfirmModal";
 import AdvancedSearchModal from "../search/AdvancedSearchModal";
 import { searchAPI } from "../../services/api"; // Eklendi
 import { useRef, useEffect, useCallback } from "react"; // Eklendi
+// import ThemeToggle from "../ui/ThemeToggle"; // Eklendi - Kaldırılacak
 
 // Debounce yardımcı fonksiyonu
 const debounce = (func: Function, delay: number) => {
@@ -151,7 +152,7 @@ const Header: React.FC<HeaderProps> = ({
         return;
       }
       try {
-        const response = await searchAPI.getSearchSuggestions(query);
+        const response = await searchAPI.getSuggestions(query); // getSearchSuggestions -> getSuggestions
         if (response.success && response.data) {
           setSuggestions(response.data.suggestions);
           setShowSuggestions(true);
@@ -246,13 +247,13 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
+    <header className="bg-white shadow-sm border-b border-gray-200 dark:bg-neutral-900/80 dark:shadow-md dark:shadow-neutral-950/30 dark:border-neutral-850/50 backdrop-blur-md">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-4">
             <button
               onClick={onSidebarToggle}
-              className="p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-neutral-400 dark:hover:text-neutral-300 dark:hover:bg-neutral-800 dark:focus:ring-primary-600"
             >
               <svg
                 className="w-6 h-6"
@@ -270,22 +271,22 @@ const Header: React.FC<HeaderProps> = ({
             </button>
 
             <div>
-              <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-neutral-200">{title}</h1>
 
               {breadcrumbs.length > 0 && (
-                <nav className="flex items-center space-x-1 text-sm text-gray-500 mt-1">
-                  <a href="/" className="hover:text-gray-700">
+                <nav className="flex items-center space-x-1 text-sm text-gray-500 mt-1 dark:text-neutral-400">
+                  <a href="/" className="hover:text-gray-700 dark:hover:text-neutral-300">
                     Ana Sayfa
                   </a>
                   {breadcrumbs.map((item, index) => (
                     <React.Fragment key={index}>
-                      <span className="mx-1">/</span>
+                      <span className="mx-1 dark:text-neutral-500">/</span>
                       {item.href ? (
-                        <a href={item.href} className="hover:text-gray-700">
+                        <a href={item.href} className="hover:text-gray-700 dark:hover:text-neutral-300">
                           {item.name}
                         </a>
                       ) : (
-                        <span className="text-gray-700 dark:text-gray-300">
+                        <span className="text-gray-700 dark:text-neutral-300">
                           {item.name}
                         </span>
                       )}
@@ -297,6 +298,7 @@ const Header: React.FC<HeaderProps> = ({
           </div>
 
           <div className="flex items-center space-x-4">
+            {/* Search Section (Desktop) */}
             <div className="relative flex items-center space-x-2">
               <form onSubmit={handleSearch} className="flex-grow relative">
                 <input
@@ -306,18 +308,17 @@ const Header: React.FC<HeaderProps> = ({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setShowSuggestions(true)} // Odaklandığında önerileri göster
-                  className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-neutral-800 dark:bg-neutral-850 dark:text-neutral-300 dark:placeholder-neutral-400 dark:focus:ring-primary-500"
                 />
                 {showSuggestions && suggestions.length > 0 && (
                   <div
                     ref={suggestionsRef}
-                    className="absolute top-full left-0 w-full max-w-xs bg-white border border-gray-300 rounded-md shadow-lg z-10 dark:bg-gray-700 dark:border-gray-600"
-                  >
+                    className="absolute top-full left-0 w-full max-w-xs bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 z-10 dark:bg-neutral-900/80 dark:ring-neutral-850/50 dark:shadow-xl backdrop-blur-md">
                     <ul className="py-1">
                       {suggestions.map((suggestion, index) => (
                         <li
                           key={index}
-                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer dark:hover:bg-gray-600 dark:text-gray-200"
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer dark:hover:bg-neutral-850 dark:text-neutral-200"
                           onClick={() => handleSelectSuggestion(suggestion)}
                         >
                           {suggestion}
@@ -329,8 +330,8 @@ const Header: React.FC<HeaderProps> = ({
               </form>
               <button
                 onClick={() => setIsSearchModalOpen(true)}
-                className={`p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  isSearchModalOpen ? "ring-2 ring-blue-500" : ""
+                className={`p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-neutral-400 dark:hover:text-neutral-300 dark:hover:bg-neutral-800 dark:focus:ring-primary-600 ${
+                  isSearchModalOpen ? "ring-2 ring-blue-500 dark:ring-primary-600" : ""
                 }`}
               >
                 <svg
@@ -350,19 +351,23 @@ const Header: React.FC<HeaderProps> = ({
               </button>
             </div>
 
+            {/* Theme Toggle - Sadece mobil için veya küçük boyutlarda - Kaldırılacak */}
+            {/* <ThemeToggle size="sm" className="md:hidden"/> */}
+
+            {/* User Menu / Profile Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full"
+                className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full dark:text-neutral-300 dark:hover:text-neutral-200 dark:focus:ring-primary-600"
               >
-                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-medium">
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-medium dark:bg-primary-800">
                   {user?.firstName?.charAt(0) || user?.email?.charAt(0) || "U"}
                 </div>
-                <span className="font-medium text-gray-700 dark:text-gray-300 hidden md:inline">
+                <span className="font-medium text-gray-700 dark:text-neutral-300 hidden md:inline">
                   {user?.firstName || "Misafir"}
                 </span>
                 <svg
-                  className={`w-4 h-4 transition-transform duration-200 ${
+                  className={`w-4 h-4 transition-transform duration-200 dark:text-neutral-400 ${
                     isUserMenuOpen ? "rotate-180" : ""
                   }`}
                   fill="none"
@@ -379,22 +384,26 @@ const Header: React.FC<HeaderProps> = ({
               </button>
 
               {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 z-10">
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 z-10 dark:bg-neutral-900/80 dark:shadow-xl dark:ring-neutral-850/50 backdrop-blur-md">
+                  {/* Desktop Theme Toggle - Sadece desktop için - Kaldırılacak */}
+                  {/* <div className="px-4 py-2 hidden md:block">
+                    <ThemeToggle size="sm" showLabel={true} className="w-full justify-start py-2 px-3 text-sm font-medium rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-700 dark:text-neutral-200 dark:hover:text-neutral-100"/>
+                  </div> */}
                   <a
                     href="/profile"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-neutral-200 dark:hover:bg-neutral-850/50"
                   >
                     Profil
                   </a>
                   <a
                     href="/settings"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-neutral-200 dark:hover:bg-neutral-850/50"
                   >
                     Ayarlar
                   </a>
                   <button
                     onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-error-400 dark:hover:bg-error-900/60"
                   >
                     Çıkış Yap
                   </button>

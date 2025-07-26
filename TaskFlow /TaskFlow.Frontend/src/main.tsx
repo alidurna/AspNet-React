@@ -74,6 +74,7 @@ import "./index.css";
 import App from "./App.tsx";
 import ErrorBoundary from "./components/common/ErrorBoundary.tsx"; // Eklendi
 import environment from "./config/environment"; // Environment config import edildi
+import { ThemeProvider } from "./contexts/ThemeContext";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Provider } from "react-redux"; // Provider import edildi
@@ -97,7 +98,9 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <Provider store={store}> {/* Redux Provider eklendi */}
         <ErrorBoundary> {/* ErrorBoundary ile App'i sararız */}
-          <App />
+          <ThemeProvider>
+            <App />
+          </ThemeProvider>
         </ErrorBoundary>
       </Provider>
     </QueryClientProvider>

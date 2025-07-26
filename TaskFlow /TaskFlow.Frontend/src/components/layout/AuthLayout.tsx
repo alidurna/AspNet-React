@@ -12,7 +12,7 @@ interface AuthLayoutProps {
 const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, description, showLogo = true }) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-50 via-blue-50/30 to-indigo-50/20 p-4 sm:p-6 lg:p-8">
-      <Card className="max-w-md w-full space-y-6 p-8 border-0 rounded-3xl shadow-xl bg-white/95 backdrop-blur-xl">
+      <Card className="max-w-md w-full space-y-6 p-8 border-0 rounded-3xl shadow-xl bg-white/95 backdrop-blur-xl dark:bg-neutral-700/80 dark:border-neutral-600/40">
         {showLogo && (
           <div className="flex justify-center">
             <div className="h-12 w-12 bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-all duration-300">
@@ -34,10 +34,10 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, description, s
           </div>
         )}
         <div>
-          <h2 className="mt-6 text-center text-2xl font-light tracking-wide text-neutral-800 leading-relaxed">
+          <h2 className="mt-6 text-center text-2xl font-light tracking-wide text-neutral-800 leading-relaxed dark:text-neutral-200">
             {title}
           </h2>
-          <p className="mt-3 text-center text-sm text-neutral-500 font-light leading-relaxed">
+          <p className="mt-3 text-center text-sm text-neutral-500 font-light leading-relaxed dark:text-neutral-400">
             {description}
           </p>
         </div>

@@ -101,6 +101,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../hooks/useToast";
 import ConfirmModal from "../ui/ConfirmModal"; // ConfirmModal'ı import et
+import ThemeToggle from "../ui/ThemeToggle"; // ThemeToggle'u import et
 
 // Navigation menu items configuration
 const navigationItems = [
@@ -271,7 +272,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       {/* Sidebar */}
       <div
         className={`
-        fixed top-0 left-0 z-50 h-screen bg-white shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col
+        fixed top-0 left-0 z-50 h-screen bg-white transform transition-transform duration-300 ease-in-out flex flex-col
+        dark:bg-neutral-950/5 shadow-glass-dark backdrop-blur-3xl dark:border-neutral-900/5
         ${
           isOpen
             ? "w-64 translate-x-0"
@@ -280,10 +282,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       `}
       >
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-neutral-850">
           {/* Logo */}
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center dark:bg-primary-800">
               <svg
                 className="w-5 h-5 text-white"
                 fill="currentColor"
@@ -292,13 +294,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
                 <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h1 className="text-xl font-bold text-gray-900">TaskFlow</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-neutral-200">TaskFlow</h1>
           </div>
 
           {/* Mobile Close Button */}
           <button
             onClick={onToggle}
-            className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+            className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-neutral-400 dark:hover:text-neutral-300 dark:hover:bg-neutral-800/50"
           >
             <svg
               className="w-6 h-6"
@@ -317,133 +319,81 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         </div>
 
         {/* Main Navigation */}
-        <ul className="flex-1 py-4 space-y-2">
-          {navigationItems.map((item) =>
-            item.external ? (
-              <a
-                key={item.name}
-                href={item.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`flex items-center gap-3 px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition-colors duration-200 ${isActiveRoute(item.href) ? "bg-blue-500 text-white" : ""}`}
-              >
-                {item.icon}
-                <span>{item.name}</span>
-              </a>
-            ) : (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`flex items-center gap-3 px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 transition-colors duration-200 ${isActiveRoute(item.href) ? "bg-blue-500 text-white" : ""}`}
-              >
-                {item.icon}
-                <span>{item.name}</span>
-              </Link>
-            )
-          )}
+        <ul className="flex-1 py-4">
+          {navigationItems.map((item) => (
+            <li key={item.name}>
+              {item.external ? (
+                <a
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`flex items-center space-x-3 px-6 py-2 rounded-lg text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 dark:text-neutral-200 dark:hover:bg-neutral-900/10 dark:hover:text-neutral-50`}
+                >
+                  {item.icon}
+                  <span className="font-medium">{item.name}</span>
+                </a>
+              ) : (
+                <Link
+                  to={item.href}
+                  className={`flex items-center space-x-3 px-6 py-2 rounded-lg ${isActiveRoute(item.href)
+                      ? "bg-primary-100 text-primary-700 dark:bg-primary-900/10 dark:text-neutral-50"
+                      : "text-gray-700 hover:bg-primary-50 hover:text-primary-600 dark:text-neutral-200 dark:hover:bg-neutral-900/10 dark:hover:text-neutral-50"
+                    } transition-colors duration-200`}
+                >
+                  {item.icon}
+                  <span className="font-medium">{item.name}</span>
+                </Link>
+              )}
+            </li>
+          ))}
         </ul>
 
         {/* User Profile Section */}
-        {/* <div className="border-t border-gray-200 py-3 px-4">
-          
+        <div className="p-6 border-t border-gray-200 dark:border-neutral-850">
           <div className="flex items-center space-x-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-semibold text-sm">
-                {user?.firstName?.charAt(0)}
-                {user?.lastName?.charAt(0)}
-              </span>
+            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold text-lg dark:bg-neutral-800 dark:text-neutral-300">
+              {user?.firstName ? user.firstName.charAt(0).toUpperCase() : "U"}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
+            <div>
+              <p className="text-gray-900 font-semibold dark:text-neutral-200">
                 {user?.firstName} {user?.lastName}
               </p>
-              <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+              <p className="text-gray-500 text-sm dark:text-neutral-400">
+                {user?.email}
+              </p>
             </div>
           </div>
-
-          
-          <div className="space-y-2">
-            
-            <Link
-              to="/profile"
-              className="flex items-center space-x-3 px-3 py-1.5 rounded-md text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors duration-200 shadow-md hover:shadow-lg dark:bg-primary-700 dark:hover:bg-primary-800/80 dark:shadow-none dark:hover:shadow-none"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-              <span>Profil</span>
-            </Link>
-
-            
-            <Link
-              to="/settings"
-              className="flex items-center space-x-3 px-3 py-1.5 rounded-md text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-              <span>Ayarlar</span>
-            </Link>
-
-            
-            <button
-              onClick={handleLogout}
-              className="flex items-center space-x-3 px-3 py-1.5 rounded-md text-sm text-red-600 hover:bg-red-50 hover:text-red-700 w-full text-left"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                />
-              </svg>
-              <span>Çıkış Yap</span>
-            </button>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+              />
+            </svg>
+            <span>Çıkış Yap</span>
+          </button>
+          <div className="mt-4 flex justify-center">
+            <ThemeToggle />
           </div>
-        </div> */}
+        </div>
       </div>
 
-      {/* Logout Confirmation Modal */}
       <ConfirmModal
         isOpen={isConfirmModalOpen}
-        onConfirm={handleConfirmLogout}
         onCancel={handleCancelLogout}
+        onConfirm={handleConfirmLogout}
         title="Çıkış Onayı"
-        message="Uygulamadan çıkış yapmak istediğinize emin misiniz?"
-        confirmButtonText="Evet, Çıkış Yap"
-        cancelButtonText="İptal Et"
+        message="Hesabınızdan çıkış yapmak istediğinize emin misiniz?"
       />
     </>
   );

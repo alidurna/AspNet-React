@@ -305,13 +305,13 @@ const Dashboard: React.FC = () => {
     <DashboardLayout title="Dashboard" breadcrumbs={[{ name: "Dashboard" }]}>
       {/* Welcome Section */}
       <div className="mb-8">
-        <div className="bg-gradient-to-r from-primary-50 to-secondary-50 rounded-2xl p-8 text-neutral-800 shadow-soft border border-primary-100/50">
+        <div className="rounded-2xl p-8 text-neutral-800 shadow-soft border dark:from-neutral-850 dark:to-neutral-900 dark:text-neutral-300 dark:shadow-none dark:border-neutral-850 dark:bg-neutral-900/10 backdrop-blur-xl backdrop-saturate-150">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-3xl font-light mb-3 tracking-wide">
                 Hoş Geldiniz, {user?.firstName}! 👋
               </h2>
-              <p className="text-lg font-light text-neutral-600">
+              <p className="text-lg font-light text-neutral-600 dark:text-neutral-400">
                 Bugün{" "}
                 {new Date().toLocaleDateString("tr-TR", {
                   weekday: "long",
@@ -321,7 +321,7 @@ const Dashboard: React.FC = () => {
                 })}
               </p>
             </div>
-            <div className="h-16 w-16 bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <div className="h-16 w-16 bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg dark:from-neutral-850 dark:via-neutral-900 dark:to-neutral-900 dark:shadow-none">
               <svg
                 className="h-8 w-8 text-white"
                 fill="none"
@@ -393,8 +393,8 @@ const Dashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Görev Tamamlama Grafiği */}
-        <Card className="p-8 shadow-soft rounded-2xl h-full border-0 bg-white/95 backdrop-blur-sm">
-          <h3 className="text-xl font-light text-neutral-800 mb-6 tracking-wide">
+        <Card className="p-8 shadow-soft rounded-2xl h-full border dark:bg-neutral-900/10 backdrop-blur-xl backdrop-saturate-150 dark:border-neutral-700/10">
+          <h3 className="text-xl font-light text-neutral-800 mb-6 tracking-wide dark:text-neutral-300">
             Görev Tamamlama Oranı
           </h3>
           {isStatsLoading ? (
@@ -402,7 +402,7 @@ const Dashboard: React.FC = () => {
               <LoadingSpinner />
             </div>
           ) : isStatsError || !statsResponse?.data ? (
-            <div className="flex items-center justify-center h-48 text-neutral-500 font-light">
+            <div className="flex items-center justify-center h-48 text-neutral-500 font-light dark:text-neutral-400">
               İstatistikler yüklenirken bir hata oluştu.
             </div>
           ) : (
@@ -414,8 +414,8 @@ const Dashboard: React.FC = () => {
         </Card>
 
         {/* Son Aktiviteler */}
-        <Card className="p-8 shadow-soft rounded-2xl h-full border-0 bg-white/95 backdrop-blur-sm">
-          <h3 className="text-xl font-light text-neutral-800 mb-6 tracking-wide">
+        <Card className="p-8 shadow-soft rounded-2xl h-full border dark:bg-neutral-900/10 backdrop-blur-xl backdrop-saturate-150 dark:border-neutral-700/10">
+          <h3 className="text-xl font-light text-neutral-800 mb-6 tracking-wide dark:text-neutral-300">
             Son Aktiviteler
           </h3>
           <div className="space-y-4">
@@ -423,13 +423,13 @@ const Dashboard: React.FC = () => {
               recentActivities.map((activity) => (
                 <div
                   key={activity.id}
-                  className="flex items-center space-x-4 p-3 rounded-xl hover:bg-neutral-50 transition-colors duration-200"
+                  className="flex items-center space-x-4 p-3 rounded-xl hover:bg-neutral-50 transition-colors duration-200 dark:hover:bg-neutral-800/50"
                 >
                   <div
                     className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${
                       activity.type === "completed"
-                        ? "bg-success-100 text-success-600"
-                        : "bg-primary-100 text-primary-600"
+                        ? "bg-success-100 text-success-600 dark:bg-success-900/60 dark:text-success-500"
+                        : "bg-primary-100 text-primary-600 dark:bg-primary-900/60 dark:text-primary-500"
                     }`}
                   >
                     {activity.type === "completed" ? (
@@ -462,47 +462,49 @@ const Dashboard: React.FC = () => {
                       </svg>
                     )}
                   </div>
-                  <p className="text-sm text-neutral-700 font-light">
-                    <span className="font-medium">{activity.action}</span>:{" "}
+                  <p className="text-neutral-700 text-sm font-light dark:text-neutral-400">
+                    <span className="font-medium dark:text-neutral-300">{activity.action}</span>:{" "}
                     {activity.task} -{" "}
-                    <span className="text-neutral-500">{activity.time}</span>
+                    <span className="text-neutral-500 dark:text-neutral-400">{activity.time}</span>
                   </p>
                 </div>
               ))
             ) : (
-              <p className="text-neutral-500 font-light">Henüz bir aktivite yok.</p>
+              <p className="text-neutral-500 font-light dark:text-neutral-400">Henüz bir aktivite yok.</p>
             )}
           </div>
         </Card>
       </div>
 
       {/* Hızlı İşlemler */}
-      <h2 className="text-2xl font-light text-neutral-800 mb-6 mt-8 tracking-wide">
+      <h2 className="text-2xl font-light text-neutral-800 mb-6 mt-8 tracking-wide dark:text-neutral-200">
         Hızlı İşlemler
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {quickActions.map((action, index) => (
           <Card
             key={index}
-            className="p-8 shadow-soft rounded-2xl flex flex-col items-start space-y-4 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 bg-white/95 backdrop-blur-sm cursor-pointer"
+            className="p-8 shadow-soft rounded-2xl flex flex-col items-start space-y-4 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border cursor-pointer dark:bg-neutral-900/10 backdrop-blur-xl backdrop-saturate-150 dark:border-neutral-700/10 dark:hover:shadow-none"
             onClick={action.action}
           >
             <div
               className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-md ${
                 action.color === "blue"
-                  ? "bg-primary-100 text-primary-600"
+                  ? "bg-primary-100 text-primary-600 dark:bg-primary-900/60 dark:text-primary-500"
                   : action.color === "purple"
-                  ? "bg-secondary-100 text-secondary-600"
-                  : "bg-success-100 text-success-600"
+                  ? "bg-secondary-100 text-secondary-600 dark:bg-secondary-900/60 dark:text-secondary-500"
+                  : "bg-success-100 text-success-600 dark:bg-success-900/60 dark:text-success-500"
               }`}
             >
               {action.icon}
             </div>
-            <h3 className="text-lg font-medium text-neutral-800">
+            <h3 className="text-lg font-medium text-neutral-800 dark:text-neutral-200">
               {action.title}
             </h3>
-            <p className="text-sm text-neutral-600 font-light">{action.description}</p>
-            <Button variant="ghost" className="mt-2 text-primary-500 hover:text-primary-600">
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              {action.description}
+            </p>
+            <Button variant="ghost" className="mt-2 text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300">
               Git <span aria-hidden="true">→</span>
             </Button>
           </Card>

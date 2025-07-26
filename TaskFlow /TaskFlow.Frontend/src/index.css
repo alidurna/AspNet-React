@@ -71,7 +71,8 @@
            focus:ring-2 focus:ring-primary-500 focus:border-primary-500 
            placeholder-gray-400 text-gray-900 bg-white
            transition-all duration-200 ease-in-out
-           disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed;
+           disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed
+           dark:border-neutral-800 dark:bg-neutral-850 dark:text-neutral-300 dark:placeholder-neutral-400;
   }
 
   /* Input Field with Error - Hatalı input stili */
@@ -89,7 +90,8 @@
   /* Card - Temel kart stili */
   .card {
     @apply bg-white rounded-xl border border-gray-200 shadow-sm 
-           hover:shadow-md transition-shadow duration-200 p-6;
+           hover:shadow-md transition-shadow duration-200 p-6
+           dark:bg-neutral-850 dark:border-neutral-800 dark:shadow-none;
   }
 
   /* Card with hover effect - Hover efektli kart */
@@ -99,7 +101,8 @@
 
   /* Card compact - Küçük padding'li kart */
   .card-compact {
-    @apply bg-white rounded-lg border border-gray-200 shadow-sm p-4;
+    @apply bg-white rounded-lg border border-gray-200 shadow-sm p-4
+           dark:bg-neutral-850 dark:border-neutral-800 dark:shadow-none;
   }
 
   /* ===== LAYOUT COMPONENTS ===== */
@@ -111,7 +114,8 @@
 
   /* Form Container - Form wrapper */
   .form-container {
-    @apply max-w-md mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200;
+    @apply max-w-md mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200
+           dark:bg-neutral-850 dark:border-neutral-800 dark:shadow-none;
   }
 
   /* ===== BACKGROUND COMPONENTS ===== */
@@ -161,7 +165,7 @@
 
   /* Divider - Ayırıcı çizgi */
   .divider {
-    @apply border-t border-gray-200 my-6;
+    @apply border-t border-gray-200 my-6 dark:border-neutral-800;
   }
 
   /* Badge - Küçük etiket */
@@ -194,11 +198,11 @@
 @layer base {
   /* HTML ve Body temel stilleri */
   html {
-    @apply scroll-smooth; /* Smooth scrolling */
+    @apply scroll-smooth dark:bg-neutral-900; /* Smooth scrolling ve karanlık mod arka planı */
   }
 
   body {
-    @apply font-sans text-gray-900 bg-gray-50 antialiased; /* Temel font ve arka plan rengi gri-50 */
+    @apply font-sans text-gray-900 bg-gray-50 antialiased dark:bg-neutral-900 dark:text-neutral-300;
   }
 
   /* Heading element'leri için temel stiller */
@@ -208,7 +212,7 @@
   h4,
   h5,
   h6 {
-    @apply font-semibold leading-tight; /* Font weight ve line height */
+    @apply font-semibold leading-tight dark:text-neutral-200;
   }
 
   /* Link element'leri için temel stiller */
@@ -227,15 +231,15 @@
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-gray-100; /* Scrollbar track rengi */
+    @apply bg-gray-100 dark:bg-neutral-850; /* Scrollbar track rengi */
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-gray-400 rounded-full; /* Scrollbar thumb rengi ve şekli */
+    @apply bg-gray-400 rounded-full dark:bg-neutral-700; /* Scrollbar thumb rengi ve şekli */
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-500; /* Scrollbar thumb hover rengi */
+    @apply bg-gray-500 dark:bg-neutral-600; /* Scrollbar thumb hover rengi */
   }
 }
 

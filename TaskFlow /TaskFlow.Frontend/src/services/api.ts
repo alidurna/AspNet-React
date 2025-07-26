@@ -34,6 +34,13 @@ import type {
   CaptchaVerification,
   Login2FARequest,
   LoginRecoveryRequest,
+  WebAuthnStatus,
+  WebAuthnRegistrationRequest,
+  WebAuthnRegistrationResponse,
+  WebAuthnRegistrationComplete,
+  WebAuthnAuthenticationRequest,
+  WebAuthnAuthenticationResponse,
+  WebAuthnAuthenticationComplete,
 } from "../types/auth.types";
 
 import type { AttachmentDto, UploadLimitsDto } from "../types/file.types";
@@ -449,6 +456,9 @@ export const categoriesAPI = {
 export const searchAPI = {
   getSuggestions: (query: string): Promise<ApiResponse<SearchSuggestionsResponse>> =>
     apiClient.get<ApiResponse<SearchSuggestionsResponse>>("/search/suggestions", { params: { query } }).then(res => res.data),
+
+  globalSearch: (data: { query: string; includeUsers: boolean }): Promise<ApiResponse<any>> =>
+    apiClient.get<ApiResponse<any>>("/search/global", { params: data }).then(res => res.data),
 };
 
 // 2FA API Methods

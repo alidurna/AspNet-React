@@ -374,7 +374,7 @@ const Login: React.FC = () => {
                 <input
                   id="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 text-primary-500 focus:ring-primary-300 border-neutral-300 rounded transition-all duration-200 hover:border-primary-400"
+                  className="h-4 w-4 text-primary-500 focus:ring-primary-300 border-neutral-300 rounded transition-all duration-200 hover:border-primary-400 dark:border-neutral-600 dark:bg-neutral-700 dark:checked:bg-primary-600 dark:checked:border-primary-600 dark:focus:ring-offset-neutral-800"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                   disabled={isSubmitting}
@@ -382,7 +382,7 @@ const Login: React.FC = () => {
                 />
                 <label
                   htmlFor="remember-me"
-                  className="ml-3 block text-sm font-light text-neutral-600 hover:text-neutral-700 transition-colors duration-200 cursor-pointer"
+                  className="ml-3 block text-sm font-light text-neutral-600 hover:text-neutral-700 transition-colors duration-200 cursor-pointer dark:text-neutral-300 dark:hover:text-neutral-200"
                 >
                   Beni hatırla
                 </label>
@@ -394,7 +394,7 @@ const Login: React.FC = () => {
               <div className="text-sm">
                 <Link
                   to="/forgot-password"
-                  className="font-medium text-primary-500 hover:text-primary-600 transition-all duration-200 hover:underline"
+                  className="font-medium text-primary-500 hover:text-primary-600 transition-all duration-200 hover:underline dark:text-primary-400 dark:hover:text-primary-300"
                 >
                   Şifremi unuttum
                 </Link>
@@ -482,7 +482,7 @@ const Login: React.FC = () => {
               Hesabınız yok mu?{" "}
               <Link
                 to="/register"
-                className="font-medium text-primary-500 hover:text-primary-600 transition-all duration-200 hover:underline"
+                className="font-medium text-primary-500 hover:text-primary-600 transition-all duration-200 hover:underline dark:text-primary-400 dark:hover:text-primary-300"
               >
                 Kayıt olun
               </Link>

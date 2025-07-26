@@ -146,6 +146,7 @@ const Card: React.FC<CardProps> = ({
     <div
       className={`
         bg-white/95 backdrop-blur-xl rounded-3xl border border-white/20 
+        dark:bg-neutral-800/95 dark:backdrop-blur-xl dark:border-neutral-700/20 dark:shadow-none
         ${paddingClasses[padding]} // Seçilen padding boyutu
         ${shadowClasses[shadow]} // Seçilen gölge boyutu
         ${hoverClasses} // Hover efekti (varsa)
@@ -154,7 +155,7 @@ const Card: React.FC<CardProps> = ({
       onClick={onClick} // onClick eventi eklendi
       style={{ cursor: onClick ? "pointer" : "default" }} // onClick varsa cursor pointer yap
     >
-      {title && <h3 className="text-xl font-light mb-6 text-neutral-800">{title}</h3>} {/* Başlık */}
+      {title && <h3 className="text-xl font-light mb-6 text-neutral-800 dark:text-neutral-200">{title}</h3>} {/* Başlık */}
       {/* Card içeriği - children prop'u ile gelen tüm içerik */}
       {children}
     </div>

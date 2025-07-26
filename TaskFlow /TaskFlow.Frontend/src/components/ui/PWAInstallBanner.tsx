@@ -165,6 +165,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
         fixed bottom-6 left-4 right-4 z-50 
         bg-white/95 backdrop-blur-xl border border-white/20
         text-gray-800 rounded-3xl shadow-soft
+        dark:bg-neutral-800/95 dark:border-neutral-700/50 dark:text-neutral-200 dark:shadow-none
         transform transition-all duration-700 ease-out
         ${
           isVisible ? "translate-y-0 opacity-100 scale-100" : "translate-y-full opacity-0 scale-95"
@@ -178,15 +179,15 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-4">
             <div className="flex-shrink-0">
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl flex items-center justify-center border border-blue-100/50">
-                <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl flex items-center justify-center border border-blue-100/50 dark:from-primary-900 dark:to-neutral-900 dark:border-neutral-800">
+                <svg className="w-7 h-7 text-blue-500 dark:text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
               </div>
             </div>
             <div>
-              <h3 className="font-semibold text-lg text-gray-900 mb-1">TaskFlow Uygulaması</h3>
-              <p className="text-gray-600 text-sm font-light">
+              <h3 className="font-semibold text-lg text-gray-900 mb-1 dark:text-neutral-50">TaskFlow Uygulaması</h3>
+              <p className="text-gray-600 text-sm font-light dark:text-neutral-300">
                 Daha hızlı erişim için yükle
               </p>
             </div>
@@ -195,7 +196,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
           {/* Close Button */}
           <button
             onClick={handleDismiss}
-            className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-xl hover:bg-gray-50"
+            className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-xl hover:bg-gray-50 dark:text-neutral-500 dark:hover:text-neutral-400 dark:hover:bg-neutral-700"
             aria-label="Kapat"
           >
             <svg
@@ -217,28 +218,28 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
         {/* Benefits */}
         <div className="mb-6 space-y-3">
           <div className="flex items-center space-x-3 text-sm">
-            <div className="w-6 h-6 bg-green-50 rounded-full flex items-center justify-center">
-              <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+            <div className="w-6 h-6 bg-green-50 rounded-full flex items-center justify-center dark:bg-green-800/20">
+              <svg className="w-3 h-3 text-green-500 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
             </div>
-            <span className="text-gray-700 font-light">Offline çalışma</span>
+            <span className="text-gray-700 font-light dark:text-neutral-300">Offline çalışma</span>
           </div>
           <div className="flex items-center space-x-3 text-sm">
-            <div className="w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center">
-              <svg className="w-3 h-3 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+            <div className="w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center dark:bg-blue-800/20">
+              <svg className="w-3 h-3 text-blue-500 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
             </div>
-            <span className="text-gray-700 font-light">Anlık bildirimler</span>
+            <span className="text-gray-700 font-light dark:text-neutral-300">Anlık bildirimler</span>
           </div>
           <div className="flex items-center space-x-3 text-sm">
-            <div className="w-6 h-6 bg-purple-50 rounded-full flex items-center justify-center">
-              <svg className="w-3 h-3 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+            <div className="w-6 h-6 bg-purple-50 rounded-full flex items-center justify-center dark:bg-purple-800/20">
+              <svg className="w-3 h-3 text-purple-500 dark:text-purple-400" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
             </div>
-            <span className="text-gray-700 font-light">Daha hızlı yükleme</span>
+            <span className="text-gray-700 font-light dark:text-neutral-300">Daha hızlı yükleme</span>
           </div>
         </div>
 
@@ -262,7 +263,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
       </div>
 
       {/* Subtle progress indicator */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-b-3xl opacity-20" />
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-b-3xl opacity-20 dark:from-primary-700 dark:to-primary-900 dark:opacity-30" />
     </div>
   );
 };

@@ -73,8 +73,10 @@ module.exports = {
           500: "#737373", // Orta gri
           600: "#525252",
           700: "#404040",
-          800: "#262626",
-          900: "#171717", // Çok koyu gri
+          800: "#333333", // Daha soft ve pure dark grey
+          850: "#2A2A2A", // Main element background - daha soft
+          900: "#212121", // Main background - deep, subtle dark grey
+          950: "#171717", // Deepest background, almost black with a hint of grey
         },
 
         // Success renk paleti - Başarı mesajları için (yeşil tonları)
@@ -172,6 +174,7 @@ module.exports = {
         soft: "0 2px 15px 0 rgba(0, 0, 0, 0.1)", // Yumuşak gölge
         medium: "0 4px 25px 0 rgba(0, 0, 0, 0.15)", // Orta gölge
         strong: "0 8px 40px 0 rgba(0, 0, 0, 0.2)", // Güçlü gölge
+        "glass-dark": "0 4px 12px rgba(0, 0, 0, 0.1)", // Yeni cam efekti için yumuşak karanlık gölge
       },
 
       // ===== BORDER RADIUS =====
