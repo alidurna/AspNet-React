@@ -88,8 +88,7 @@ Bu repository, modern web geliştirme teknolojilerini kullanarak oluşturulmuş 
 ### 🎯 TaskFlow - Görev Yönetimi Sistemi
 **Modern task management platform with enterprise security**
 
-![TaskFlow Giriş Ekranı](https://github.com/user-attachments/assets/009ce77c-f645-44a8-b191-d7e8d21393a6)
-
+![TaskFlow Giriş Ekranı](https://github.com/user-attachments/assets/c07a75d1-5041-4acc-8782-4ba108303e39)
 #### ✨ Özellikler
 - 🔐 **Gelişmiş Güvenlik**: 2FA, WebAuthn, Captcha, Rate Limiting
 - 📊 **Dashboard**: Real-time statistics and charts
