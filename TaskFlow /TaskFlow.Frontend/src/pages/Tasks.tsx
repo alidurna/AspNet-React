@@ -19,6 +19,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import { tasksAPI, categoriesAPI } from "../services/api";
 import type {
   TodoTaskDto,
@@ -29,6 +30,7 @@ import type { CategoryDto } from "../types/category.types";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
 import { useToast } from "../hooks/useToast";
 import { useAnalytics } from "../hooks/useAnalytics";
+import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { 
   FaPlus, 
   FaSearch, 
@@ -44,10 +46,15 @@ import {
   FaStar,
   FaClock,
   FaCheckCircle,
-  FaExclamationTriangle
+  FaExclamationTriangle,
+  FaColumns
 } from "react-icons/fa";
 import { format, isToday, isTomorrow, isPast, parseISO } from "date-fns";
 import { tr } from "date-fns/locale";
+import KanbanBoard from "../components/tasks/KanbanBoard";
+import ProgressSlider from "../components/tasks/ProgressSlider";
+
+
 
 /**
  * Priority renk ve icon mapping'i
@@ -74,17 +81,28 @@ const Tasks: React.FC = () => {
     description: "",
     dueDate: "",
     priority: 1,
-    categoryId: 6,
+    categoryId: undefined,
   });
   const [selectedTaskIds, setSelectedTaskIds] = useState<number[]>([]);
   const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'kanban'>('grid');
 
   // Hooks
   const { showSuccess, showError } = useToast();
   const queryClient = useQueryClient();
   const analytics = useAnalytics();
+  
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onNewTask: () => handleOpenModal(),
+    onSearch: () => (document.querySelector('input[placeholder="Görevlerde ara..."]') as HTMLInputElement)?.focus(),
+    onToggleView: () => setViewMode(prev => prev === 'grid' ? 'list' : prev === 'list' ? 'kanban' : 'grid'),
+    onEscape: () => {
+      if (isModalOpen) handleCloseModal();
+      if (taskToDelete) setTaskToDelete(null);
+    }
+  });
 
   const pageSize = 12;
 
@@ -173,7 +191,7 @@ const Tasks: React.FC = () => {
         description: task.description || "",
         dueDate: task.dueDate ? format(parseISO(task.dueDate), 'yyyy-MM-dd') : "",
         priority: task.priority,
-        categoryId: task.categoryId || 6,
+        categoryId: task.categoryId,
       });
     } else {
       setCurrentTask(null);
@@ -196,7 +214,7 @@ const Tasks: React.FC = () => {
       description: "",
       dueDate: "",
       priority: 1,
-      categoryId: 6,
+      categoryId: undefined,
     });
   };
 
@@ -223,7 +241,7 @@ const Tasks: React.FC = () => {
       description: taskForm.description,
       dueDate: taskForm.dueDate ? new Date(taskForm.dueDate).toISOString() : undefined,
       priority: taskForm.priority || 1,
-      categoryId: taskForm.categoryId || 6,
+      categoryId: taskForm.categoryId,
     };
 
     if (currentTask) {
@@ -256,11 +274,27 @@ const Tasks: React.FC = () => {
     });
 
     try {
-      await tasksAPI.updateTaskProgress(taskId, isCompleted ? 100 : 0);
+      await tasksAPI.completeTask(taskId, isCompleted);
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       showSuccess(isCompleted ? "Görev tamamlandı!" : "Görev aktif hale getirildi!");
     } catch (error) {
       showError("Görev durumu güncellenirken hata oluştu");
+    }
+  };
+
+  const handleProgressChange = async (taskId: number, progress: number) => {
+    analytics.trackEvent('user_action', 'task_progress_updated', {
+      taskId,
+      progress,
+      action: progress === 0 ? 'start' : progress === 100 ? 'complete' : 'progress'
+    });
+
+    try {
+      await tasksAPI.updateTaskProgress(taskId, progress);
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      showSuccess(`Görev ilerlemesi %${progress} olarak güncellendi!`);
+    } catch (error) {
+      showError("Görev ilerlemesi güncellenirken hata oluştu");
     }
   };
 
@@ -289,16 +323,65 @@ const Tasks: React.FC = () => {
 
   if (isTasksLoading || isCategoriesLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="lg" />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-2"
+                  />
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.1 }}
+                    className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+                >
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                      <div className="w-3 h-3 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-16" />
+                      <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-20" />
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header Section */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm border-b border-gray-200/50 dark:border-gray-700/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
@@ -336,6 +419,16 @@ const Tasks: React.FC = () => {
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
                   </svg>
+                </button>
+                <button
+                  onClick={() => setViewMode('kanban')}
+                  className={`p-2 rounded-md transition-colors ${
+                    viewMode === 'kanban'
+                      ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  }`}
+                >
+                  <FaColumns className="w-4 h-4" />
                 </button>
               </div>
 
@@ -397,31 +490,45 @@ const Tasks: React.FC = () => {
             <p className="text-gray-500 dark:text-gray-400 mb-6">
               İlk görevinizi oluşturarak başlayın
             </p>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => handleOpenModal()}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               <FaPlus className="w-4 h-4" />
               Yeni Görev Ekle
-            </button>
+            </motion.button>
           </div>
+        ) : viewMode === 'kanban' ? (
+          <KanbanBoard
+            tasks={filteredTasks}
+            categories={categoriesResponse?.data || []}
+            onEdit={handleOpenModal}
+            onDelete={setTaskToDelete}
+            onToggleComplete={handleToggleComplete}
+            onProgressChange={handleProgressChange}
+          />
         ) : (
           <div className={
             viewMode === 'grid' 
               ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
               : "space-y-4"
           }>
-            {filteredTasks.map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                viewMode={viewMode}
-                onEdit={() => handleOpenModal(task)}
-                onDelete={() => setTaskToDelete(task.id)}
-                onToggleComplete={(isCompleted) => handleToggleComplete(task.id, isCompleted)}
-                categories={categoriesResponse?.data || []}
-              />
-            ))}
+            <AnimatePresence>
+              {filteredTasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  viewMode={viewMode}
+                  onEdit={() => handleOpenModal(task)}
+                  onDelete={() => setTaskToDelete(task.id)}
+                  onToggleComplete={(isCompleted) => handleToggleComplete(task.id, isCompleted)}
+                  onProgressChange={(taskId, progress) => handleProgressChange(taskId, progress)}
+                  categories={categoriesResponse?.data || []}
+                />
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </div>
@@ -456,10 +563,11 @@ const Tasks: React.FC = () => {
 // Task Card Component
 interface TaskCardProps {
   task: TodoTaskDto;
-  viewMode: 'grid' | 'list';
+  viewMode: 'grid' | 'list' | 'kanban';
   onEdit: () => void;
   onDelete: () => void;
   onToggleComplete: (isCompleted: boolean) => void;
+  onProgressChange: (taskId: number, progress: number) => void;
   categories: CategoryDto[];
 }
 
@@ -469,6 +577,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   onEdit,
   onDelete,
   onToggleComplete,
+  onProgressChange,
   categories,
 }: TaskCardProps) => {
   const [showMenu, setShowMenu] = useState(false);
@@ -477,7 +586,17 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
   if (viewMode === 'list') {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        whileHover={{ 
+          scale: 1.02,
+          boxShadow: "0 10px 25px rgba(0,0,0,0.1)"
+        }}
+        transition={{ duration: 0.2 }}
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow"
+      >
         <div className="flex items-center gap-4">
           {/* Checkbox */}
           <button
@@ -549,12 +668,32 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </button>
           </div>
         </div>
-      </div>
+
+        {/* Progress Slider for List View */}
+        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+          <ProgressSlider
+            currentProgress={task.progress}
+            onProgressChange={(progress) => onProgressChange(task.id, progress)}
+            isCompleted={task.isCompleted}
+          />
+        </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all duration-200 group">
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      whileHover={{ 
+        scale: 1.05,
+        boxShadow: "0 20px 40px rgba(0,0,0,0.1)"
+      }}
+      whileTap={{ scale: 0.95 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-all duration-200 group"
+    >
       {/* Card Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -625,6 +764,15 @@ const TaskCard: React.FC<TaskCardProps> = ({
         </p>
       )}
 
+      {/* Progress Slider */}
+      <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+        <ProgressSlider
+          currentProgress={task.progress}
+          onProgressChange={(progress) => onProgressChange(task.id, progress)}
+          isCompleted={task.isCompleted}
+        />
+      </div>
+
       {/* Card Footer */}
       <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
         <div className="flex items-center gap-2">
@@ -652,7 +800,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
            </div>
          )}
       </div>
-    </div>
+    </motion.div>
   );
 };
 

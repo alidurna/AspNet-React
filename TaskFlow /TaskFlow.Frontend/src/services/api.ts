@@ -52,6 +52,7 @@ import type {
   CreateTodoTaskDto,
   TodoTaskFilterDto,
   TasksResponse,
+  CompleteTaskDto,
 } from "../types/task.types";
 import type {
   CategoryDto,
@@ -404,22 +405,24 @@ export const tasksAPI = {
   deleteTask: (id: number): Promise<ApiResponse<object>> =>
     apiClient.delete<ApiResponse<object>>(`/todotasks/${id}`).then(res => res.data),
 
-  updateTaskProgress: (
-    id: number,
-    progress: number
-  ): Promise<ApiResponse<TodoTaskDto>> =>
-    apiClient.patch<ApiResponse<TodoTaskDto>>(
-      `/todotasks/${id}/progress/${progress}`,
-      {}
-    ).then(res => res.data),
+
 
   completeTask: (
     id: number,
     isCompleted: boolean
   ): Promise<ApiResponse<TodoTaskDto>> =>
     apiClient.patch<ApiResponse<TodoTaskDto>>(
-      `/todotasks/${id}/complete/${isCompleted}`,
-      {}
+      `/todotasks/${id}/complete`,
+      { isCompleted } as CompleteTaskDto
+    ).then(res => res.data),
+
+  updateTaskProgress: (
+    id: number,
+    progress: number
+  ): Promise<ApiResponse<TodoTaskDto>> =>
+    apiClient.patch<ApiResponse<TodoTaskDto>>(
+      `/todotasks/${id}/progress`,
+      { completionPercentage: progress }
     ).then(res => res.data),
 
   bulkDeleteTasks: (data: BulkDeleteTaskDto): Promise<ApiResponse<object>> =>

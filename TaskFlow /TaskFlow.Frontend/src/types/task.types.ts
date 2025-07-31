@@ -74,6 +74,12 @@ export interface TodoTaskFilterDto {
   PageSize?: number; // Changed from pageSize to match backend
 }
 
+export interface CompleteTaskDto {
+  isCompleted: boolean;
+  completionPercentage?: number;
+  completionNote?: string;
+}
+
 export interface TaskStatsDto {
   totalTasks: number;
   completedTasks: number;

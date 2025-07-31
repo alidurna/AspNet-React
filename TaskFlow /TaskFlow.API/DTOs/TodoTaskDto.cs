@@ -165,11 +165,9 @@ namespace TaskFlow.API.DTOs
     {
         /// <summary>
         /// Task'in ait olacağı kategori ID'si
-        /// Zorunlu alan - her task bir kategoriye ait olmalı
+        /// Opsiyonel alan - task kategori olmadan da oluşturulabilir
         /// </summary>
-        [Required(ErrorMessage = "Kategori seçimi zorunludur")]
-        [Range(1, int.MaxValue, ErrorMessage = "Geçerli bir kategori seçiniz")]
-        public int CategoryId { get; set; }
+        public int? CategoryId { get; set; }
 
         /// <summary>
         /// Üst task ID'si (opsiyonel)
