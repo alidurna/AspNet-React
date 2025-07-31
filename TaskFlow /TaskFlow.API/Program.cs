@@ -129,7 +129,8 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
             "http://localhost:3000",
-            "http://localhost:3001"
+            "http://localhost:3001",
+            "http://localhost:3002"
         )
         .AllowAnyHeader()
         .AllowAnyMethod()
@@ -582,6 +583,9 @@ var app = builder.Build();
  */
 await EnsureDatabaseUpdated(app);
 
+// Seed test data
+await SeedTestData(app);
+
 // ===== MIDDLEWARE PIPELINE CONFIGURATION =====
 /*
  * Middleware'ler HTTP request pipeline'ını oluşturur.
@@ -726,6 +730,22 @@ app.Run();
  * Database migration'ları kontrol eden ve uygulayan helper method.
  * Bu method uygulama başlarken çalışır.
  */
+async Task SeedTestData(WebApplication webApp)
+{
+    try
+    {
+        using var scope = webApp.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<TaskFlowDbContext>();
+        
+        await SeedData.SeedAsync(context);
+        Console.WriteLine("✅ Test data seeded successfully!");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Seed data error: {ex.Message}");
+    }
+}
+
 async Task EnsureDatabaseUpdated(WebApplication webApp)
 {
     try

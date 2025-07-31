@@ -65,7 +65,7 @@ import type {
 } from "../types/auth.types";
 import type { UploadLimitsDto } from "../types/file.types"; // Doğru yerden import edildi
 import { useToast } from "../hooks/useToast";
-import DashboardLayout from "../components/layout/DashboardLayout";
+
 import Card from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
@@ -410,32 +410,32 @@ const Profile: React.FC = () => {
   // Profil verisi yükleniyorsa loading spinner göster
   if (isLoading) {
     return (
-      <DashboardLayout title="Profil" breadcrumbs={[{ name: "Profil" }]}>
+      <div>
         <div className="flex justify-center items-center h-64">
           <LoadingSpinner />
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   // Profil verisi veya hata yoksa hata mesajı göster
   if (error || !profile?.data) {
     return (
-      <DashboardLayout title="Profil" breadcrumbs={[{ name: "Profil" }]}>
+      <div>
         <div className="text-center py-8">
           <p className="text-red-600 mb-4">
             Profil bilgileri yüklenirken bir hata oluştu
           </p>
           <Button onClick={() => window.location.reload()}>Yeniden Dene</Button>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   const userData = profile.data;
 
   return (
-    <DashboardLayout title="Profilim" breadcrumbs={[{ name: "Profilim" }]}>
+    <div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sol Sütun: Profil Bilgileri ve İstatistikler */}
         <div className="lg:col-span-2 space-y-6">
@@ -660,7 +660,7 @@ const Profile: React.FC = () => {
           </Card>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 };
 

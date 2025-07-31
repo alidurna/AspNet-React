@@ -99,7 +99,7 @@ createRoot(document.getElementById("root")!).render(
       <Provider store={store}> {/* Redux Provider eklendi */}
         <ErrorBoundary> {/* ErrorBoundary ile App'i sararız */}
           <ThemeProvider>
-            <App />
+          <App />
           </ThemeProvider>
         </ErrorBoundary>
       </Provider>

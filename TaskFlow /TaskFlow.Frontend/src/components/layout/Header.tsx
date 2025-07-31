@@ -247,7 +247,7 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 dark:bg-neutral-900/80 dark:shadow-md dark:shadow-neutral-950/30 dark:border-neutral-850/50 backdrop-blur-md">
+    <header className="bg-white shadow-lg border-b-2 border-blue-200 dark:bg-neutral-900/90 dark:shadow-xl dark:shadow-neutral-950/50 dark:border-neutral-700/50 backdrop-blur-md relative z-10">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-4">
@@ -271,7 +271,12 @@ const Header: React.FC<HeaderProps> = ({
             </button>
 
             <div>
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-neutral-200">{title}</h1>
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">TF</span>
+                </div>
+                <h1 className="text-2xl font-semibold text-gray-900 dark:text-neutral-200">{title}</h1>
+              </div>
 
               {breadcrumbs.length > 0 && (
                 <nav className="flex items-center space-x-1 text-sm text-gray-500 mt-1 dark:text-neutral-400">

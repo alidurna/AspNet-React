@@ -49,7 +49,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import DashboardLayout from "../components/layout/DashboardLayout";
+
 import StatsCard from "../components/ui/StatsCard";
 import { Button } from "../components/ui/Button";
 import Card from "../components/ui/Card";
@@ -302,7 +302,7 @@ const Dashboard: React.FC = () => {
   ];
 
   return (
-    <DashboardLayout title="Dashboard" breadcrumbs={[{ name: "Dashboard" }]}>
+    <div>
       {/* Welcome Section */}
       <div className="mb-8">
         <div className="rounded-2xl p-8 text-neutral-800 shadow-soft border dark:from-neutral-850 dark:to-neutral-900 dark:text-neutral-300 dark:shadow-none dark:border-neutral-850 dark:bg-neutral-900/10 backdrop-blur-xl backdrop-saturate-150">
@@ -510,7 +510,7 @@ const Dashboard: React.FC = () => {
           </Card>
         ))}
       </div>
-    </DashboardLayout>
+    </div>
   );
 };
 

@@ -130,7 +130,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       </div>
     );
   }
-                                             
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-transparent">
       {/* Sidebar */}

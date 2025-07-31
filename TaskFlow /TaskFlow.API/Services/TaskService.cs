@@ -130,14 +130,11 @@ namespace TaskFlow.API.Services
 
                 if (category == null)
                 {
-                    throw new InvalidOperationException("Geçersiz kategori");
+                    throw new InvalidOperationException($"Geçersiz kategori (ID: {createDto.CategoryId}, UserID: {userId})");
                 }
 
-                // Priority enum parsing
-                if (!Enum.TryParse<Priority>(createDto.Priority, out var priority))
-                {
-                    priority = Priority.Normal; // Default priority
-                }
+                // Priority artık int olduğu için enum'a çevirmemiz gerekiyor
+                var priority = (Priority)createDto.Priority;
 
                 // TodoTask entity oluştur
                 var task = new TodoTask

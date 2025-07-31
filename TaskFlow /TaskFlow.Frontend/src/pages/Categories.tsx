@@ -8,7 +8,7 @@ import {
   type ApiResponse,
 } from "../services/api";
 import { useToast } from "../hooks/useToast";
-import DashboardLayout from "../components/layout/DashboardLayout";
+
 import Card from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import Input from "../components/ui/Input";
@@ -176,37 +176,28 @@ const Categories: React.FC = () => {
 
   if (isLoading) {
     return (
-      <DashboardLayout
-        title="Kategoriler"
-        breadcrumbs={[{ name: "Kategoriler" }]}
-      >
+      <div>
         <div className="flex justify-center items-center h-64">
           <p>Kategoriler yükleniyor...</p>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   if (isError) {
     return (
-      <DashboardLayout
-        title="Kategoriler"
-        breadcrumbs={[{ name: "Kategoriler" }]}
-      >
+      <div>
         <div className="text-red-600 text-center py-8">
           Kategoriler yüklenirken bir hata oluştu: {error?.message}
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   const categories = categoriesResponse?.data || []; // data.data yerine data kullanıldı
 
   return (
-    <DashboardLayout
-      title="Kategoriler"
-      breadcrumbs={[{ name: "Kategoriler" }]}
-    >
+    <div>
       <div className="flex justify-end mb-6">
         <Button onClick={handleOpenCreateModal} variant="default">
           Yeni Kategori Ekle
@@ -348,7 +339,7 @@ const Categories: React.FC = () => {
         confirmButtonText="Evet, Sil"
         cancelButtonText="İptal Et"
       />
-    </DashboardLayout>
+    </div>
   );
 };
 

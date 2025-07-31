@@ -116,12 +116,14 @@ namespace TaskFlow.API.Services
         public CaptchaConfigDto GetCaptchaConfig()
         {
             var siteKey = _configuration["Captcha:SiteKey"] ?? "";
-            var isEnabled = !string.IsNullOrEmpty(siteKey) && !string.IsNullOrEmpty(_secretKey);
+            var isEnabled = !string.IsNullOrEmpty(siteKey) && !string.IsNullOrEmpty(_secretKey) && 
+                           siteKey != "6LcXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" && 
+                           _secretKey != "6LcXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
             
             return new CaptchaConfigDto
             {
                 SiteKey = siteKey,
-                SecretKey = _secretKey,
+                SecretKey = "", // Güvenlik için secret key'i client'a gönderme
                 Threshold = _threshold,
                 Enabled = isEnabled
             };
@@ -134,7 +136,9 @@ namespace TaskFlow.API.Services
         {
             var siteKey = _configuration["Captcha:SiteKey"] ?? "";
             return !string.IsNullOrEmpty(siteKey) && 
-                   !string.IsNullOrEmpty(_secretKey);
+                   !string.IsNullOrEmpty(_secretKey) &&
+                   siteKey != "6LcXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" && 
+                   _secretKey != "6LcXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
         }
     }
 } 

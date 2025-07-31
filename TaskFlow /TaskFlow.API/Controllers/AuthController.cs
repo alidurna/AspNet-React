@@ -11,11 +11,13 @@ using System.Text;
 using System.Net.Http;
 using System.Text.Json;
 using System.Security.Cryptography;
+using Asp.Versioning;
 
 namespace TaskFlow.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class AuthController : ControllerBase
     {
         private readonly IUserService _userService;

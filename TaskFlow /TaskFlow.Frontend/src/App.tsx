@@ -98,6 +98,7 @@ import Profile from "./pages/Profile";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import Tasks from "./pages/Tasks";
 import Categories from "./pages/Categories";
+import DashboardLayout from "./components/layout/DashboardLayout";
 import Statistics from "./pages/Statistics";
 import LoadingSpinner from "./components/ui/LoadingSpinner"; // LoadingSpinner eklendi
 import ForgotPassword from "./pages/ForgotPassword"; // Eklendi
@@ -151,12 +152,12 @@ function AuthAppRoutes() {
       />
 
       {/* Korumalı rotalar - ProtectedRoute bileşeni aracılığıyla kimlik doğrulaması gerektirir */}
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      <Route path="/security" element={<ProtectedRoute><Security /></ProtectedRoute>} />
-      <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-      <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
-      <Route path="/statistics" element={<ProtectedRoute><Statistics /></ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout title="Dashboard" breadcrumbs={[{ name: "Dashboard" }]}><Dashboard /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><DashboardLayout title="Profil" breadcrumbs={[{ name: "Profil" }]}><Profile /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/security" element={<ProtectedRoute><DashboardLayout title="Güvenlik" breadcrumbs={[{ name: "Güvenlik" }]}><Security /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/tasks" element={<ProtectedRoute><DashboardLayout title="Görevler" breadcrumbs={[{ name: "Görevler" }]}><Tasks /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/categories" element={<ProtectedRoute><DashboardLayout title="Kategoriler" breadcrumbs={[{ name: "Kategoriler" }]}><Categories /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/statistics" element={<ProtectedRoute><DashboardLayout title="İstatistikler" breadcrumbs={[{ name: "İstatistikler" }]}><Statistics /></DashboardLayout></ProtectedRoute>} />
 
       {/* Tüm diğer bilinmeyen rotalar için - kullanıcıyı kimlik doğrulama durumuna göre yönlendirir */}
       <Route

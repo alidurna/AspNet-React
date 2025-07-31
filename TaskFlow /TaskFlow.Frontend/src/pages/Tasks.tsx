@@ -1,277 +1,179 @@
-import React, { useState, useEffect } from "react";
+/**
+ * Tasks Sayfası Component - Modern UI/UX Tasarımı
+ *
+ * Bu dosya, kullanıcıların görevlerini yönetebilmesi için tasarlanmış
+ * modern ve responsive tasks sayfasını içerir.
+ *
+ * Ana Özellikler:
+ * - Modern card-based tasarım
+ * - Responsive grid layout
+ * - Smooth animasyonlar
+ * - İntuitive kullanıcı arayüzü
+ * - Real-time güncellemeler
+ * - Drag & drop desteği (gelecekte)
+ *
+ * @author TaskFlow Development Team
+ * @version 2.0.0
+ * @since 2024
+ */
+
+import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  tasksAPI,
-  categoriesAPI,
-  type TodoTaskDto,
-  type CategoryDto,
-  type CreateTodoTaskDto,
-  type UpdateTodoTaskDto,
-  type TodoTaskFilterDto,
-  type ApiResponse,
-} from "../services/api";
-import { Button } from "../components/ui/Button";
-import Input from "../components/ui/Input";
-import Card from "../components/ui/Card";
+import { tasksAPI, categoriesAPI } from "../services/api";
+import type {
+  TodoTaskDto,
+  CreateTodoTaskDto,
+  UpdateTodoTaskDto,
+} from "../types/task.types";
+import type { CategoryDto } from "../types/category.types";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
-import { Skeleton, SkeletonGroup } from "../components/ui/Skeleton";
-import ConfirmModal from "../components/ui/ConfirmModal";
-import TaskDetailModal from "../components/tasks/TaskDetailModal";
 import { useToast } from "../hooks/useToast";
-import { useOptimisticUpdate, useOptimisticList } from "../hooks/useOptimisticUpdate";
-import { useOfflineFirst } from "../hooks/useOfflineFirst";
 import { useAnalytics } from "../hooks/useAnalytics";
-import { format } from "date-fns";
-import useSignalR from "../hooks/useSignalR";
-
-// PaginationMetadata tipini tanımla
-interface PaginationMetadata {
-  currentPage: number;
-  totalPages: number;
-  pageSize: number;
-  totalCount: number;
-  hasPrevious: boolean;
-  hasNext: boolean;
-}
-
-// UpdateTaskProgressDto tipini tanımla
-interface UpdateTaskProgressDto {
-  progress: number;
-}
+import { 
+  FaPlus, 
+  FaSearch, 
+  FaFilter, 
+  FaCalendarAlt, 
+  FaFlag, 
+  FaUser,
+  FaEllipsisV,
+  FaCheck,
+  FaTimes,
+  FaEdit,
+  FaTrash,
+  FaStar,
+  FaClock,
+  FaCheckCircle,
+  FaExclamationTriangle
+} from "react-icons/fa";
+import { format, isToday, isTomorrow, isPast, parseISO } from "date-fns";
+import { tr } from "date-fns/locale";
 
 /**
- * Tasks sayfası, kullanıcının görevlerini yönetebileceği ana arayüzü sağlar.
- * Bu sayfa, görevleri listeler, yeni görevler oluşturmaya, mevcut görevleri düzenlemeye ve silmeye olanak tanır.
- * Ayrıca, görev ilerlemesini güncelleyebilir ve kategoriye göre filtreleme yapabilir.
- * React Query kütüphanesi, API çağrılarının ve durum yönetiminin verimli bir şekilde yapılmasını sağlar.
+ * Priority renk ve icon mapping'i
+ */
+const PRIORITY_CONFIG = {
+  0: { color: "text-gray-500", bg: "bg-gray-100", icon: FaFlag, label: "Düşük" },
+  1: { color: "text-blue-500", bg: "bg-blue-100", icon: FaFlag, label: "Normal" },
+  2: { color: "text-orange-500", bg: "bg-orange-100", icon: FaFlag, label: "Yüksek" },
+  3: { color: "text-red-500", bg: "bg-red-100", icon: FaExclamationTriangle, label: "Kritik" },
+};
+
+/**
+ * Tasks Sayfası Component
  */
 const Tasks: React.FC = () => {
-  const queryClient = useQueryClient();
-  const { showSuccess, showError } = useToast();
-
-  // Analytics tracking
-  const analytics = useAnalytics({
-    debug: import.meta.env.DEV,
-    endpoint: '/api/analytics'
-  });
-
-  const [page, setPage] = useState(1);
-  const [pageSize] = useState(10);
+  // State management
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentTask, setCurrentTask] = useState<TodoTaskDto | null>(null);
-  const [isViewingDetails, setIsViewingDetails] = useState(false); // Yeni state: Detay görüntüleme modunda mı?
-  const [selectedTaskIds, setSelectedTaskIds] = useState<number[]>([]); // Yeni state: Seçilen görev ID'leri
-  const [taskForm, setTaskForm] = useState<
-    CreateTodoTaskDto | UpdateTodoTaskDto
-  >({
-    // 'isCompleted' kaldırıldı
+  const [taskForm, setTaskForm] = useState<CreateTodoTaskDto | UpdateTodoTaskDto>({
     title: "",
     description: "",
     dueDate: "",
-    priority: "Low",
-    categoryId: undefined,
+    priority: 1,
+    categoryId: 6,
   });
-
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<number[]>([]);
   const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  // SignalR bağlantısı
-  const { connection } = useSignalR();
+  // Hooks
+  const { showSuccess, showError } = useToast();
+  const queryClient = useQueryClient();
+  const analytics = useAnalytics();
 
-  // Page view tracking
-  useEffect(() => {
-    analytics.trackPageView('Tasks Page');
-  }, [analytics]);
+  const pageSize = 12;
 
-  // Görevleri çekmek için React Query kullanımı
+  // API Queries
   const {
-    data: tasksData,
-    isLoading: isLoadingTasks,
+    data: tasksResponse,
+    isLoading: isTasksLoading,
     error: tasksError,
-  } = useQuery<ApiResponse<TodoTaskDto[]>, Error>({
+  } = useQuery({
     queryKey: ["tasks", page, pageSize, searchQuery, selectedCategory],
-    queryFn: async ({ queryKey }) => {
-      const [_key, page, pageSize, searchQuery, selectedCategory] = queryKey;
-      return tasksAPI.getTasks({
-        pageNumber: page as number,
-        pageSize: pageSize as number,
-        searchQuery: searchQuery as string,
-        categoryId: selectedCategory ? Number(selectedCategory) : undefined,
-      });
-    },
+    queryFn: () =>
+      tasksAPI.getTasks({
+        Page: page,
+        PageSize: pageSize,
+        SearchText: searchQuery,
+        CategoryId: selectedCategory ? Number(selectedCategory) : undefined,
+      }),
+    staleTime: 30000,
   });
 
-  // Offline-first yaklaşımı için hook
-  const offlineTasks = useOfflineFirst<TodoTaskDto[]>(
-    tasksData?.data || [],
-    {
-      cacheKey: 'tasks-cache',
-      cacheExpiry: 10 * 60 * 1000, // 10 dakika
-      strategy: 'stale-while-revalidate',
-      onSync: (data) => {
-        console.log('Tasks synced:', data);
-      },
-      onError: (error) => {
-        showError(`Senkronizasyon hatası: ${error.message}`);
-      }
-    }
-  );
-
-  // Optimistic updates için hook
-  const optimisticTasks = useOptimisticList<TodoTaskDto>(
-    tasksData?.data || [],
-    {
-      getId: (task) => task.id,
-      onSuccess: (data) => {
-        console.log('Optimistic update successful:', data);
-      },
-      onError: (error, originalData) => {
-        showError(`Optimistic update failed: ${error.message}`);
-        console.log('Rolling back to:', originalData);
-      }
-    }
-  );
-
-  // Kategorileri çekmek için React Query kullanımı
   const {
-    data: categories,
-    isLoading: isLoadingCategories,
-    error: categoriesError,
-  } = useQuery<
-    ApiResponse<CategoryDto[]>,
-    Error,
-    ApiResponse<CategoryDto[]>,
-    string[]
-  >(
-    { queryKey: ["categories"], queryFn: () => categoriesAPI.getCategories() } // queryFn düzeltildi
-  );
+    data: categoriesResponse,
+    isLoading: isCategoriesLoading,
+  } = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => categoriesAPI.getCategories(),
+    staleTime: 300000,
+  });
 
-  // Görev oluşturma mutasyonu
+  // Mutations
   const createTaskMutation = useMutation({
-    mutationFn: (newTask: CreateTodoTaskDto) => tasksAPI.createTask(newTask),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      showSuccess("Görev başarıyla oluşturuldu.");
-      setIsModalOpen(false);
-      setTaskForm({
-        title: "",
-        description: "",
-        dueDate: "",
-        priority: "Low",
-        categoryId: undefined,
-      });
+    mutationFn: (data: CreateTodoTaskDto) => {
+      console.log("🚀 Gönderilen veri:", data);
+      return tasksAPI.createTask(data);
     },
-    onError: (error) => {
-      showError(`Görev oluşturulurken hata oluştu: ${error.message}`);
+    onSuccess: (response) => {
+      showSuccess("Görev başarıyla oluşturuldu!");
+      setIsModalOpen(false);
+      handleCloseModal();
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      analytics.trackEvent('user_action', 'task_created', { taskId: response.data.id });
+    },
+    onError: (error: any) => {
+      console.error("Task creation error:", error);
+      const errorMessage = error.response?.data?.message || "Görev oluşturulurken hata oluştu";
+      showError(errorMessage);
     },
   });
 
-  // Görev güncelleme mutasyonu
   const updateTaskMutation = useMutation({
-    mutationFn: (updatedTask: UpdateTodoTaskDto & { id: number }) =>
-      tasksAPI.updateTask(updatedTask.id, updatedTask),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      showSuccess("Görev başarıyla güncellendi.");
+    mutationFn: ({ id, ...data }: UpdateTodoTaskDto & { id: number }) =>
+      tasksAPI.updateTask(id, data),
+    onSuccess: (response) => {
+      showSuccess("Görev başarıyla güncellendi!");
       setIsModalOpen(false);
-      setCurrentTask(null);
+      handleCloseModal();
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      analytics.trackEvent('user_action', 'task_updated', { taskId: response.data.id });
     },
-    onError: (error) => {
-      showError(`Görev güncellenirken hata oluştu: ${error.message}`);
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || "Görev güncellenirken hata oluştu";
+      showError(errorMessage);
     },
   });
 
-  // Görev silme mutasyonu
   const deleteTaskMutation = useMutation({
-    mutationFn: (taskId: number) => tasksAPI.deleteTask(taskId),
+    mutationFn: tasksAPI.deleteTask,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      showSuccess("Görev başarıyla silindi.");
-      setShowConfirmModal(false);
+      showSuccess("Görev başarıyla silindi!");
       setTaskToDelete(null);
-    },
-    onError: (error) => {
-      showError(`Görev silinirken hata oluştu: ${error.message}`);
-    },
-  });
-
-  // Görev ilerlemesi güncelleme mutasyonu
-  const updateTaskProgressMutation = useMutation({
-    mutationFn: (data: {
-      taskId: number;
-      updateProgressDto: UpdateTaskProgressDto;
-    }) => tasksAPI.updateTaskProgress(data.taskId, data.updateProgressDto.progress),
-    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      showSuccess("Görev ilerlemesi güncellendi.");
+      analytics.trackEvent('user_action', 'task_deleted', {});
     },
-    onError: (error) => {
-      showError(
-        `Görev ilerlemesi güncellenirken hata oluştu: ${(error as Error).message}`
-      );
-    },
-  });
-
-  // Toplu görev silme mutasyonu
-  const bulkDeleteTasksMutation = useMutation({
-    mutationFn: (taskIds: number[]) => tasksAPI.bulkDeleteTasks({ taskIds }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      showSuccess("Seçilen görevler başarıyla silindi.");
-      setSelectedTaskIds([]); // Seçimi temizle
-    },
-    onError: (error) => {
-      showError(`Toplu silme başarısız oldu: ${error.message}`);
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || "Görev silinirken hata oluştu";
+      showError(errorMessage);
     },
   });
 
-  // Toplu görev tamamlama mutasyonu
-  const bulkCompleteTasksMutation = useMutation({
-    mutationFn: (taskIds: number[]) => tasksAPI.bulkCompleteTasks({ taskIds }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      showSuccess("Seçilen görevler başarıyla tamamlandı.");
-      setSelectedTaskIds([]); // Seçimi temizle
-    },
-    onError: (error) => {
-      showError(`Toplu tamamlama başarısız oldu: ${error.message}`);
-    },
-  });
-
-  // SignalR TaskUpdate olayını dinle ve görevleri yeniden getir
-  useEffect(() => {
-    if (connection) {
-      const handleTaskUpdate = (data: any) => {
-        console.log("SignalR: Görev güncellemesi alındı:", data);
-        // Görevlerle ilgili herhangi bir güncelleme olduğunda 'tasks' query key'ini invalidate et
-        queryClient.invalidateQueries({ queryKey: ["tasks"] });
-        // İsteğe bağlı: Spesifik görev ID'sine göre güncellemeleri daha detaylı işleyebiliriz
-        // Ancak genel bir invalidate, tüm listeyi güncel tutmak için yeterli.
-      };
-
-      connection.on("TaskUpdate", handleTaskUpdate);
-
-      // Component unmount edildiğinde veya connection değiştiğinde event listener'ı temizle
-      return () => {
-        connection.off("TaskUpdate", handleTaskUpdate);
-      };
-    }
-  }, [connection, queryClient]);
-
-  const handleOpenModal = (task?: TodoTaskDto, viewOnly: boolean = false) => {
+  // Handlers
+  const handleOpenModal = (task?: TodoTaskDto) => {
     if (task) {
       setCurrentTask(task);
       setTaskForm({
         title: task.title,
         description: task.description || "",
-        dueDate: task.dueDate
-          ? new Date(task.dueDate).toISOString().split("T")[0]
-          : "",
+        dueDate: task.dueDate ? format(parseISO(task.dueDate), 'yyyy-MM-dd') : "",
         priority: task.priority,
-        categoryId: task.categoryId || undefined,
-        // isCompleted kaldırıldı
+        categoryId: task.categoryId || 6,
       });
     } else {
       setCurrentTask(null);
@@ -279,39 +181,37 @@ const Tasks: React.FC = () => {
         title: "",
         description: "",
         dueDate: "",
-        priority: "Low",
-        categoryId: undefined,
-        // isCompleted kaldırıldı
+        priority: 1,
+        categoryId: 6,
       });
     }
-    setIsViewingDetails(viewOnly); // Modalı detay görüntüleme modunda aç
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setCurrentTask(null);
-    setIsViewingDetails(false); // Modalı kapatırken detay modunu sıfırla
+    setTaskForm({
+      title: "",
+      description: "",
+      dueDate: "",
+      priority: 1,
+      categoryId: 6,
+    });
   };
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
 
-    if (name === "isCompleted") {
-      // isCompleted için özel durum
-      // isCompleted checkbox'ı doğrudan task.id ile handleToggleComplete'i çağırır, form state'ini güncellemez.
-      // Bu yüzden burada bir şey yapmaya gerek yok.
-      return;
-    }
-
     setTaskForm((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: type === "checkbox" ? checked :
+               name === "priority" ? parseInt(value) :
+               name === "categoryId" ? (value === "" ? undefined : parseInt(value)) :
+               value,
     }));
   };
 
@@ -321,12 +221,11 @@ const Tasks: React.FC = () => {
     const taskData = {
       title: taskForm.title,
       description: taskForm.description,
-      dueDate: taskForm.dueDate,
-      priority: taskForm.priority,
-      categoryId: taskForm.categoryId || undefined,
+      dueDate: taskForm.dueDate ? new Date(taskForm.dueDate).toISOString() : undefined,
+      priority: taskForm.priority || 1,
+      categoryId: taskForm.categoryId || 6,
     };
 
-    // Analytics tracking
     if (currentTask) {
       analytics.trackEvent('user_action', 'task_updated', {
         taskId: currentTask.id,
@@ -339,6 +238,7 @@ const Tasks: React.FC = () => {
         ...taskData,
       } as UpdateTodoTaskDto & { id: number });
     } else {
+      console.log("🚀 Gönderilen veri:", taskData);
       analytics.trackEvent('user_action', 'task_created', {
         priority: taskForm.priority,
         hasCategory: !!taskForm.categoryId,
@@ -348,489 +248,638 @@ const Tasks: React.FC = () => {
     }
   };
 
-  const handleDelete = () => {
-    if (taskToDelete !== null) {
-      analytics.trackEvent('user_action', 'task_deleted', {
-        taskId: taskToDelete
-      });
-      deleteTaskMutation.mutate(taskToDelete);
-    }
-  };
-
-  const handleSearch = () => {
-    analytics.trackEvent('search', 'task_search', {
-      query: searchQuery,
-      category: selectedCategory
-    });
-    setPage(1);
-    queryClient.invalidateQueries({ queryKey: ["tasks"] });
-  };
-
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    analytics.trackEvent('filter', 'category_filter', {
-      category: e.target.value || 'all'
-    });
-    setSelectedCategory(e.target.value === "" ? null : e.target.value);
-    setPage(1);
-  };
-
-  const handleToggleComplete = (taskId: number, isCompleted: boolean) => {
-    // Analytics tracking
+  const handleToggleComplete = async (taskId: number, isCompleted: boolean) => {
     analytics.trackEvent('user_action', 'task_completed', {
       taskId,
       isCompleted,
       action: isCompleted ? 'complete' : 'uncomplete'
     });
 
-    // Optimistic update
-    optimisticTasks.updateItem(
-      taskId,
-      (task) => ({ ...task, isCompleted }),
-      async () => {
-        // Backend call - progress ile güncelle
-        await tasksAPI.updateTaskProgress(taskId, isCompleted ? 100 : 0);
-        // Return updated tasks list
-        const response = await tasksAPI.getTasks({
-          pageNumber: page,
-          pageSize: pageSize,
-          searchQuery: searchQuery,
-          categoryId: selectedCategory ? Number(selectedCategory) : undefined,
-        });
-        return response.data;
-      }
-    );
-  };
-
-  const handleSelectTask = (taskId: number, isSelected: boolean) => {
-    setSelectedTaskIds((prev) =>
-      isSelected ? [...prev, taskId] : prev.filter((id) => id !== taskId)
-    );
-  };
-
-  const handleSelectAllTasks = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const isChecked = event.target.checked;
-    if (isChecked) {
-      const allTaskIds = optimisticTasks.data?.map((task) => task.id) || [];
-      setSelectedTaskIds(allTaskIds);
-    } else {
-      setSelectedTaskIds([]);
+    try {
+      await tasksAPI.updateTaskProgress(taskId, isCompleted ? 100 : 0);
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      showSuccess(isCompleted ? "Görev tamamlandı!" : "Görev aktif hale getirildi!");
+    } catch (error) {
+      showError("Görev durumu güncellenirken hata oluştu");
     }
   };
 
-  const handleBulkDelete = () => {
-    if (selectedTaskIds.length > 0) {
-      analytics.trackEvent('bulk_action', 'bulk_delete', {
-        count: selectedTaskIds.length,
-        taskIds: selectedTaskIds
-      });
-      bulkDeleteTasksMutation.mutate(selectedTaskIds);
-    } else {
-      showError("Lütfen silmek için en az bir görev seçin.");
-    }
+  const formatDueDate = (dueDate: string) => {
+    const date = parseISO(dueDate);
+    if (isToday(date)) return "Bugün";
+    if (isTomorrow(date)) return "Yarın";
+    return format(date, "d MMM", { locale: tr });
   };
 
-  const handleBulkComplete = () => {
-    if (selectedTaskIds.length > 0) {
-      analytics.trackEvent('bulk_action', 'bulk_complete', {
-        count: selectedTaskIds.length,
-        taskIds: selectedTaskIds
-      });
-      bulkCompleteTasksMutation.mutate(selectedTaskIds);
-    } else {
-      showError("Lütfen tamamlamak için en az bir görev seçin.");
-    }
+  const getDueDateColor = (dueDate: string) => {
+    const date = parseISO(dueDate);
+    if (isPast(date) && !isToday(date)) return "text-red-500";
+    if (isToday(date)) return "text-orange-500";
+    if (isTomorrow(date)) return "text-yellow-500";
+    return "text-gray-500";
   };
 
-  const isAllTasksSelected = (
-    optimisticTasks.data?.length ?? 0
-  ) > 0 && selectedTaskIds.length === (optimisticTasks.data?.length ?? 0);
+  // Filtered and sorted tasks  
+  const filteredTasks = useMemo(() => {
+    if (tasksResponse?.data && 'tasks' in tasksResponse.data) {
+      return tasksResponse.data.tasks || [];
+    }
+    return [];
+  }, [tasksResponse?.data]);
 
-  const isAnyTaskSelected = selectedTaskIds.length > 0;
-
-  if (isLoadingTasks || isLoadingCategories) {
+  if (isTasksLoading || isCategoriesLoading) {
     return (
-      <div className="p-6">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white">
-          Görevler
-        </h1>
-        
-        {/* Skeleton Loading */}
-        <SkeletonGroup>
-          {/* Search Bar Skeleton */}
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <Skeleton variant="input" className="flex-grow" />
-            <Skeleton variant="button" size="md" />
-            <Skeleton variant="input" className="w-48" />
-            <Skeleton variant="button" size="md" />
-          </div>
-          
-          {/* Task Cards Skeleton */}
-          {Array.from({ length: 5 }).map((_, index) => (
-            <Skeleton key={index} variant="card" className="h-24" />
-          ))}
-        </SkeletonGroup>
-      </div>
-    );
-  }
-
-  if (tasksError) {
-    return (
-      <div className="text-red-500">
-        Görevler yüklenirken hata oluştu: {(tasksError as Error)?.message ?? 'Bilinmeyen bir hata oluştu.'}
-      </div>
-    );
-  }
-
-  if (categoriesError) {
-    return (
-      <div className="text-red-500">
-        Kategoriler yüklenirken hata oluştu: {(categoriesError as Error)?.message ?? 'Bilinmeyen bir hata oluştu.'}
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white">
-        Görevler
-      </h1>
-
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <Input
-          type="text"
-          placeholder="Görev ara..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-grow"
-        />
-        <Button
-          onClick={handleSearch}
-          className="bg-blue-500 hover:bg-blue-600 text-white"
-        >
-          Ara
-        </Button>
-        <select
-          className="p-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          onChange={handleCategoryChange}
-          value={selectedCategory || ""}
-        >
-          <option value="">Tüm Kategoriler</option>
-          {categories?.data.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
-        <Button
-          onClick={() => handleOpenModal()}
-          className="bg-green-500 hover:bg-green-600 text-white"
-        >
-          Yeni Görev Ekle
-        </Button>
-      </div>
-
-      {/* Toplu İşlem Kontrolleri */}
-      {isAnyTaskSelected && (
-        <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-md shadow-sm">
-          <p className="text-gray-700 dark:text-gray-300 self-center">
-            {selectedTaskIds.length} görev seçildi.
-          </p>
-          <Button
-            onClick={handleBulkComplete}
-            className="bg-indigo-500 hover:bg-indigo-600 text-white"
-          >
-            Seçilenleri Tamamla
-          </Button>
-          <Button
-            onClick={handleBulkDelete}
-            variant="destructive"
-          >
-            Seçilenleri Sil
-          </Button>
-        </div>
-      )}
-
-      {/* Görev Listesi */}
-      {isLoadingTasks ? (
-        <div className="flex justify-center items-center h-64">
-          <LoadingSpinner />
-        </div>
-      ) : (optimisticTasks.data?.length ?? 0) === 0 ? (
-        <div className="text-center">
-          <p className="text-gray-500 mb-4">Henüz görev bulunmamaktadır.</p>
-          {offlineTasks.isOffline && (
-            <p className="text-gray-400 text-sm">
-              Çevrimdışı mod - Veriler cache'den yükleniyor
-            </p>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {/* Offline Status */}
-          {offlineTasks.isOffline && (
-            <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
-              <p className="text-gray-600 text-sm">
-                Çevrimdışı mod - Değişiklikler senkronize edilecek
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Header Section */}
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Görevler
+              </h1>
+              <p className="mt-1 text-gray-500 dark:text-gray-400">
+                {filteredTasks.length} görev bulundu
               </p>
             </div>
-          )}
-          
-          <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-md shadow-sm mb-2">
-            <input
-              type="checkbox"
-              checked={isAllTasksSelected}
-              onChange={handleSelectAllTasks}
-              className="mr-3 w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-            />
-            <label htmlFor="selectAllTasks" className="text-md font-semibold text-gray-800 dark:text-white">
-              Tümünü Seç / Seçimi Kaldır
-            </label>
-          </div>
-          {optimisticTasks.data?.map((task) => (
-            <Card key={task.id} className="p-4 flex items-center justify-between shadow-sm">
-              <div className="flex items-center flex-1">
-                <input
-                  type="checkbox"
-                  checked={selectedTaskIds.includes(task.id)}
-                  onChange={() => handleSelectTask(task.id, !selectedTaskIds.includes(task.id))}
-                  className="mr-3 w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                />
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">{task.title}</h3>
-                  {task.description && (
-                    <p className="text-gray-600 text-sm mt-1 line-clamp-2">
-                      {task.description}
-                    </p>
-                  )}
-                  <div className="text-xs text-gray-500 mt-2">
-                    <span>Öncelik: {task.priority}</span>
-                    {task.dueDate && (
-                      <span className="ml-4">Bitiş Tarihi: {format(new Date(task.dueDate), "dd.MM.yyyy")}
-                      </span>
-                    )}
-                    {task.categoryName && (
-                      <span className="ml-4">Kategori: {task.categoryName}</span>
-                    )}
-                    <span className="ml-4">Durum: {task.status}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex space-x-2 ml-4">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handleOpenModal(task, true)} // Detay görüntüleme modu
+            
+            <div className="flex items-center gap-3">
+              {/* View Mode Toggle */}
+              <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-md transition-colors ${
+                    viewMode === 'grid'
+                      ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  }`}
                 >
-                  Detayları Görüntüle
-                </Button>
-                <Button variant="secondary" size="sm" onClick={() => handleOpenModal(task)}>
-                  Düzenle
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    setTaskToDelete(task.id);
-                    setShowConfirmModal(true);
-                  }}
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-md transition-colors ${
+                    viewMode === 'list'
+                      ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  }`}
                 >
-                  Sil
-                </Button>
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  </svg>
+                </button>
               </div>
-            </Card>
-          ))}
-        </div>
-      )}
 
-      {/* Sayfalama Kontrolleri */}
-      <div className="flex justify-between mt-6">
-        <Button
-          onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-          disabled={page === 1}
-          className="bg-gray-300 dark:bg-gray-700 dark:text-white"
-        >
-          Önceki
-        </Button>
-        <span className="text-gray-700 dark:text-gray-300">
-          Sayfa {page} /{" "}
-          {Math.ceil((optimisticTasks.data?.length || 0) / pageSize)}
-        </span>
-        <Button
-          onClick={() => setPage((prev) => prev + 1)}
-          disabled={
-            page * pageSize >= (optimisticTasks.data?.length || 0)
-          }
-          className="bg-gray-300 dark:bg-gray-700 dark:text-white"
-        >
-          Sonraki
-        </Button>
+              {/* New Task Button */}
+              <button
+                onClick={() => handleOpenModal()}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm"
+              >
+                <FaPlus className="w-4 h-4" />
+                <span className="hidden sm:inline">Yeni Görev</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Search and Filters */}
+          <div className="mt-6 flex flex-col sm:flex-row gap-4">
+            {/* Search Bar */}
+            <div className="flex-1 relative">
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Görevlerde ara..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Category Filter */}
+            <div className="relative">
+              <select
+                value={selectedCategory || ""}
+                onChange={(e) => setSelectedCategory(e.target.value || null)}
+                className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 pr-8 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Tüm Kategoriler</option>
+                {categoriesResponse?.data?.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <FaFilter className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <ConfirmModal
-        isOpen={showConfirmModal}
-        onCancel={() => setShowConfirmModal(false)}
-        onConfirm={handleDelete}
-        title="Görevi Sil"
-        message="Bu görevi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
-      />
+      {/* Tasks Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {filteredTasks.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+              <FaPlus className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              Henüz görev bulunmamaktadır
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              İlk görevinizi oluşturarak başlayın
+            </p>
+            <button
+              onClick={() => handleOpenModal()}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              <FaPlus className="w-4 h-4" />
+              Yeni Görev Ekle
+            </button>
+          </div>
+        ) : (
+          <div className={
+            viewMode === 'grid' 
+              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+              : "space-y-4"
+          }>
+            {filteredTasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                viewMode={viewMode}
+                onEdit={() => handleOpenModal(task)}
+                onDelete={() => setTaskToDelete(task.id)}
+                onToggleComplete={(isCompleted) => handleToggleComplete(task.id, isCompleted)}
+                categories={categoriesResponse?.data || []}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
-      {isModalOpen && !isViewingDetails && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="p-6 w-full max-w-md dark:bg-gray-800">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">
-              {currentTask ? "Görevi Düzenle" : "Yeni Görev Ekle"}
-            </h2>
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label
-                  htmlFor="title"
-                  className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2"
-                >
-                  Başlık:
-                </label>
-                <Input
-                  id="title"
-                  name="title"
-                  value={taskForm.title}
-                  onChange={handleChange}
-                  required
-                  className="w-full"
-                />
-              </div>
-              <div className="mb-4">
-                <label
-                  htmlFor="description"
-                  className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2"
-                >
-                  Açıklama:
-                </label>
-                <textarea
-                  id="description"
-                  name="description"
-                  value={taskForm.description}
-                  onChange={handleChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  rows={3}
-                ></textarea>
-              </div>
-              <div className="mb-4">
-                <label
-                  htmlFor="dueDate"
-                  className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2"
-                >
-                  Son Tarih:
-                </label>
-                <Input
-                  id="dueDate"
-                  name="dueDate"
-                  type="date"
-                  value={taskForm.dueDate}
-                  onChange={handleChange}
-                  className="w-full"
-                />
-              </div>
-              <div className="mb-4">
-                <label
-                  htmlFor="priority"
-                  className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2"
-                >
-                  Öncelik:
+      {/* Task Modal */}
+      {isModalOpen && (
+        <TaskModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          task={currentTask}
+          taskForm={taskForm}
+          onChange={handleChange}
+          onSubmit={handleSubmit}
+          categories={categoriesResponse?.data || []}
+          isLoading={createTaskMutation.isPending || updateTaskMutation.isPending}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {taskToDelete && (
+        <DeleteConfirmationModal
+          isOpen={!!taskToDelete}
+          onClose={() => setTaskToDelete(null)}
+          onConfirm={() => deleteTaskMutation.mutate(taskToDelete)}
+          isLoading={deleteTaskMutation.isPending}
+        />
+      )}
+    </div>
+  );
+};
+
+// Task Card Component
+interface TaskCardProps {
+  task: TodoTaskDto;
+  viewMode: 'grid' | 'list';
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggleComplete: (isCompleted: boolean) => void;
+  categories: CategoryDto[];
+}
+
+const TaskCard: React.FC<TaskCardProps> = ({
+  task,
+  viewMode,
+  onEdit,
+  onDelete,
+  onToggleComplete,
+  categories,
+}: TaskCardProps) => {
+  const [showMenu, setShowMenu] = useState(false);
+  const priority = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG];
+  const category = categories.find(c => c.id === task.categoryId);
+
+  if (viewMode === 'list') {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow">
+        <div className="flex items-center gap-4">
+          {/* Checkbox */}
+          <button
+            onClick={() => onToggleComplete(!task.isCompleted)}
+            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+              task.isCompleted
+                ? 'bg-green-500 border-green-500 text-white'
+                : 'border-gray-300 dark:border-gray-600 hover:border-green-400'
+            }`}
+          >
+            {task.isCompleted && <FaCheck className="w-3 h-3" />}
+          </button>
+
+          {/* Task Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3">
+              <h3 className={`font-medium truncate ${
+                task.isCompleted 
+                  ? 'text-gray-500 dark:text-gray-400 line-through' 
+                  : 'text-gray-900 dark:text-white'
+              }`}>
+                {task.title}
+              </h3>
+              
+              {/* Priority Badge */}
+              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${priority.bg} ${priority.color}`}>
+                <priority.icon className="w-3 h-3" />
+                {priority.label}
+              </span>
+
+                             {/* Category Badge */}
+               {category && (
+                 <span 
+                   className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white bg-blue-500"
+                 >
+                   {category.name}
+                 </span>
+               )}
+
+               {/* Due Date */}
+               {task.dueDate && (
+                 <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                   <FaCalendarAlt className="w-3 h-3" />
+                   {new Date(task.dueDate).toLocaleDateString('tr-TR')}
+                 </span>
+               )}
+            </div>
+
+            {task.description && (
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 truncate">
+                {task.description}
+              </p>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onEdit}
+              className="p-2 text-gray-400 hover:text-blue-500 transition-colors"
+            >
+              <FaEdit className="w-4 h-4" />
+            </button>
+            <button
+              onClick={onDelete}
+              className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+            >
+              <FaTrash className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all duration-200 group">
+      {/* Card Header */}
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => onToggleComplete(!task.isCompleted)}
+            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+              task.isCompleted
+                ? 'bg-green-500 border-green-500 text-white scale-110'
+                : 'border-gray-300 dark:border-gray-600 hover:border-green-400 hover:scale-110'
+            }`}
+          >
+            {task.isCompleted && <FaCheck className="w-3 h-3" />}
+          </button>
+          
+          {/* Priority Indicator */}
+          <div className={`w-3 h-3 rounded-full ${priority.color.replace('text-', 'bg-')}`} />
+        </div>
+
+        {/* Actions Menu */}
+        <div className="relative">
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <FaEllipsisV className="w-4 h-4" />
+          </button>
+          
+          {showMenu && (
+            <div className="absolute right-0 top-8 w-32 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-10">
+              <button
+                onClick={() => {
+                  onEdit();
+                  setShowMenu(false);
+                }}
+                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2"
+              >
+                <FaEdit className="w-3 h-3" />
+                Düzenle
+              </button>
+              <button
+                onClick={() => {
+                  onDelete();
+                  setShowMenu(false);
+                }}
+                className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+              >
+                <FaTrash className="w-3 h-3" />
+                Sil
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Task Title */}
+      <h3 className={`text-lg font-semibold mb-2 ${
+        task.isCompleted 
+          ? 'text-gray-500 dark:text-gray-400 line-through' 
+          : 'text-gray-900 dark:text-white'
+      }`}>
+        {task.title}
+      </h3>
+
+      {/* Task Description */}
+      {task.description && (
+        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">
+          {task.description}
+        </p>
+      )}
+
+      {/* Card Footer */}
+      <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
+        <div className="flex items-center gap-2">
+                     {/* Category */}
+           {category && (
+             <span 
+               className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white bg-blue-500"
+             >
+               {category.name}
+             </span>
+           )}
+           
+           {/* Priority */}
+           <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${priority.bg} ${priority.color}`}>
+             <priority.icon className="w-3 h-3" />
+             {priority.label}
+           </span>
+         </div>
+
+         {/* Due Date */}
+         {task.dueDate && (
+           <div className="flex items-center gap-1 text-xs text-gray-500">
+             <FaCalendarAlt className="w-3 h-3" />
+             {new Date(task.dueDate).toLocaleDateString('tr-TR')}
+           </div>
+         )}
+      </div>
+    </div>
+  );
+};
+
+// Task Modal Component
+interface TaskModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  task: TodoTaskDto | null;
+  taskForm: CreateTodoTaskDto | UpdateTodoTaskDto;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  categories: CategoryDto[];
+  isLoading: boolean;
+}
+
+const TaskModal: React.FC<TaskModalProps> = ({
+  isOpen,
+  onClose,
+  task,
+  taskForm,
+  onChange,
+  onSubmit,
+  categories,
+  isLoading,
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        {/* Backdrop */}
+        <div 
+          className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+          onClick={onClose}
+        />
+
+        {/* Modal */}
+        <div className="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-2xl">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {task ? 'Görevi Düzenle' : 'Yeni Görev Ekle'}
+            </h3>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              <FaTimes className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={onSubmit} className="space-y-6">
+            {/* Title */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Başlık *
+              </label>
+              <input
+                type="text"
+                name="title"
+                value={taskForm.title}
+                onChange={onChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Görev başlığını girin..."
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Açıklama
+              </label>
+              <textarea
+                name="description"
+                value={taskForm.description}
+                onChange={onChange}
+                rows={4}
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                placeholder="Görev açıklamasını girin..."
+              />
+            </div>
+
+            {/* Row: Priority and Category */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Priority */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Öncelik
                 </label>
                 <select
-                  id="priority"
                   name="priority"
                   value={taskForm.priority}
-                  onChange={handleChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  onChange={onChange}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="Low">Düşük</option>
-                  <option value="Medium">Orta</option>
-                  <option value="High">Yüksek</option>
+                  <option value={0}>Düşük</option>
+                  <option value={1}>Normal</option>
+                  <option value={2}>Yüksek</option>
+                  <option value={3}>Kritik</option>
                 </select>
               </div>
-              <div className="mb-4">
-                <label
-                  htmlFor="categoryId"
-                  className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2"
-                >
-                  Kategori:
+
+              {/* Category */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Kategori
                 </label>
                 <select
-                  id="categoryId"
                   name="categoryId"
                   value={taskForm.categoryId || ""}
-                  onChange={handleChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  onChange={onChange}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="">Kategori Seç</option>
-                  {categories?.data.map((category) => (
+                  <option value="">Kategori seçin</option>
+                  {categories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}
                     </option>
                   ))}
                 </select>
               </div>
-              <div className="mb-4 flex items-center">
-                <input
-                  id="isCompleted"
-                  name="isCompleted"
-                  type="checkbox"
-                  checked={currentTask?.isCompleted || false} // isCompleted'ı form state'inden çıkarıp currentTask'tan al
-                  onChange={(e) =>
-                    handleToggleComplete(currentTask!.id, e.target.checked)
-                  } // doğrudan toggle fonksiyonunu çağır
-                  className="mr-2 leading-tight"
-                />
-                <label
-                  htmlFor="isCompleted"
-                  className="text-sm text-gray-700 dark:text-gray-300"
-                >
-                  Tamamlandı
-                </label>
-              </div>
-              <div className="flex justify-end gap-4">
-                {isViewingDetails ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={handleCloseModal}
-                  >
-                    Kapat
-                  </Button>
-                ) : (
-                  <>
-                    <Button
-                      type="button"
-                      onClick={handleCloseModal}
-                      className="bg-gray-500 hover:bg-gray-600 text-white"
-                    >
-                      İptal
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="bg-blue-500 hover:bg-blue-600 text-white"
-                      disabled={
-                        createTaskMutation.isPending || updateTaskMutation.isPending
-                      }
-                    >
-                      {currentTask ? "Kaydet" : "Oluştur"}
-                    </Button>
-                  </>
-                )}
-              </div>
-            </form>
-          </Card>
+            </div>
+
+            {/* Due Date */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Son Tarih
+              </label>
+              <input
+                type="date"
+                name="dueDate"
+                value={taskForm.dueDate}
+                onChange={onChange}
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-6 py-3 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+              >
+                İptal
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors flex items-center gap-2"
+                             >
+                 {isLoading && <LoadingSpinner size="sm" />}
+                 {task ? 'Güncelle' : 'Oluştur'}
+               </button>
+            </div>
+          </form>
         </div>
-      )}
+      </div>
+    </div>
+  );
+};
 
-      {isModalOpen && isViewingDetails && currentTask && (
-        <TaskDetailModal
-          isOpen={isModalOpen} // isOpen prop'unu ekle
-          taskId={currentTask.id}
-          onClose={handleCloseModal}
+// Delete Confirmation Modal
+interface DeleteConfirmationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  isLoading: boolean;
+}
+
+const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  isLoading,
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        {/* Backdrop */}
+        <div 
+          className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+          onClick={onClose}
         />
-      )}
 
+        {/* Modal */}
+        <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-2xl">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
+              <FaTrash className="w-5 h-5 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Görevi Sil
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400">
+                Bu işlem geri alınamaz
+              </p>
+            </div>
+          </div>
+
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Bu görevi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+          </p>
+
+          <div className="flex items-center justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+            >
+              İptal
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={isLoading}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-lg transition-colors flex items-center gap-2"
+                         >
+               {isLoading && <LoadingSpinner size="sm" />}
+               Sil
+             </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

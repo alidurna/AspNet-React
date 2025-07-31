@@ -198,8 +198,7 @@ namespace TaskFlow.API.DTOs
         /// Enum değerlerinden biri olmalı
         /// </summary>
         [Required(ErrorMessage = "Öncelik seviyesi seçimi zorunludur")]
-        [RegularExpression("^(Low|Normal|High|Critical)$", ErrorMessage = "Geçerli öncelik seviyesi seçiniz")]
-        public string Priority { get; set; } = "Normal";
+        public int Priority { get; set; } = 1; // 0: Low, 1: Normal, 2: High, 3: Critical
 
         /// <summary>
         /// Task tamamlanma yüzdesi

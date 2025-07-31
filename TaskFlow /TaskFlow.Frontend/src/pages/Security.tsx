@@ -1,5 +1,5 @@
 import React from 'react';
-import DashboardLayout from '../components/layout/DashboardLayout';
+
 import { TwoFactorAuth } from '../components/security/TwoFactorAuth';
 import { WebAuthn } from '../components/security/WebAuthn';
 import Card from '../components/ui/Card';
@@ -14,7 +14,7 @@ import Card from '../components/ui/Card';
  */
 const Security: React.FC = () => {
   return (
-    <DashboardLayout>
+    <div>
       <div className="space-y-8">
         {/* Sayfa Başlığı */}
         <div>
@@ -74,7 +74,7 @@ const Security: React.FC = () => {
           </div>
         </Card>
       </div>
-    </DashboardLayout>
+    </div>
   );
 };
 

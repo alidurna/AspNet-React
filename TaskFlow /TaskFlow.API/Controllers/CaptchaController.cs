@@ -10,8 +10,8 @@ namespace TaskFlow.API.Controllers
     /// Captcha Controller - ReCAPTCHA doğrulama işlemleri
     /// </summary>
     [ApiController]
-    [Route("api/[controller]")]
     [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [AllowAnonymous] // Tüm captcha endpoint'leri anonim erişime açık
     public class CaptchaController : ControllerBase
     {

@@ -51,6 +51,7 @@ import type {
   UpdateTodoTaskDto,
   CreateTodoTaskDto,
   TodoTaskFilterDto,
+  TasksResponse,
 } from "../types/task.types";
 import type {
   CategoryDto,
@@ -80,7 +81,7 @@ export interface ApiResponse<T> {
  *
  * Tüm istekler bu base URL üzerinden yönlendirilir.
  */
-const API_BASE_URL = "http://localhost:5281/api"; // Doğrudan backend'e istek at
+const API_BASE_URL = "http://localhost:5282/api/v1.0"; // API versioning ile backend'e istek at
 
 /**
  * Axios Instance Oluşturma
@@ -354,16 +355,16 @@ export const authAPI = {
 // USER API
 export const profileAPI = {
   getProfile: (): Promise<ApiResponse<UserProfile>> =>
-    apiClient.get<ApiResponse<UserProfile>>("/v1.0/users/profile").then(res => res.data),
+    apiClient.get<ApiResponse<UserProfile>>("/users/profile").then(res => res.data),
 
   updateProfile: (userData: UpdateProfileRequest): Promise<ApiResponse<UserProfile>> =>
     apiClient.put<ApiResponse<UserProfile>>(
-      "/v1.0/users/profile",
+      "/users/profile",
       userData
     ).then(res => res.data),
 
   getUserStats: (): Promise<ApiResponse<UserStatsDto>> =>
-    apiClient.get<ApiResponse<UserStatsDto>>("/v1.0/users/statistics").then(res => res.data),
+    apiClient.get<ApiResponse<UserStatsDto>>("/users/statistics").then(res => res.data),
 };
 
 // FILE UPLOAD API
@@ -385,8 +386,8 @@ export const fileUploadAPI = {
 
 // TASKS API
 export const tasksAPI = {
-  getTasks: (filter?: TodoTaskFilterDto): Promise<ApiResponse<TodoTaskDto[]>> =>
-    apiClient.get<ApiResponse<TodoTaskDto[]>>("/todotasks", { params: filter }).then(res => res.data),
+  getTasks: (filter?: TodoTaskFilterDto): Promise<ApiResponse<TasksResponse>> =>
+    apiClient.get<ApiResponse<TasksResponse>>("/todotasks", { params: filter }).then(res => res.data),
 
   getTaskById: (id: number): Promise<ApiResponse<TodoTaskDto>> =>
     apiClient.get<ApiResponse<TodoTaskDto>>(`/todotasks/${id}`).then(res => res.data),

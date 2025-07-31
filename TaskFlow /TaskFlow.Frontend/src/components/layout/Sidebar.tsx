@@ -323,27 +323,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           {navigationItems.map((item) => (
             <li key={item.name}>
               {item.external ? (
-                <a
-                  href={item.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
+              <a
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
                   className={`flex items-center space-x-3 px-6 py-2 rounded-lg text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 dark:text-neutral-200 dark:hover:bg-neutral-900/10 dark:hover:text-neutral-50`}
-                >
-                  {item.icon}
+              >
+                {item.icon}
                   <span className="font-medium">{item.name}</span>
-                </a>
-              ) : (
-                <Link
-                  to={item.href}
+              </a>
+            ) : (
+              <Link
+                to={item.href}
                   className={`flex items-center space-x-3 px-6 py-2 rounded-lg ${isActiveRoute(item.href)
                       ? "bg-primary-100 text-primary-700 dark:bg-primary-900/10 dark:text-neutral-50"
                       : "text-gray-700 hover:bg-primary-50 hover:text-primary-600 dark:text-neutral-200 dark:hover:bg-neutral-900/10 dark:hover:text-neutral-50"
                     } transition-colors duration-200`}
-                >
-                  {item.icon}
+              >
+                {item.icon}
                   <span className="font-medium">{item.name}</span>
-                </Link>
-              )}
+              </Link>
+          )}
             </li>
           ))}
         </ul>
@@ -363,25 +363,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
               </p>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
+            <button
+              onClick={handleLogout}
             className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors duration-200 shadow-md hover:shadow-lg dark:bg-primary-700 dark:hover:bg-primary-800/80 dark:shadow-none dark:hover:shadow-none"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-              />
-            </svg>
-            <span>Çıkış Yap</span>
-          </button>
+              <svg
+              className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+              <span>Çıkış Yap</span>
+            </button>
           <div className="mt-4 flex justify-center">
             <ThemeToggle />
           </div>
