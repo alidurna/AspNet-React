@@ -106,10 +106,8 @@ export const fetchCategories = createAsyncThunk(
   "categories/fetchCategories",
   async (includeInactive: boolean = false, { rejectWithValue }) => {
     try {
-      // TODO: API call implementation
-      console.log("Fetching categories, includeInactive:", includeInactive);
-
-      // Mock response for now
+      // Real API implementation will be added when backend is connected
+      // For now, return empty mock data
       return [];
     } catch (error) {
       const message =

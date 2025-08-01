@@ -1,295 +1,159 @@
 /**
- * useAnalytics Custom Hook
+ * useAnalytics Custom Hook - Refactored & Simplified
  *
- * Bu dosya, TaskFlow uygulamasında kullanıcı davranışlarını
- * takip etmek için kullanılan analytics hook'unu içerir.
- * Kullanıcı etkileşimlerini, sayfa görüntülemelerini ve
- * performans metriklerini toplar.
- *
- * Ana Özellikler:
- * - Page view tracking
- * - User interaction tracking
- * - Event tracking
- * - Performance monitoring
- * - Error tracking
- * - Session management
- *
- * Tracking Events:
- * - Page views
- * - Button clicks
- * - Form submissions
- * - Navigation events
- * - Error occurrences
- * - Performance metrics
- *
- * Privacy & GDPR:
- * - Consent management
- * - Data anonymization
- * - Opt-out functionality
- * - Data retention policies
- * - User privacy controls
- *
- * Performance:
- * - Batch processing
- * - Debounced events
- * - Efficient data storage
- * - Minimal impact on UX
- * - Background processing
- *
- * Sürdürülebilirlik:
- * - TypeScript tip güvenliği
- * - Modüler yapı
- * - Açık ve anlaşılır kod
- * - Comprehensive documentation
- *
- * @author TaskFlow Development Team
- * @version 1.0.0
- * @since 2024
+ * Basitleştirilmiş analytics hook'u. External service dependency'si olmadan
+ * kendi içinde minimal analytics functionality sağlar.
  */
 
-import { useEffect, useCallback, useRef, useState } from 'react';
-
-/**
- * Analytics Event Types
- */
-export type AnalyticsEventType = 
-  | 'page_view'
-  | 'button_click'
-  | 'form_submit'
-  | 'form_error'
-  | 'navigation'
-  | 'error'
-  | 'performance'
-  | 'user_action'
-  | 'feature_usage'
-  | 'search'
-  | 'filter'
-  | 'sort'
-  | 'export'
-  | 'import'
-  | 'bulk_action';
+import { useEffect, useCallback, useState } from 'react';
 
 /**
  * Analytics Event Interface
  */
-export interface AnalyticsEvent {
+interface AnalyticsEvent {
   id: string;
-  type: AnalyticsEventType;
+  type: string;
   name: string;
   properties?: Record<string, any>;
   timestamp: number;
-  sessionId: string;
   userId?: string;
-  page: string;
-  userAgent: string;
-  screenResolution: string;
-  language: string;
+  sessionId: string;
 }
 
 /**
- * Performance Metrics Interface
+ * Analytics Hook Config
  */
-export interface PerformanceMetrics {
-  pageLoadTime: number;
-  domContentLoaded: number;
-  firstContentfulPaint: number;
-  largestContentfulPaint: number;
-  cumulativeLayoutShift: number;
-  firstInputDelay: number;
-  timeToInteractive: number;
+interface UseAnalyticsConfig {
+  enabled?: boolean;
+  trackPageViews?: boolean;
+  trackUserActions?: boolean;
+  userId?: string;
 }
 
 /**
- * User Session Interface
+ * useAnalytics Hook - Refactored & Simplified
+ * 
+ * Basit analytics functionality sağlayan hook. Production'da
+ * gerçek analytics service ile değiştirilebilir.
  */
-export interface UserSession {
-  id: string;
-  startTime: number;
-  lastActivity: number;
-  pageViews: number;
-  events: number;
-  referrer?: string;
-  utmSource?: string;
-  utmMedium?: string;
-  utmCampaign?: string;
-}
+export const useAnalytics = (config: UseAnalyticsConfig = {}) => {
+  // ===== CONFIG =====
+  const {
+    enabled = true,
+    trackPageViews = true,
+    trackUserActions = true,
+    userId
+  } = config;
 
-/**
- * Analytics Configuration Interface
- */
-export interface AnalyticsConfig {
-  enabled: boolean;
-  consentGiven: boolean;
-  batchSize: number;
-  flushInterval: number;
-  endpoint: string;
-  debug: boolean;
-  anonymizeData: boolean;
-  trackPerformance: boolean;
-  trackErrors: boolean;
-  trackUserActions: boolean;
-}
+  // ===== STATE =====
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [currentUserId, setCurrentUserId] = useState(userId);
+  const [events, setEvents] = useState<AnalyticsEvent[]>([]);
 
-/**
- * Analytics State Interface
- */
-export interface AnalyticsState {
-  session: UserSession | null;
-  events: AnalyticsEvent[];
-  performance: PerformanceMetrics | null;
-  config: AnalyticsConfig;
-  isInitialized: boolean;
-}
+  // ===== INITIALIZATION =====
+  useEffect(() => {
+    if (!enabled) return;
+    setIsInitialized(true);
+  }, [enabled]);
 
-/**
- * useAnalytics Custom Hook
- *
- * Kullanıcı davranışlarını takip etmek için kullanılan hook.
- * Page views, events, performance metrics ve error tracking sağlar.
- *
- * @param config - Analytics konfigürasyonu
- * @returns Analytics functions ve state
- */
-export function useAnalytics(config: Partial<AnalyticsConfig> = {}) {
-  const [state, setState] = useState<AnalyticsState>({
-    session: null,
-    events: [],
-    performance: null,
-    config: {
-      enabled: true,
-      consentGiven: false,
-      batchSize: 10,
-      flushInterval: 30000, // 30 seconds
-      endpoint: '/api/analytics',
-      debug: false,
-      anonymizeData: true,
-      trackPerformance: true,
-      trackErrors: true,
-      trackUserActions: true,
-      ...config
-    },
-    isInitialized: false
-  });
+  // ===== PAGE VIEW TRACKING =====
+  useEffect(() => {
+    if (!enabled || !trackPageViews || !isInitialized) return;
 
-  const flushTimeoutRef = useRef<NodeJS.Timeout>();
-  const sessionRef = useRef<UserSession | null>(null);
+    // Track initial page view
+    trackPageView(window.location.pathname);
 
-  /**
-   * Generate unique ID
-   */
-  const generateId = useCallback(() => {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  }, []);
-
-  /**
-   * Generate session ID
-   */
-  const generateSessionId = useCallback(() => {
-    return `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  }, []);
-
-  /**
-   * Get current page info
-   */
-  const getPageInfo = useCallback(() => {
-    return {
-      url: window.location.href,
-      path: window.location.pathname,
-      title: document.title,
-      referrer: document.referrer
+    // Track navigation changes
+    const handlePopState = () => {
+      trackPageView(window.location.pathname);
     };
-  }, []);
 
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [enabled, trackPageViews, isInitialized]);
+
+  // ===== HELPER FUNCTIONS =====
   /**
-   * Get user agent info
+   * Generate unique event ID
    */
-  const getUserAgentInfo = useCallback(() => {
-    return {
-      userAgent: navigator.userAgent,
-      screenResolution: `${screen.width}x${screen.height}`,
-      language: navigator.language,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-    };
+  const generateEventId = useCallback(() => {
+    return `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }, []);
 
   /**
    * Create analytics event
    */
   const createEvent = useCallback((
-    type: AnalyticsEventType,
+    type: string,
     name: string,
     properties?: Record<string, any>
   ): AnalyticsEvent => {
-    const pageInfo = getPageInfo();
-    const userAgentInfo = getUserAgentInfo();
-
     return {
-      id: generateId(),
+      id: generateEventId(),
       type,
       name,
       properties,
       timestamp: Date.now(),
-      sessionId: sessionRef.current?.id || '',
-      page: pageInfo.path,
-      userAgent: userAgentInfo.userAgent,
-      screenResolution: userAgentInfo.screenResolution,
-      language: userAgentInfo.language
+      userId: currentUserId,
+      sessionId
     };
-  }, [generateId, getPageInfo, getUserAgentInfo]);
+  }, [generateEventId, currentUserId, sessionId]);
+
+  /**
+   * Store event (mock implementation)
+   */
+  const storeEvent = useCallback((event: AnalyticsEvent) => {
+    setEvents(prev => [...prev.slice(-99), event]); // Keep last 100 events
+    
+    // In production, send to analytics service
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📊 Analytics Event:', event);
+    }
+  }, []);
+
+  // ===== PUBLIC METHODS =====
+  /**
+   * Track custom event
+   */
+  const trackEvent = useCallback((
+    type: string,
+    name: string,
+    properties?: Record<string, any>
+  ) => {
+    if (!enabled || !isInitialized) return;
+
+    const event = createEvent(type, name, properties);
+    storeEvent(event);
+  }, [enabled, isInitialized, createEvent, storeEvent]);
 
   /**
    * Track page view
    */
-  const trackPageView = useCallback((pageName?: string) => {
-    if (!state.config.enabled || !state.config.consentGiven) return;
+  const trackPageView = useCallback((path?: string) => {
+    if (!enabled || !isInitialized) return;
 
-    const pageInfo = getPageInfo();
-    const event = createEvent('page_view', pageName || pageInfo.path, {
-      pageTitle: pageInfo.title,
-      referrer: pageInfo.referrer
+    trackEvent('page_view', path || window.location.pathname, {
+      title: document.title,
+      referrer: document.referrer
     });
-
-    setState(prev => ({
-      ...prev,
-      events: [...prev.events, event],
-      session: prev.session ? {
-        ...prev.session,
-        pageViews: prev.session.pageViews + 1,
-        lastActivity: Date.now()
-      } : prev.session
-    }));
-
-    if (state.config.debug) {
-      console.log('📊 Page View Tracked:', event);
-    }
-  }, [state.config, createEvent, getPageInfo]);
+  }, [enabled, isInitialized, trackEvent]);
 
   /**
    * Track user action
    */
-  const trackEvent = useCallback((
-    type: AnalyticsEventType,
-    name: string,
+  const trackUserAction = useCallback((
+    action: string,
+    element?: string,
     properties?: Record<string, any>
   ) => {
-    if (!state.config.enabled || !state.config.consentGiven) return;
+    if (!enabled || !trackUserActions || !isInitialized) return;
 
-    const event = createEvent(type, name, properties);
-
-    setState(prev => ({
-      ...prev,
-      events: [...prev.events, event],
-      session: prev.session ? {
-        ...prev.session,
-        events: prev.session.events + 1,
-        lastActivity: Date.now()
-      } : prev.session
-    }));
-
-    if (state.config.debug) {
-      console.log('📊 Event Tracked:', event);
-    }
-  }, [state.config, createEvent]);
+    trackEvent('user_action', action, {
+      element,
+      ...properties
+    });
+  }, [enabled, trackUserActions, isInitialized, trackEvent]);
 
   /**
    * Track button click
@@ -306,221 +170,144 @@ export function useAnalytics(config: Partial<AnalyticsConfig> = {}) {
    */
   const trackFormSubmit = useCallback((
     formName: string,
+    success: boolean,
     properties?: Record<string, any>
   ) => {
-    trackEvent('form_submit', formName, properties);
-  }, [trackEvent]);
-
-  /**
-   * Track form error
-   */
-  const trackFormError = useCallback((
-    formName: string,
-    errorMessage: string,
-    properties?: Record<string, any>
-  ) => {
-    trackEvent('form_error', formName, {
-      errorMessage,
+    trackEvent(success ? 'form_submit' : 'form_error', formName, {
+      success,
       ...properties
     });
   }, [trackEvent]);
 
   /**
-   * Track navigation
+   * Track search
    */
-  const trackNavigation = useCallback((
-    from: string,
-    to: string,
+  const trackSearch = useCallback((
+    query: string,
+    results?: number,
     properties?: Record<string, any>
   ) => {
-    trackEvent('navigation', `${from} -> ${to}`, properties);
+    trackEvent('search', 'search_performed', {
+      query,
+      results,
+      ...properties
+    });
+  }, [trackEvent]);
+
+  /**
+   * Track feature usage
+   */
+  const trackFeatureUsage = useCallback((
+    feature: string,
+    properties?: Record<string, any>
+  ) => {
+    trackEvent('feature_usage', feature, properties);
+  }, [trackEvent]);
+
+  /**
+   * Track performance metric
+   */
+  const trackPerformance = useCallback((
+    metric: string,
+    value: number,
+    properties?: Record<string, any>
+  ) => {
+    trackEvent('performance', metric, {
+      value,
+      ...properties
+    });
   }, [trackEvent]);
 
   /**
    * Track error
    */
   const trackError = useCallback((
-    error: Error,
-    context?: string,
+    error: string,
     properties?: Record<string, any>
   ) => {
-    if (!state.config.trackErrors) return;
-
-    trackEvent('error', error.message, {
-      errorName: error.name,
-      errorStack: error.stack,
-      context,
-      ...properties
-    });
-  }, [state.config.trackErrors, trackEvent]);
+    trackEvent('error', error, properties);
+  }, [trackEvent]);
 
   /**
-   * Track performance metrics
+   * Set user ID
    */
-  const trackPerformance = useCallback(() => {
-    if (!state.config.trackPerformance) return;
+  const setUserId = useCallback((newUserId: string) => {
+    if (!enabled || !isInitialized) return;
 
-    // Wait for performance metrics to be available
-    setTimeout(() => {
-      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-      const paint = performance.getEntriesByType('paint');
-      
-      const metrics: PerformanceMetrics = {
-        pageLoadTime: navigation.loadEventEnd - navigation.loadEventStart,
-        domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
-        firstContentfulPaint: paint.find(p => p.name === 'first-contentful-paint')?.startTime || 0,
-        largestContentfulPaint: 0, // Will be updated by LCP observer
-        cumulativeLayoutShift: 0, // Will be updated by CLS observer
-        firstInputDelay: 0, // Will be updated by FID observer
-        timeToInteractive: navigation.domInteractive - navigation.fetchStart
-      };
-
-      setState(prev => ({
-        ...prev,
-        performance: metrics
-      }));
-
-      trackEvent('performance', 'page_load', metrics);
-
-      if (state.config.debug) {
-        console.log('📊 Performance Tracked:', metrics);
-      }
-    }, 1000);
-  }, [state.config.trackPerformance, trackEvent]);
+    setCurrentUserId(newUserId);
+    trackEvent('identify', 'user_identified', { userId: newUserId });
+  }, [enabled, isInitialized, trackEvent]);
 
   /**
-   * Flush events to server
+   * Set user properties
    */
-  const flushEvents = useCallback(async () => {
-    if (state.events.length === 0) return;
+  const setUserProperties = useCallback((properties: Record<string, any>) => {
+    if (!enabled || !isInitialized) return;
 
-    try {
-      const eventsToSend = [...state.events];
-      
-      setState(prev => ({
-        ...prev,
-        events: []
-      }));
-
-      // Send to analytics endpoint
-      await fetch(state.config.endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          events: eventsToSend,
-          session: sessionRef.current,
-          timestamp: Date.now()
-        })
-      });
-
-      if (state.config.debug) {
-        console.log('📊 Events flushed:', eventsToSend.length);
-      }
-    } catch (error) {
-      console.error('Analytics flush error:', error);
-      
-      // Restore events if flush failed
-      setState(prev => ({
-        ...prev,
-        events: [...state.events, ...prev.events]
-      }));
-    }
-  }, [state.events, state.config]);
+    trackEvent('identify', 'user_properties_updated', properties);
+  }, [enabled, isInitialized, trackEvent]);
 
   /**
-   * Initialize analytics
+   * Get session info
    */
-  const initialize = useCallback(() => {
-    if (state.isInitialized) return;
+  const getSessionInfo = useCallback(() => {
+    if (!enabled || !isInitialized) return null;
 
-    // Create new session
-    const session: UserSession = {
-      id: generateSessionId(),
-      startTime: Date.now(),
-      lastActivity: Date.now(),
-      pageViews: 0,
-      events: 0,
-      referrer: document.referrer
+    return {
+      sessionId,
+      userId: currentUserId,
+      eventCount: events.length,
+      startTime: parseInt(sessionId.split('_')[1])
     };
-
-    sessionRef.current = session;
-
-    setState(prev => ({
-      ...prev,
-      session,
-      isInitialized: true
-    }));
-
-    // Track initial page view
-    trackPageView();
-
-    // Track performance
-    trackPerformance();
-
-    // Set up periodic flush
-    flushTimeoutRef.current = setInterval(flushEvents, state.config.flushInterval);
-
-    if (state.config.debug) {
-      console.log('📊 Analytics initialized');
-    }
-  }, [state.isInitialized, generateSessionId, trackPageView, trackPerformance, flushEvents, state.config]);
+  }, [enabled, isInitialized, sessionId, currentUserId, events.length]);
 
   /**
-   * Set consent
+   * Flush events (mock implementation)
    */
-  const setConsent = useCallback((consent: boolean) => {
-    setState(prev => ({
-      ...prev,
-      config: {
-        ...prev.config,
-        consentGiven: consent
-      }
-    }));
+  const flush = useCallback(() => {
+    if (!enabled || !isInitialized) return;
 
-    localStorage.setItem('analytics-consent', consent.toString());
+    // In production, send events to analytics service
+    console.log('📊 Flushing analytics events:', events.length);
+  }, [enabled, isInitialized, events.length]);
+
+  /**
+   * Clear events
+   */
+  const clearEvents = useCallback(() => {
+    setEvents([]);
   }, []);
 
-  /**
-   * Initialize on mount
-   */
-  useEffect(() => {
-    // Check for existing consent
-    const savedConsent = localStorage.getItem('analytics-consent');
-    if (savedConsent) {
-      setConsent(savedConsent === 'true');
-    }
-
-    initialize();
-
-    // Cleanup on unmount
-    return () => {
-      if (flushTimeoutRef.current) {
-        clearInterval(flushTimeoutRef.current);
-      }
-      flushEvents();
-    };
-  }, [initialize, setConsent, flushEvents]);
-
+  // ===== RETURN =====
   return {
     // State
-    session: state.session,
-    events: state.events,
-    performance: state.performance,
-    config: state.config,
-    isInitialized: state.isInitialized,
-
-    // Actions
-    trackPageView,
+    isInitialized,
+    enabled,
+    eventCount: events.length,
+    
+    // Event tracking
     trackEvent,
+    trackPageView,
+    trackUserAction,
     trackButtonClick,
     trackFormSubmit,
-    trackFormError,
-    trackNavigation,
-    trackError,
+    trackSearch,
+    trackFeatureUsage,
     trackPerformance,
-    setConsent,
-    flushEvents
+    trackError,
+    
+    // User management
+    setUserId,
+    setUserProperties,
+    
+    // Utilities
+    getSessionInfo,
+    flush,
+    clearEvents,
+    
+    // Debug info (development only)
+    events: process.env.NODE_ENV === 'development' ? events : []
   };
-} 
+};
+
+export default useAnalytics; 

@@ -1,52 +1,17 @@
 /**
- * useAnimations Custom Hook
+ * useAnimations Custom Hook - Refactored
  *
- * Bu dosya, TaskFlow uygulamasında micro-interactions ve animasyonlar
- * için kullanılan custom hook'u içerir. Kullanıcı deneyimini iyileştirmek
- * için çeşitli animasyon efektleri sağlar.
+ * Modüler animasyon hook'larını orchestrate eden ana hook.
+ * Micro-interactions ve animasyonlar için unified interface sağlar.
  *
- * Ana Özellikler:
- * - Hover animasyonları
- * - Click animasyonları
- * - Loading animasyonları
- * - Transition efektleri
- * - Staggered animasyonlar
- * - Scroll-triggered animasyonlar
- *
- * Animasyon Türleri:
- * - Fade in/out
- * - Slide in/out
- * - Scale in/out
- * - Rotate
- * - Bounce
- * - Pulse
- * - Shake
- * - Wiggle
- *
- * Performance:
- * - RequestAnimationFrame kullanımı
- * - Optimized transitions
- * - Memory management
- * - Debounced animations
- *
- * Accessibility:
- * - Reduced motion support
- * - Screen reader friendly
- * - Keyboard navigation
- * - Focus indicators
- *
- * Sürdürülebilirlik:
- * - TypeScript tip güvenliği
- * - Modüler yapı
- * - Açık ve anlaşılır kod
- * - Comprehensive documentation
- *
- * @author TaskFlow Development Team
- * @version 1.0.0
- * @since 2024
+ * @version 2.0.0 - Modular
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+
+// Sub-hooks
+import { useHoverAnimation } from './animations/useHoverAnimation';
+import { useClickAnimation } from './animations/useClickAnimation';
 
 /**
  * Animation State Interface
@@ -69,326 +34,190 @@ interface AnimationOptions {
 }
 
 /**
- * useAnimations Custom Hook
- *
- * Micro-interactions ve animasyonlar için kullanılan hook.
- * Çeşitli animasyon efektleri ve state yönetimi sağlar.
- *
- * @param options - Animasyon seçenekleri
- * @returns Animation state ve fonksiyonları
+ * Fade Animation Hook
  */
-export const useAnimations = (options: AnimationOptions = {}) => {
-  const {
-    duration = 300,
-    delay = 0,
-    easing = 'ease-out',
-    threshold = 0.1,
-    triggerOnce = true
-  } = options;
+export const useFadeAnimation = (options: AnimationOptions = {}) => {
+  const { duration = 300, delay = 0 } = options;
+  const [isVisible, setIsVisible] = useState(false);
 
-  const [animationState, setAnimationState] = useState<AnimationState>({
-    isAnimating: false,
-    isVisible: false,
-    hasAnimated: false
-  });
-
-  const elementRef = useRef<HTMLElement | null>(null);
-  const animationRef = useRef<number | null>(null);
-
-  /**
-   * Fade in animasyonu
-   */
   const fadeIn = useCallback(() => {
-    if (!elementRef.current) return;
+    setTimeout(() => setIsVisible(true), delay);
+  }, [delay]);
 
-    setAnimationState(prev => ({ ...prev, isAnimating: true }));
-
-    const element = elementRef.current;
-    element.style.opacity = '0';
-    element.style.transform = 'translateY(20px)';
-    element.style.transition = `opacity ${duration}ms ${easing}, transform ${duration}ms ${easing}`;
-
-    setTimeout(() => {
-      element.style.opacity = '1';
-      element.style.transform = 'translateY(0)';
-    }, delay);
-
-    setTimeout(() => {
-      setAnimationState(prev => ({ 
-        ...prev, 
-        isAnimating: false, 
-        isVisible: true,
-        hasAnimated: true 
-      }));
-    }, delay + duration);
-  }, [duration, delay, easing]);
-
-  /**
-   * Fade out animasyonu
-   */
   const fadeOut = useCallback(() => {
-    if (!elementRef.current) return;
+    setIsVisible(false);
+  }, []);
 
-    setAnimationState(prev => ({ ...prev, isAnimating: true }));
+  const fadeProps = {
+    style: {
+      opacity: isVisible ? 1 : 0,
+      transition: `opacity ${duration}ms ease-in-out`,
+    },
+  };
 
-    const element = elementRef.current;
-    element.style.transition = `opacity ${duration}ms ${easing}, transform ${duration}ms ${easing}`;
-    element.style.opacity = '0';
-    element.style.transform = 'translateY(-20px)';
+  return { isVisible, fadeIn, fadeOut, fadeProps };
+};
 
-    setTimeout(() => {
-      setAnimationState(prev => ({ 
-        ...prev, 
-        isAnimating: false, 
-        isVisible: false 
-      }));
-    }, duration);
-  }, [duration, easing]);
+/**
+ * Slide Animation Hook
+ */
+export const useSlideAnimation = (direction: 'up' | 'down' | 'left' | 'right' = 'up') => {
+  const [isVisible, setIsVisible] = useState(false);
 
-  /**
-   * Scale animasyonu
-   */
-  const scale = useCallback((scaleValue: number = 1.05) => {
-    if (!elementRef.current) return;
-
-    const element = elementRef.current;
-    const originalTransform = element.style.transform;
+  const getTransform = (visible: boolean) => {
+    if (visible) return 'translate(0, 0)';
     
-    element.style.transition = `transform ${duration}ms ${easing}`;
-    element.style.transform = `scale(${scaleValue})`;
+    switch (direction) {
+      case 'up': return 'translate(0, 20px)';
+      case 'down': return 'translate(0, -20px)';
+      case 'left': return 'translate(20px, 0)';
+      case 'right': return 'translate(-20px, 0)';
+      default: return 'translate(0, 20px)';
+    }
+  };
 
-    setTimeout(() => {
-      element.style.transform = originalTransform;
-    }, duration);
-  }, [duration, easing]);
+  const slideProps = {
+    style: {
+      transform: getTransform(isVisible),
+      opacity: isVisible ? 1 : 0,
+      transition: 'all 300ms ease-in-out',
+    },
+  };
 
-  /**
-   * Bounce animasyonu
-   */
-  const bounce = useCallback(() => {
-    if (!elementRef.current) return;
+  return { isVisible, setIsVisible, slideProps };
+};
 
-    const element = elementRef.current;
-    const originalTransform = element.style.transform;
-    
-    element.style.transition = `transform ${duration}ms ${easing}`;
-    element.style.transform = 'scale(1.1)';
+/**
+ * Scale Animation Hook
+ */
+export const useScaleAnimation = (options: { scale?: number; duration?: number } = {}) => {
+  const { scale = 1.1, duration = 200 } = options;
+  const [isScaled, setIsScaled] = useState(false);
 
-    setTimeout(() => {
-      element.style.transform = 'scale(0.95)';
-    }, duration / 2);
+  const scaleProps = {
+    style: {
+      transform: isScaled ? `scale(${scale})` : 'scale(1)',
+      transition: `transform ${duration}ms ease-in-out`,
+    },
+  };
 
-    setTimeout(() => {
-      element.style.transform = originalTransform;
-    }, duration);
-  }, [duration, easing]);
+  return { isScaled, setIsScaled, scaleProps };
+};
 
-  /**
-   * Shake animasyonu
-   */
-  const shake = useCallback(() => {
-    if (!elementRef.current) return;
+/**
+ * Pulse Animation Hook
+ */
+export const usePulseAnimation = (duration: number = 1000) => {
+  const [isPulsing, setIsPulsing] = useState(false);
 
-    const element = elementRef.current;
-    const originalTransform = element.style.transform;
-    
-    const shakeKeyframes = [
-      { transform: 'translateX(0)' },
-      { transform: 'translateX(-5px)' },
-      { transform: 'translateX(5px)' },
-      { transform: 'translateX(-5px)' },
-      { transform: 'translateX(5px)' },
-      { transform: 'translateX(0)' }
-    ];
-
-    element.animate(shakeKeyframes, {
-      duration: duration,
-      easing: easing
-    });
-
-    setTimeout(() => {
-      element.style.transform = originalTransform;
-    }, duration);
-  }, [duration, easing]);
-
-  /**
-   * Pulse animasyonu
-   */
-  const pulse = useCallback(() => {
-    if (!elementRef.current) return;
-
-    const element = elementRef.current;
-    const originalTransform = element.style.transform;
-    
-    element.style.transition = `transform ${duration}ms ${easing}`;
-    element.style.transform = 'scale(1.05)';
-
-    setTimeout(() => {
-      element.style.transform = originalTransform;
-    }, duration);
-  }, [duration, easing]);
-
-  /**
-   * Wiggle animasyonu
-   */
-  const wiggle = useCallback(() => {
-    if (!elementRef.current) return;
-
-    const element = elementRef.current;
-    const originalTransform = element.style.transform;
-    
-    const wiggleKeyframes = [
-      { transform: 'rotate(0deg)' },
-      { transform: 'rotate(-3deg)' },
-      { transform: 'rotate(3deg)' },
-      { transform: 'rotate(-3deg)' },
-      { transform: 'rotate(3deg)' },
-      { transform: 'rotate(0deg)' }
-    ];
-
-    element.animate(wiggleKeyframes, {
-      duration: duration,
-      easing: easing
-    });
-
-    setTimeout(() => {
-      element.style.transform = originalTransform;
-    }, duration);
-  }, [duration, easing]);
-
-  /**
-   * Intersection Observer ile scroll-triggered animasyon
-   */
   useEffect(() => {
-    if (!elementRef.current) return;
+    if (!isPulsing) return;
+
+    const interval = setInterval(() => {
+      // Pulse effect handled by CSS animation
+    }, duration);
+
+    return () => clearInterval(interval);
+  }, [isPulsing, duration]);
+
+  const pulseProps = {
+    style: {
+      animation: isPulsing ? `pulse ${duration}ms infinite` : 'none',
+    },
+  };
+
+  return { isPulsing, setIsPulsing, pulseProps };
+};
+
+/**
+ * Scroll Animation Hook
+ */
+export const useScrollAnimation = (options: AnimationOptions = {}) => {
+  const { threshold = 0.1, triggerOnce = true } = options;
+  const [isVisible, setIsVisible] = useState(false);
+  const [hasAnimated, setHasAnimated] = useState(false);
+  const ref = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
 
     const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && !animationState.hasAnimated) {
-            fadeIn();
-            if (triggerOnce) {
-              observer.unobserve(entry.target);
-            }
-          }
-        });
+      ([entry]) => {
+        if (entry.isIntersecting && (!triggerOnce || !hasAnimated)) {
+          setIsVisible(true);
+          setHasAnimated(true);
+        } else if (!triggerOnce) {
+          setIsVisible(false);
+        }
       },
-      {
-        threshold,
-        rootMargin: '0px 0px -50px 0px'
-      }
+      { threshold }
     );
 
-    observer.observe(elementRef.current);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [threshold, triggerOnce, hasAnimated]);
 
-    return () => {
-      if (elementRef.current) {
-        observer.unobserve(elementRef.current);
-      }
-    };
-  }, [fadeIn, threshold, triggerOnce, animationState.hasAnimated]);
-
-  /**
-   * Cleanup function
-   */
-  useEffect(() => {
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, []);
-
-  return {
-    elementRef,
-    animationState,
-    fadeIn,
-    fadeOut,
-    scale,
-    bounce,
-    shake,
-    pulse,
-    wiggle,
-    isAnimating: animationState.isAnimating,
-    isVisible: animationState.isVisible
-  };
+  return { ref, isVisible, hasAnimated };
 };
 
 /**
- * useHoverAnimation Hook
- *
- * Hover animasyonları için özel hook
+ * Main useAnimations Hook - Orchestrator
  */
-export const useHoverAnimation = (options: AnimationOptions = {}) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const { scale, pulse } = useAnimations(options);
+export const useAnimations = (options: AnimationOptions = {}) => {
+  const [state, setState] = useState<AnimationState>({
+    isAnimating: false,
+    isVisible: false,
+    hasAnimated: false,
+  });
 
-  const handleMouseEnter = useCallback(() => {
-    setIsHovered(true);
-    scale(1.05);
-  }, [scale]);
+  // Sub-hooks
+  const hoverAnimation = useHoverAnimation();
+  const clickAnimation = useClickAnimation();
+  const fadeAnimation = useFadeAnimation(options);
+  const slideAnimation = useSlideAnimation();
+  const scaleAnimation = useScaleAnimation();
+  const pulseAnimation = usePulseAnimation();
+  const scrollAnimation = useScrollAnimation(options);
 
-  const handleMouseLeave = useCallback(() => {
-    setIsHovered(false);
-    scale(1);
-  }, [scale]);
+  const startAnimation = useCallback(() => {
+    setState(prev => ({ ...prev, isAnimating: true }));
+  }, []);
+
+  const stopAnimation = useCallback(() => {
+    setState(prev => ({ ...prev, isAnimating: false }));
+  }, []);
+
+  const resetAnimation = useCallback(() => {
+    setState({
+      isAnimating: false,
+      isVisible: false,
+      hasAnimated: false,
+    });
+  }, []);
 
   return {
-    isHovered,
-    handleMouseEnter,
-    handleMouseLeave
+    // State
+    ...state,
+    
+    // Controls
+    startAnimation,
+    stopAnimation,
+    resetAnimation,
+    
+    // Sub-animations
+    hover: hoverAnimation,
+    click: clickAnimation,
+    fade: fadeAnimation,
+    slide: slideAnimation,
+    scale: scaleAnimation,
+    pulse: pulseAnimation,
+    scroll: scrollAnimation,
   };
 };
 
-/**
- * useClickAnimation Hook
- *
- * Click animasyonları için özel hook
- */
-export const useClickAnimation = (options: AnimationOptions = {}) => {
-  const { bounce, shake } = useAnimations(options);
+// Re-export sub-hooks
+export { useHoverAnimation } from './animations/useHoverAnimation';
+export { useClickAnimation } from './animations/useClickAnimation';
 
-  const handleClick = useCallback(() => {
-    bounce();
-  }, [bounce]);
-
-  const handleErrorClick = useCallback(() => {
-    shake();
-  }, [shake]);
-
-  return {
-    handleClick,
-    handleErrorClick
-  };
-};
-
-/**
- * useLoadingAnimation Hook
- *
- * Loading animasyonları için özel hook
- */
-export const useLoadingAnimation = (options: AnimationOptions = {}) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const { pulse } = useAnimations(options);
-
-  const startLoading = useCallback(() => {
-    setIsLoading(true);
-  }, []);
-
-  const stopLoading = useCallback(() => {
-    setIsLoading(false);
-  }, []);
-
-  const pulseWhileLoading = useCallback(() => {
-    if (isLoading) {
-      pulse();
-    }
-  }, [isLoading, pulse]);
-
-  return {
-    isLoading,
-    startLoading,
-    stopLoading,
-    pulseWhileLoading
-  };
-}; 
+export default useAnimations; 

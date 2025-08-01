@@ -1,558 +1,304 @@
 /**
- * useErrorMonitoring Custom Hook
+ * useErrorMonitoring Custom Hook - Refactored
  *
- * Bu dosya, TaskFlow uygulamasında hata izleme ve
- * raporlama için kullanılan error monitoring hook'unu içerir.
- * JavaScript hatalarını, network hatalarını ve
- * kullanıcı deneyimi hatalarını yakalar.
- *
- * Ana Özellikler:
- * - Global error handling
- * - Network error monitoring
- * - React error boundaries
- * - Performance error tracking
- * - User feedback collection
- * - Error categorization
- *
- * Error Types:
- * - JavaScript errors
- * - Network errors
- * - React component errors
- * - Performance errors
- * - User interaction errors
- * - API errors
- *
- * Error Handling:
- * - Automatic error capture
- * - Error grouping
- * - Severity classification
- * - Context preservation
- * - User impact assessment
- * - Recovery suggestions
- *
- * Performance:
- * - Efficient error processing
- * - Batch error reporting
- * - Minimal performance impact
- * - Background processing
- * - Error deduplication
- *
- * Sürdürülebilirlik:
- * - TypeScript tip güvenliği
- * - Modüler yapı
- * - Açık ve anlaşılır kod
- * - Comprehensive documentation
- *
- * @author TaskFlow Development Team
- * @version 1.0.0
- * - Açık ve anlaşılır kod
+ * Modüler error monitoring hook'u. Büyük monolitik yapı yerine
+ * küçük, focused utilities kullanır.
  */
 
-import { useEffect, useCallback, useRef, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
+import type { 
+  ErrorReport, 
+  ErrorStats, 
+  ErrorMonitoringConfig,
+  NetworkErrorInfo,
+  PerformanceErrorInfo 
+} from './error/errorTypes';
+import { 
+  createErrorReport, 
+  createNetworkErrorReport, 
+  createPerformanceErrorReport 
+} from './error/errorCapture';
 
 /**
- * Error Severity Levels
+ * Default configuration
  */
-export type ErrorSeverity = 'low' | 'medium' | 'high' | 'critical';
+const defaultConfig: ErrorMonitoringConfig = {
+  enabled: true,
+  maxErrors: 100,
+  reportInterval: 60000, // 1 minute
+  captureConsoleErrors: true,
+  captureUnhandledRejections: true,
+  captureNetworkErrors: true,
+  severityThresholds: {
+    javascript: 'medium',
+    network: 'high',
+    api: 'medium'
+  }
+};
 
 /**
- * Error Categories
+ * useErrorMonitoring Hook - Refactored
+ * 
+ * Ana error monitoring hook'u. Modüler utilities kullanarak
+ * error capture, reporting ve statistics sağlar.
  */
-export type ErrorCategory = 
-  | 'javascript'
-  | 'network'
-  | 'react'
-  | 'api'
-  | 'performance'
-  | 'user_interaction'
-  | 'authentication'
-  | 'validation'
-  | 'unknown';
+export const useErrorMonitoring = (config: Partial<ErrorMonitoringConfig> = {}) => {
+  // ===== CONFIG =====
+  const finalConfig = { ...defaultConfig, ...config };
+  
+  // ===== STATE =====
+  const [errors, setErrors] = useState<ErrorReport[]>([]);
+  const [isMonitoring, setIsMonitoring] = useState(false);
+  const [stats, setStats] = useState<ErrorStats | null>(null);
+  
+  // ===== REFS =====
+  const errorQueue = useRef<ErrorReport[]>([]);
+  const reportTimer = useRef<NodeJS.Timeout | null>(null);
 
-/**
- * Error Context Interface
- */
-export interface ErrorContext {
-  url: string;
-  userAgent: string;
-  timestamp: number;
-  userId?: string;
-  sessionId?: string;
-  componentStack?: string;
-  stackTrace?: string;
-  userActions?: string[];
-  performanceMetrics?: Record<string, any>;
-  networkInfo?: {
-    online: boolean;
-    connectionType?: string | null;
-    effectiveType?: string | null;
-  };
-}
+  // ===== ERROR HANDLERS =====
+  /**
+   * Handle JavaScript errors
+   */
+  const handleJavaScriptError = useCallback((event: ErrorEvent) => {
+    if (!finalConfig.enabled) return;
 
-/**
- * Error Report Interface
- */
-export interface ErrorReport {
-  id: string;
-  message: string;
-  name: string;
-  severity: ErrorSeverity;
-  category: ErrorCategory;
-  context: ErrorContext;
-  fingerprint: string;
-  occurrences: number;
-  firstSeen: number;
-  lastSeen: number;
-  resolved: boolean;
-  userImpact: 'none' | 'low' | 'medium' | 'high';
-  recoverySuggestion?: string;
-}
+    const error = new Error(event.message);
+    error.name = 'JavaScriptError';
+    error.stack = `${event.filename}:${event.lineno}:${event.colno}`;
 
-/**
- * Error Monitoring Configuration
- */
-export interface ErrorMonitoringConfig {
-  enabled: boolean;
-  endpoint: string;
-  batchSize: number;
-  flushInterval: number;
-  maxErrorsPerMinute: number;
-  captureUserActions: boolean;
-  capturePerformance: boolean;
-  captureNetworkInfo: boolean;
-  debug: boolean;
-  ignorePatterns: RegExp[];
-  severityThreshold: ErrorSeverity;
-}
+    const errorReport = createErrorReport(error, {
+      componentStack: event.filename
+    });
 
-/**
- * Error Monitoring State
- */
-export interface ErrorMonitoringState {
-  errors: ErrorReport[];
-  isInitialized: boolean;
-  config: ErrorMonitoringConfig;
-  errorCount: number;
-  lastErrorTime: number;
-}
-
-/**
- * useErrorMonitoring Custom Hook
- *
- * Hata izleme ve raporlama için kullanılan hook.
- * JavaScript hatalarını, network hatalarını ve React hatalarını yakalar.
- *
- * @param config - Error monitoring konfigürasyonu
- * @returns Error monitoring functions ve state
- */
-export function useErrorMonitoring(config: Partial<ErrorMonitoringConfig> = {}) {
-  const [state, setState] = useState<ErrorMonitoringState>({
-    errors: [],
-    isInitialized: false,
-    config: {
-      enabled: true,
-      endpoint: '/api/errors',
-      batchSize: 10,
-      flushInterval: 30000, // 30 seconds
-      maxErrorsPerMinute: 10,
-      captureUserActions: true,
-      capturePerformance: true,
-      captureNetworkInfo: true,
-      debug: false,
-      ignorePatterns: [
-        /Script error\.?/, // Cross-origin script errors
-        /ResizeObserver loop limit exceeded/, // Common browser warning
-        /Network request failed/ // Network errors handled separately
-      ],
-      severityThreshold: 'low',
-      ...config
-    },
-    errorCount: 0,
-    lastErrorTime: 0
-  });
-
-  const flushTimeoutRef = useRef<NodeJS.Timeout>();
-  const userActionsRef = useRef<string[]>([]);
-  const errorFingerprintsRef = useRef<Map<string, ErrorReport>>(new Map());
+    addError(errorReport);
+  }, [finalConfig.enabled]);
 
   /**
-   * Generate error fingerprint
+   * Handle unhandled promise rejections
    */
-  const generateFingerprint = useCallback((error: Error, context: ErrorContext): string => {
-    const key = `${error.name}:${error.message}:${context.url}`;
-    return btoa(key).substring(0, 16);
-  }, []);
+  const handleUnhandledRejection = useCallback((event: PromiseRejectionEvent) => {
+    if (!finalConfig.enabled) return;
+
+    const error = new Error(String(event.reason));
+    error.name = 'UnhandledRejection';
+
+    const errorReport = createErrorReport(error);
+    addError(errorReport);
+  }, [finalConfig.enabled]);
 
   /**
-   * Determine error severity
+   * Add error to queue and state
    */
-  const determineSeverity = useCallback((error: Error, context: ErrorContext): ErrorSeverity => {
-    // Critical errors
-    if (error.name === 'TypeError' || error.name === 'ReferenceError') {
-      return 'critical';
-    }
-
-    // High severity errors
-    if (error.name === 'NetworkError' || error.message.includes('fetch')) {
-      return 'high';
-    }
-
-    // Medium severity errors
-    if (error.name === 'ValidationError' || error.message.includes('validation')) {
-      return 'medium';
-    }
-
-    // Low severity errors
-    return 'low';
-  }, []);
-
-  /**
-   * Determine error category
-   */
-  const determineCategory = useCallback((error: Error, context: ErrorContext): ErrorCategory => {
-    if (error.name === 'NetworkError' || error.message.includes('fetch')) {
-      return 'network';
-    }
-
-    if (error.name === 'ValidationError') {
-      return 'validation';
-    }
-
-    if (error.message.includes('authentication') || error.message.includes('unauthorized')) {
-      return 'authentication';
-    }
-
-    if (error.message.includes('performance') || error.message.includes('timeout')) {
-      return 'performance';
-    }
-
-    if (context.componentStack) {
-      return 'react';
-    }
-
-    return 'javascript';
-  }, []);
-
-  /**
-   * Assess user impact
-   */
-  const assessUserImpact = useCallback((error: Error, severity: ErrorSeverity): 'none' | 'low' | 'medium' | 'high' => {
-    if (severity === 'critical') {
-      return 'high';
-    }
-
-    if (severity === 'high') {
-      return 'medium';
-    }
-
-    if (severity === 'medium') {
-      return 'low';
-    }
-
-    return 'none';
-  }, []);
-
-  /**
-   * Generate recovery suggestion
-   */
-  const generateRecoverySuggestion = useCallback((error: Error, category: ErrorCategory): string | undefined => {
-    switch (category) {
-      case 'network':
-        return 'İnternet bağlantınızı kontrol edin ve sayfayı yenileyin';
-      case 'authentication':
-        return 'Oturumunuzu yeniden açın';
-      case 'validation':
-        return 'Girdiğiniz bilgileri kontrol edin';
-      case 'performance':
-        return 'Sayfayı yenileyin veya daha sonra tekrar deneyin';
-      default:
-        return 'Sayfayı yenileyin';
-    }
-  }, []);
-
-  /**
-   * Capture error context
-   */
-  const captureContext = useCallback((): ErrorContext => {
-    const context: ErrorContext = {
-      url: window.location.href,
-      userAgent: navigator.userAgent,
-      timestamp: Date.now(),
-      userActions: state.config.captureUserActions ? [...userActionsRef.current] : undefined,
-      performanceMetrics: state.config.capturePerformance ? {
-        memory: (performance as any).memory,
-        navigation: performance.getEntriesByType('navigation')[0],
-        paint: performance.getEntriesByType('paint')
-      } : undefined,
-      networkInfo: state.config.captureNetworkInfo ? {
-        online: navigator.onLine,
-        connectionType: (navigator as any).connection?.effectiveType || undefined,
-        effectiveType: (navigator as any).connection?.effectiveType || undefined
-      } : undefined
-    };
-
-    return context;
-  }, [state.config]);
-
-  /**
-   * Create error report
-   */
-  const createErrorReport = useCallback((error: Error, context: ErrorContext): ErrorReport => {
-    const fingerprint = generateFingerprint(error, context);
-    const severity = determineSeverity(error, context);
-    const category = determineCategory(error, context);
-    const userImpact = assessUserImpact(error, severity);
-    const recoverySuggestion = generateRecoverySuggestion(error, category);
-
-    return {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      message: error.message,
-      name: error.name,
-      severity,
-      category,
-      context,
-      fingerprint,
-      occurrences: 1,
-      firstSeen: Date.now(),
-      lastSeen: Date.now(),
-      resolved: false,
-      userImpact,
-      recoverySuggestion
-    };
-  }, [generateFingerprint, determineSeverity, determineCategory, assessUserImpact, generateRecoverySuggestion]);
-
-  /**
-   * Check if error should be ignored
-   */
-  const shouldIgnoreError = useCallback((error: Error): boolean => {
-    return state.config.ignorePatterns.some(pattern => 
-      pattern.test(error.message) || pattern.test(error.name)
+  const addError = useCallback((errorReport: ErrorReport) => {
+    // Check for duplicates
+    const existingError = errors.find(e => 
+      e.message === errorReport.message && 
+      e.name === errorReport.name
     );
-  }, [state.config.ignorePatterns]);
 
-  /**
-   * Check rate limiting
-   */
-  const isRateLimited = useCallback((): boolean => {
-    const now = Date.now();
-    const oneMinuteAgo = now - 60000;
-
-    if (state.lastErrorTime > oneMinuteAgo && state.errorCount >= state.config.maxErrorsPerMinute) {
-      return true;
-    }
-
-    return false;
-  }, [state.lastErrorTime, state.errorCount, state.config.maxErrorsPerMinute]);
-
-  /**
-   * Capture error
-   */
-  const captureError = useCallback((error: Error, additionalContext?: Partial<ErrorContext>) => {
-    if (!state.config.enabled || shouldIgnoreError(error) || isRateLimited()) {
-      return;
-    }
-
-    const context = {
-      ...captureContext(),
-      ...additionalContext
-    };
-
-    const errorReport = createErrorReport(error, context);
-    const fingerprint = errorReport.fingerprint;
-
-    // Check if we've seen this error before
-    const existingError = errorFingerprintsRef.current.get(fingerprint);
     if (existingError) {
       // Update existing error
-      existingError.occurrences += 1;
-      existingError.lastSeen = Date.now();
-      
-      setState(prev => ({
-        ...prev,
-        errors: prev.errors.map(e => 
-          e.fingerprint === fingerprint ? existingError : e
-        ),
-        errorCount: prev.errorCount + 1,
-        lastErrorTime: Date.now()
-      }));
+      setErrors(prev => prev.map(e => 
+        e.id === existingError.id 
+          ? { ...e, count: e.count + 1, lastOccurrence: Date.now() }
+          : e
+      ));
     } else {
       // Add new error
-      errorFingerprintsRef.current.set(fingerprint, errorReport);
-      
-      setState(prev => ({
-        ...prev,
-        errors: [...prev.errors, errorReport],
-        errorCount: prev.errorCount + 1,
-        lastErrorTime: Date.now()
-      }));
+      setErrors(prev => {
+        const newErrors = [...prev, errorReport];
+        
+        // Limit max errors
+        if (newErrors.length > finalConfig.maxErrors) {
+          return newErrors.slice(-finalConfig.maxErrors);
+        }
+        
+        return newErrors;
+      });
     }
 
-    if (state.config.debug) {
-      console.error('🚨 Error captured:', errorReport);
-    }
-  }, [state.config, shouldIgnoreError, isRateLimited, captureContext, createErrorReport]);
+    // Add to queue for reporting
+    errorQueue.current.push(errorReport);
+  }, [errors, finalConfig.maxErrors]);
 
+  // ===== STATISTICS =====
   /**
-   * Capture React error
+   * Calculate error statistics
    */
-  const captureReactError = useCallback((error: Error, errorInfo: React.ErrorInfo) => {
-    captureError(error, {
-      componentStack: errorInfo.componentStack
-    });
-  }, [captureError]);
+  const calculateStats = useCallback((): ErrorStats => {
+    const totalErrors = errors.reduce((sum, error) => sum + error.count, 0);
+    
+    const errorsByCategory = errors.reduce((acc, error) => {
+      acc[error.category] = (acc[error.category] || 0) + error.count;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const errorsBySeverity = errors.reduce((acc, error) => {
+      acc[error.severity] = (acc[error.severity] || 0) + error.count;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const now = Date.now();
+    const oneHourAgo = now - (60 * 60 * 1000);
+    const recentErrors = errors.filter(error => error.lastOccurrence > oneHourAgo);
+    const errorRate = recentErrors.length / 60; // errors per minute
+
+    const topErrors = [...errors]
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    return {
+      totalErrors,
+      errorsByCategory: errorsByCategory as any,
+      errorsBySeverity: errorsBySeverity as any,
+      errorRate,
+      averageResolutionTime: 0, // TODO: Calculate when resolution tracking is implemented
+      topErrors
+    };
+  }, [errors]);
+
+  // ===== REPORTING =====
+  /**
+   * Report errors to backend (mock implementation)
+   */
+  const reportErrors = useCallback(async () => {
+    if (errorQueue.current.length === 0) return;
+
+    try {
+      // Mock API call - replace with real implementation
+      console.log('Reporting errors:', errorQueue.current);
+      
+      // Clear queue after successful report
+      errorQueue.current = [];
+    } catch (error) {
+      console.error('Failed to report errors:', error);
+    }
+  }, []);
+
+  // ===== PUBLIC METHODS =====
+  /**
+   * Manually capture an error
+   */
+  const captureError = useCallback((error: Error | any, additionalContext?: any) => {
+    if (!finalConfig.enabled) return;
+
+    const errorReport = createErrorReport(error, additionalContext);
+    addError(errorReport);
+  }, [finalConfig.enabled, addError]);
 
   /**
    * Capture network error
    */
-  const captureNetworkError = useCallback((url: string, status: number, statusText: string) => {
-    const error = new Error(`Network error: ${status} ${statusText}`);
-    error.name = 'NetworkError';
-    
-    captureError(error, {
-      url,
-      networkInfo: {
-        online: navigator.onLine,
-        connectionType: (navigator as any).connection?.effectiveType || undefined,
-        effectiveType: (navigator as any).connection?.effectiveType || undefined
-      }
-    });
-  }, [captureError]);
+  const captureNetworkError = useCallback((networkInfo: NetworkErrorInfo) => {
+    if (!finalConfig.enabled || !finalConfig.captureNetworkErrors) return;
+
+    const errorReport = createNetworkErrorReport(networkInfo);
+    addError(errorReport);
+  }, [finalConfig.enabled, finalConfig.captureNetworkErrors, addError]);
 
   /**
-   * Track user action
+   * Capture performance error
    */
-  const trackUserAction = useCallback((action: string) => {
-    if (!state.config.captureUserActions) return;
+  const capturePerformanceError = useCallback((performanceInfo: PerformanceErrorInfo) => {
+    if (!finalConfig.enabled) return;
 
-    userActionsRef.current.push(`${action}:${Date.now()}`);
-    
-    // Keep only last 10 actions
-    if (userActionsRef.current.length > 10) {
-      userActionsRef.current = userActionsRef.current.slice(-10);
-    }
-  }, [state.config.captureUserActions]);
+    const errorReport = createPerformanceErrorReport(performanceInfo);
+    addError(errorReport);
+  }, [finalConfig.enabled, addError]);
 
   /**
-   * Flush errors to server
+   * Clear all errors
    */
-  const flushErrors = useCallback(async () => {
-    if (state.errors.length === 0) return;
-
-    try {
-      const errorsToSend = state.errors.filter(error => 
-        !error.resolved && 
-        Date.now() - error.lastSeen > 5000 // Only send errors older than 5 seconds
-      );
-
-      if (errorsToSend.length === 0) return;
-
-      setState(prev => ({
-        ...prev,
-        errors: prev.errors.filter(error => 
-          error.resolved || Date.now() - error.lastSeen <= 5000
-        )
-      }));
-
-      // Send to error monitoring endpoint
-      await fetch(state.config.endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          errors: errorsToSend,
-          timestamp: Date.now()
-        })
-      });
-
-      if (state.config.debug) {
-        console.log('🚨 Errors flushed:', errorsToSend.length);
-      }
-    } catch (error) {
-      console.error('Error monitoring flush error:', error);
-    }
-  }, [state.errors, state.config]);
+  const clearErrors = useCallback(() => {
+    setErrors([]);
+    errorQueue.current = [];
+  }, []);
 
   /**
-   * Initialize error monitoring
+   * Mark error as resolved
    */
-  const initialize = useCallback(() => {
-    if (state.isInitialized) return;
+  const resolveError = useCallback((errorId: string) => {
+    setErrors(prev => prev.map(error => 
+      error.id === errorId ? { ...error, resolved: true } : error
+    ));
+  }, []);
 
-    // Global error handlers
-    const handleGlobalError = (event: ErrorEvent) => {
-      captureError(event.error || new Error(event.message));
-    };
-
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      captureError(new Error(event.reason));
-    };
-
-    // Network error monitoring
-    const originalFetch = window.fetch;
-    window.fetch = async (...args) => {
-      try {
-        const response = await originalFetch(...args);
-        
-        if (!response.ok) {
-          captureNetworkError(args[0] as string, response.status, response.statusText);
-        }
-        
-        return response;
-      } catch (error) {
-        captureNetworkError(args[0] as string, 0, 'Network Error');
-        throw error;
-      }
-    };
-
-    // Add event listeners
-    window.addEventListener('error', handleGlobalError);
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-
-    // Set up periodic flush
-    flushTimeoutRef.current = setInterval(flushErrors, state.config.flushInterval);
-
-    setState(prev => ({
-      ...prev,
-      isInitialized: true
-    }));
-
-    if (state.config.debug) {
-      console.log('🚨 Error monitoring initialized');
-    }
-
-    // Cleanup function
-    return () => {
-      window.removeEventListener('error', handleGlobalError);
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-      window.fetch = originalFetch;
-      
-      if (flushTimeoutRef.current) {
-        clearInterval(flushTimeoutRef.current);
-      }
-    };
-  }, [state.isInitialized, captureError, captureNetworkError, flushErrors, state.config]);
-
+  // ===== EFFECTS =====
   /**
-   * Initialize on mount
+   * Setup error monitoring
    */
   useEffect(() => {
-    const cleanup = initialize();
-    return cleanup;
-  }, [initialize]);
+    if (!finalConfig.enabled) {
+      setIsMonitoring(false);
+      return;
+    }
 
+    // Setup global error handlers
+    if (finalConfig.captureConsoleErrors) {
+      window.addEventListener('error', handleJavaScriptError);
+    }
+
+    if (finalConfig.captureUnhandledRejections) {
+      window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    }
+
+    setIsMonitoring(true);
+
+    // Setup reporting interval
+    reportTimer.current = setInterval(reportErrors, finalConfig.reportInterval);
+
+    return () => {
+      window.removeEventListener('error', handleJavaScriptError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      
+      if (reportTimer.current) {
+        clearInterval(reportTimer.current);
+      }
+      
+      setIsMonitoring(false);
+    };
+  }, [
+    finalConfig.enabled,
+    finalConfig.captureConsoleErrors,
+    finalConfig.captureUnhandledRejections,
+    finalConfig.reportInterval,
+    handleJavaScriptError,
+    handleUnhandledRejection,
+    reportErrors
+  ]);
+
+  /**
+   * Update statistics when errors change
+   */
+  useEffect(() => {
+    const newStats = calculateStats();
+    setStats(newStats);
+  }, [errors, calculateStats]);
+
+  // ===== RETURN =====
   return {
-    // State
-    errors: state.errors,
-    isInitialized: state.isInitialized,
-    config: state.config,
-    errorCount: state.errorCount,
-
-    // Actions
+    // Core data
+    errors,
+    stats,
+    isMonitoring,
+    
+    // Configuration
+    config: finalConfig,
+    
+    // Methods
     captureError,
-    captureReactError,
     captureNetworkError,
-    trackUserAction,
-    flushErrors
+    capturePerformanceError,
+    clearErrors,
+    resolveError,
+    reportErrors,
+    
+    // Computed values
+    errorCount: errors.length,
+    hasErrors: errors.length > 0,
+    criticalErrors: errors.filter(e => e.severity === 'critical'),
+    recentErrors: errors.filter(e => Date.now() - e.lastOccurrence < 300000) // Last 5 minutes
   };
-} 
+};
+
+export default useErrorMonitoring; 

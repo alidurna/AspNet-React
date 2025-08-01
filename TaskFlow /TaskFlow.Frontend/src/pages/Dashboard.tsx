@@ -1,517 +1,290 @@
 /**
- * Dashboard Sayfası Component
- *
- * Bu dosya, kullanıcıların TaskFlow uygulamasına giriş yaptıktan sonra
- * karşılaştığı ana dashboard sayfasını içerir. Kullanıcı deneyimini
- * optimize etmek için modern UI/UX prensipleri kullanılmıştır.
- *
+ * Dashboard Page - Refactored Version
+ * 
+ * Bu dosya, ana dashboard sayfasının refactored edilmiş halidir.
+ * Mega dosya sorunu çözülmüş, küçük ve yönetilebilir componentlere bölünmüştür.
+ * 
  * Ana Özellikler:
- * - İstatistik kartları (toplam görev, tamamlanan, devam eden, vadesi geçen)
- * - Hızlı işlem butonları (yeni görev, görev listesi, kategoriler)
- * - Son aktiviteler listesi
- * - Hoş geldin mesajı
- * - Responsive tasarım
- * - Modern gradient arka plan
- *
- * İstatistik Kartları:
- * - Toplam Görev: Kullanıcının toplam görev sayısı
- * - Tamamlanan: Başarıyla tamamlanan görevler
- * - Devam Ediyor: Aktif olarak çalışılan görevler
- * - Vadesi Geçen: Süresi dolmuş görevler
- *
- * Hızlı İşlemler:
- * - Yeni Görev: Hızlıca görev oluşturma
- * - Görev Listesi: Tüm görevleri görüntüleme
- * - Kategoriler: Kategori yönetimi
- *
- * Performans:
- * - Lazy loading desteği
- * - Optimized re-renders
- * - Efficient state management
- *
- * Gelecek Geliştirmeler:
- * - Gerçek API verilerinden istatistikler
- * - Chart.js entegrasyonu
- * - Real-time updates
- * - Notification center
- * - Advanced filtering
- *
- * Sürdürülebilirlik:
- * - TypeScript tip güvenliği
  * - Modüler component yapısı
- * - Açık ve anlaşılır kod
- *
- * @author TaskFlow Development Team
- * @version 1.0.0
- * @since 2024
+ * - Clean code principles
+ * - Separation of concerns
+ * - Better maintainability
+ * - Improved performance
+ * 
+ * @version 3.0.0 - Refactored
  */
 
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 
-import StatsCard from "../components/ui/StatsCard";
-import { Button } from "../components/ui/Button";
-import Card from "../components/ui/Card";
-import LoadingSpinner from "../components/ui/LoadingSpinner"; // LoadingSpinner'ı import et
-import TaskCompletionChart from "../components/dashboard/TaskCompletionChart"; // TaskCompletionChart'ı import et
-import { useQuery } from "@tanstack/react-query"; // useQuery'yi import et
-import {
-  profileAPI,
-  type UserStatsDto,
-  type ApiResponse,
-} from "../services/api"; // userStatsAPI kaldırıldı
+// Refactored Components
+import DashboardStats from "../components/dashboard/DashboardStats";
+import DashboardRecentTasks from "../components/dashboard/DashboardRecentTasks";
+import DashboardQuickActions from "../components/dashboard/DashboardQuickActions";
 
+// Shared Components
+import LoadingSpinner from "../components/ui/LoadingSpinner";
+import { useToast } from "../hooks/useToast";
+
+// API Services (feature-based)
+import { tasksAPI } from "../services/features/tasksAPI";
+
+/**
+ * Dashboard Page Component
+ */
 const Dashboard: React.FC = () => {
-  const { user } = useAuth();
+  // ===== HOOKS =====
   const navigate = useNavigate();
+  const toast = useToast();
 
-  // Kullanıcı istatistiklerini API'den çek
-  const {
-    data: statsResponse,
-    isLoading: isStatsLoading,
-    isError: isStatsError,
-  } = useQuery<ApiResponse<UserStatsDto>, Error>({
-    queryKey: ["userStats"],
-    queryFn: profileAPI.getUserStats, // userStatsAPI.getUserStats yerine profileAPI.getUserStats kullanıldı
+  // ===== DATA FETCHING =====
+  const { data: tasksResponse, isLoading: tasksLoading } = useQuery({
+    queryKey: ['tasks'],
+    queryFn: () => tasksAPI.getTasks(),
   });
 
-  // Mock data yerine gerçek istatistik verilerini kullan
-  const statsData = statsResponse?.data
-    ? [
-        {
-          title: "Toplam Görev",
-          value: statsResponse.data.totalTasks.toString(),
-          icon: (
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-              />
-            </svg>
-          ),
-          trend: "", // Backend'den trend bilgisi gelmiyor, şimdilik boş bırakıldı
-          trendUp: true,
-          color: "blue" as const,
-        },
-        {
-          title: "Tamamlanan",
-          value: (statsResponse.data.completedTasks ?? 0).toString(),
-          icon: (
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          ),
-          trend: `+${(statsResponse.data.taskCompletionRate ?? 0).toFixed(2)}%`,
-          trendUp: true,
-          progress: statsResponse.data.taskCompletionRate ?? 0,
-          color: "green" as const,
-        },
-        {
-          title: "Devam Eden Görevler", // Başlık güncellendi
-          value: (statsResponse.data.inProgressTasks ?? 0).toString(), // inProgressTasks kullanıldı
-          icon: (
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          ),
-          trend: "",
-          trendUp: false,
-          color: "yellow" as const,
-        },
-        {
-          title: "Bekleyen Görevler", // Yeni kart
-          value: (statsResponse.data.pendingTasks ?? 0).toString(),
-          icon: (
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          ),
-          color: "orange" as const,
-        },
-        {
-          title: "Bu Ay Tamamlanan", // Yeni kart
-          value: (statsResponse.data.tasksCompletedThisMonth ?? 0).toString(),
-          icon: (
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
-          ),
-          color: "cyan" as const,
-        },
-        {
-          title: "Bu Hafta Tamamlanan", // Yeni kart
-          value: (statsResponse.data.tasksCompletedThisWeek ?? 0).toString(),
-          icon: (
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
-          ),
-          color: "teal" as const,
-        },
-      ]
-    : [];
+  const tasks = tasksResponse?.data?.tasks || [];
 
-  // Quick actions data (mevcut haliyle kalacak)
-  const quickActions = [
-    {
-      title: "Yeni Görev",
-      description: "Hızlıca yeni bir görev oluştur",
-      icon: (
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 4v16m8-8H4"
-          />
-        </svg>
-      ),
-      action: () => navigate("/tasks/new"),
-      color: "blue" as const,
-    },
-    {
-      title: "Görev Listesi",
-      description: "Tüm görevleri görüntüle",
-      icon: (
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 6h16M4 10h16M4 14h16M4 18h16"
-          />
-        </svg>
-      ),
-      action: () => navigate("/tasks"),
-      color: "purple" as const,
-    },
-    {
-      title: "Kategoriler",
-      description: "Kategori yönetimi",
-      icon: (
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z"
-          />
-        </svg>
-      ),
-      action: () => navigate("/categories"),
-      color: "green" as const,
-    },
-  ];
+  // ===== DATA PREPARATION =====
+  /**
+   * İstatistik verilerini hazırlar
+   */
+  const dashboardStats = React.useMemo(() => {
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter((task: any) => task.isCompleted).length;
+    const inProgressTasks = tasks.filter((task: any) => 
+      !task.isCompleted && task.progress > 0
+    ).length;
+    const overdueTasks = tasks.filter((task: any) => {
+      if (task.isCompleted) return false;
+      if (!task.dueDate) return false;
+      return new Date(task.dueDate) < new Date();
+    }).length;
 
-  // Recent activities mock data
-  const recentActivities = [
-    {
-      id: 1,
-      action: "Görev tamamlandı",
-      task: "Proje dokümantasyonu",
-      time: "2 saat önce",
-      type: "completed",
-    },
-    {
-      id: 2,
-      action: "Yeni görev oluşturuldu",
-      task: "API entegrasyonu",
-      time: "4 saat önce",
-      type: "created",
-    },
-    {
-      id: 3,
-      action: "Görev güncellendi",
-      task: "UI/UX tasarım",
-      time: "1 gün önce",
-      type: "updated",
-    },
-  ];
+    return {
+      totalTasks,
+      completedTasks,
+      inProgressTasks,
+      overdueTasks
+    };
+  }, [tasks]);
 
+  /**
+   * Son aktiviteleri hazırlar
+   */
+  const recentTasks = React.useMemo(() => {
+    return tasks
+      .map((task: any) => ({
+        id: task.id,
+        title: task.title,
+        status: (task.isCompleted ? 'completed' : 
+                task.progress > 0 ? 'in_progress' : 
+                (task.dueDate && new Date(task.dueDate) < new Date()) ? 'overdue' : 'pending') as 'completed' | 'in_progress' | 'overdue' | 'pending',
+        priority: (task.priority === 1 ? 'low' : 
+                 task.priority === 2 ? 'medium' : 'high') as 'low' | 'medium' | 'high',
+        dueDate: task.dueDate,
+        updatedAt: task.updatedAt || task.createdAt,
+        categoryName: task.categoryName
+      }))
+      .sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .slice(0, 10);
+  }, [tasks]);
+
+  // ===== EVENT HANDLERS =====
+  const handleCreateTask = () => {
+    navigate('/tasks');
+    toast.showInfo('Yeni görev oluşturmak için görevler sayfasına yönlendirildiniz');
+  };
+
+  const handleViewTasks = () => {
+    navigate('/tasks');
+  };
+
+  const handleViewCategories = () => {
+    navigate('/categories');
+  };
+
+  const handleViewAnalytics = () => {
+    navigate('/statistics');
+  };
+
+  const handleViewCalendar = () => {
+    toast.showInfo('Takvim özelliği yakında eklenecek!');
+  };
+
+  const handleSearch = () => {
+    toast.showInfo('Gelişmiş arama özelliği yakında eklenecek!');
+  };
+
+  const handleViewTask = (taskId: number) => {
+    navigate(`/tasks?taskId=${taskId}`);
+  };
+
+  const handleViewAllTasks = () => {
+    navigate('/tasks');
+  };
+
+  // ===== LOADING STATE =====
+  if (tasksLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // ===== RENDER =====
   return (
-    <div>
+    <div className="container mx-auto px-4 py-6 max-w-7xl">
       {/* Welcome Section */}
       <div className="mb-8">
-        <div className="rounded-2xl p-8 text-neutral-800 shadow-soft border dark:from-neutral-850 dark:to-neutral-900 dark:text-neutral-300 dark:shadow-none dark:border-neutral-850 dark:bg-neutral-900/10 backdrop-blur-xl backdrop-saturate-150">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-3xl font-light mb-3 tracking-wide">
-                Hoş Geldiniz, {user?.firstName}! 👋
-              </h2>
-              <p className="text-lg font-light text-neutral-600 dark:text-neutral-400">
-                Bugün{" "}
-                {new Date().toLocaleDateString("tr-TR", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+              <h1 className="text-2xl font-bold mb-2">
+                Hoş Geldiniz! 👋
+              </h1>
+              <p className="text-blue-100">
+                TaskFlow ile görevlerinizi organize edin ve verimliliğinizi artırın
               </p>
             </div>
-            <div className="h-16 w-16 bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg dark:from-neutral-850 dark:via-neutral-900 dark:to-neutral-900 dark:shadow-none">
-              <svg
-                className="h-8 w-8 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+            
+            <div className="hidden md:block">
+              <div className="text-right">
+                <div className="text-3xl font-bold">
+                  {new Date().toLocaleDateString('tr-TR', { day: 'numeric' })}
+                </div>
+                <div className="text-blue-100">
+                  {new Date().toLocaleDateString('tr-TR', { 
+                    month: 'long', 
+                    year: 'numeric' 
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* İstatistik Kartları */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
-        {isStatsLoading ? (
-          // Yükleme durumu için iskelet ekranı
-          <>
-            {[...Array(4)].map((_, index) => (
-              <StatsCard
-                key={index}
-                isLoading={true}
-                title=""
-                value=""
-                icon={
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8c1.657 0 3 1.343 3 3v2a3 3 0 01-3 3m0-6V7m0 6v2m-3 0h6m-3-6v6m-4-3h4"
-                    />
-                  </svg>
-                }
-              />
-            ))}
-          </>
-        ) : isStatsError ? (
-          // Hata durumu
-          <div className="lg:col-span-4 text-center text-error-500 font-light">
-            İstatistikler yüklenirken bir hata oluştu.
-          </div>
-        ) : (
-          statsData.map((stat, index) => (
-            <StatsCard
-              key={index}
-              title={stat.title}
-              value={stat.value}
-              icon={stat.icon}
-              trend={stat.trend}
-              trendUp={stat.trendUp}
-              progress={stat.progress}
-              color={stat.color}
-              isLoading={isStatsLoading}
-            />
-          ))
-        )}
+      <DashboardStats 
+        stats={dashboardStats}
+        isLoading={tasksLoading}
+      />
+
+      {/* Ana İçerik */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Sol Sütun: Hızlı İşlemler */}
+        <div className="lg:col-span-1">
+          <DashboardQuickActions
+            onCreateTask={handleCreateTask}
+            onViewTasks={handleViewTasks}
+            onViewCategories={handleViewCategories}
+            onViewAnalytics={handleViewAnalytics}
+            onViewCalendar={handleViewCalendar}
+            onSearch={handleSearch}
+          />
+        </div>
+
+        {/* Sağ Sütun: Son Aktiviteler */}
+        <div className="lg:col-span-2">
+          <DashboardRecentTasks
+            tasks={recentTasks}
+            isLoading={tasksLoading}
+            onViewTask={handleViewTask}
+            onViewAllTasks={handleViewAllTasks}
+          />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Görev Tamamlama Grafiği */}
-        <Card className="p-8 shadow-soft rounded-2xl h-full border dark:bg-neutral-900/10 backdrop-blur-xl backdrop-saturate-150 dark:border-neutral-700/10">
-          <h3 className="text-xl font-light text-neutral-800 mb-6 tracking-wide dark:text-neutral-300">
-            Görev Tamamlama Oranı
+      {/* Alt Bölüm: Ek Özellikler */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Günlük Hedefler */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            📅 Günlük Hedefler
           </h3>
-          {isStatsLoading ? (
-            <div className="flex items-center justify-center h-48">
-              <LoadingSpinner />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Tamamlanan Görevler</span>
+              <span className="text-sm font-medium text-gray-900 dark:text-white">
+                {dashboardStats.completedTasks} / {Math.max(dashboardStats.totalTasks, 5)}
+              </span>
             </div>
-          ) : isStatsError || !statsResponse?.data ? (
-            <div className="flex items-center justify-center h-48 text-neutral-500 font-light dark:text-neutral-400">
-              İstatistikler yüklenirken bir hata oluştu.
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div
+                className="h-2 rounded-full bg-green-500 transition-all duration-300"
+                style={{
+                  width: `${Math.min((dashboardStats.completedTasks / Math.max(dashboardStats.totalTasks, 5)) * 100, 100)}%`
+                }}
+              />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Bugünkü hedefinize ulaşmak için kalan: {Math.max(0, Math.max(dashboardStats.totalTasks, 5) - dashboardStats.completedTasks)} görev
+            </p>
+          </div>
+        </div>
+
+        {/* Verimlilik Skoru */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            📈 Verimlilik Skoru
+          </h3>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+              {dashboardStats.totalTasks > 0 ? 
+                Math.round((dashboardStats.completedTasks / dashboardStats.totalTasks) * 100) : 0}%
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+              Bu hafta ortalama
+            </p>
+            <div className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+              <span>Çok İyi</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Yaklaşan Son Tarihler */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            ⏰ Yaklaşan Son Tarihler
+          </h3>
+          {dashboardStats.overdueTasks > 0 ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                <span className="text-sm font-medium">
+                  {dashboardStats.overdueTasks} görev vadesi geçti
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Bu görevleri öncelikle tamamlamanız önerilir
+              </p>
             </div>
           ) : (
-            <TaskCompletionChart
-              completedTasks={statsResponse.data.completedTasks}
-              totalTasks={statsResponse.data.totalTasks}
-            />
+            <div className="text-center py-4">
+              <div className="text-green-600 dark:text-green-400 mb-2">✅</div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Vadesi geçen göreviniz yok!
+              </p>
+            </div>
           )}
-        </Card>
-
-        {/* Son Aktiviteler */}
-        <Card className="p-8 shadow-soft rounded-2xl h-full border dark:bg-neutral-900/10 backdrop-blur-xl backdrop-saturate-150 dark:border-neutral-700/10">
-          <h3 className="text-xl font-light text-neutral-800 mb-6 tracking-wide dark:text-neutral-300">
-            Son Aktiviteler
-          </h3>
-          <div className="space-y-4">
-            {recentActivities.length > 0 ? (
-              recentActivities.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex items-center space-x-4 p-3 rounded-xl hover:bg-neutral-50 transition-colors duration-200 dark:hover:bg-neutral-800/50"
-                >
-                  <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${
-                      activity.type === "completed"
-                        ? "bg-success-100 text-success-600 dark:bg-success-900/60 dark:text-success-500"
-                        : "bg-primary-100 text-primary-600 dark:bg-primary-900/60 dark:text-primary-500"
-                    }`}
-                  >
-                    {activity.type === "completed" ? (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 4v16m8-8H4"
-                        />
-                      </svg>
-                    )}
-                  </div>
-                  <p className="text-neutral-700 text-sm font-light dark:text-neutral-400">
-                    <span className="font-medium dark:text-neutral-300">{activity.action}</span>:{" "}
-                    {activity.task} -{" "}
-                    <span className="text-neutral-500 dark:text-neutral-400">{activity.time}</span>
-                  </p>
-                </div>
-              ))
-            ) : (
-              <p className="text-neutral-500 font-light dark:text-neutral-400">Henüz bir aktivite yok.</p>
-            )}
-          </div>
-        </Card>
+        </div>
       </div>
 
-      {/* Hızlı İşlemler */}
-      <h2 className="text-2xl font-light text-neutral-800 mb-6 mt-8 tracking-wide dark:text-neutral-200">
-        Hızlı İşlemler
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {quickActions.map((action, index) => (
-          <Card
-            key={index}
-            className="p-8 shadow-soft rounded-2xl flex flex-col items-start space-y-4 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border cursor-pointer dark:bg-neutral-900/10 backdrop-blur-xl backdrop-saturate-150 dark:border-neutral-700/10 dark:hover:shadow-none"
-            onClick={action.action}
-          >
-            <div
-              className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-md ${
-                action.color === "blue"
-                  ? "bg-primary-100 text-primary-600 dark:bg-primary-900/60 dark:text-primary-500"
-                  : action.color === "purple"
-                  ? "bg-secondary-100 text-secondary-600 dark:bg-secondary-900/60 dark:text-secondary-500"
-                  : "bg-success-100 text-success-600 dark:bg-success-900/60 dark:text-success-500"
-              }`}
-            >
-              {action.icon}
-            </div>
-            <h3 className="text-lg font-medium text-neutral-800 dark:text-neutral-200">
-              {action.title}
-            </h3>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
-              {action.description}
-            </p>
-            <Button variant="ghost" className="mt-2 text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300">
-              Git <span aria-hidden="true">→</span>
-            </Button>
-          </Card>
-        ))}
+      {/* Alt Bilgi */}
+      <div className="mt-8 text-center">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          TaskFlow ile verimliliğinizi artırın. Sorularınız için{' '}
+          <button className="text-blue-600 dark:text-blue-400 hover:underline">
+            destek ekibiyle iletişime geçin
+          </button>
+        </p>
       </div>
     </div>
   );
 };
 
-export default Dashboard;
+export default Dashboard; 

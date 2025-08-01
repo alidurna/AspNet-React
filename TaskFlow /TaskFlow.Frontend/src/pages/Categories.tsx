@@ -1,3 +1,9 @@
+/**
+ * Categories Page - Refactored
+ * 
+ * Kategori yönetimi sayfası. Modüler sub-components kullanır.
+ */
+
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -9,30 +15,33 @@ import {
 } from "../services/api";
 import { useToast } from "../hooks/useToast";
 
+// Sub-components
+import CategoriesHeader from "./components/CategoriesHeader";
+import CategoryCard from "./components/CategoryCard";
 import Card from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import ConfirmModal from "../components/ui/ConfirmModal";
 
+/**
+ * Categories Page - Refactored
+ */
 const Categories: React.FC = () => {
   const toast = useToast();
   const queryClient = useQueryClient();
 
+  // State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<CategoryDto | null>(
-    null
-  );
+  const [editingCategory, setEditingCategory] = useState<CategoryDto | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<number | null>(null);
-  const [categoryForm, setCategoryForm] = useState<
-    CreateCategoryDto | UpdateCategoryDto
-  >({
+  const [categoryForm, setCategoryForm] = useState<CreateCategoryDto | UpdateCategoryDto>({
     name: "",
     description: "",
     colorCode: "",
   });
 
-  // Kategorileri çekme
+  // Data fetching
   const {
     data: categoriesResponse,
     isLoading,
@@ -40,83 +49,52 @@ const Categories: React.FC = () => {
     error,
   } = useQuery<ApiResponse<CategoryDto[]>, Error>({
     queryKey: ["categories"],
-    queryFn: () => categoriesAPI.getCategories(), // queryFn doğru şekilde sarıldı
+    queryFn: () => categoriesAPI.getCategories(),
   });
 
-  // Kategori oluşturma mutasyonu
-  const createCategoryMutation = useMutation<
-    ApiResponse<CategoryDto>,
-    Error,
-    CreateCategoryDto
-  >({
+  // Mutations
+  const createCategoryMutation = useMutation<ApiResponse<CategoryDto>, Error, CreateCategoryDto>({
     mutationFn: categoriesAPI.createCategory,
     onSuccess: (response) => {
       if (response.success) {
-        toast.showSuccess(
-          response.message || "Kategori başarıyla oluşturuldu!"
-        );
+        toast.showSuccess(response.message || "Kategori başarıyla oluşturuldu!");
         queryClient.invalidateQueries({ queryKey: ["categories"] });
         setIsModalOpen(false);
         setCategoryForm({ name: "", description: "", colorCode: "" });
       } else {
-        toast.showError(
-          response.message || "Kategori oluşturulurken bir hata oluştu."
-        );
+        toast.showError(response.message || "Kategori oluşturulurken bir hata oluştu.");
       }
     },
     onError: (err) => {
-      toast.showError(
-        err.message || "Kategori oluşturulurken bir hata oluştu."
-      );
+      toast.showError(err.message || "Kategori oluşturulurken bir hata oluştu.");
     },
   });
 
-  // Kategori güncelleme mutasyonu
-  const updateCategoryMutation = useMutation<
-    ApiResponse<CategoryDto>,
-    Error,
-    { id: number; data: UpdateCategoryDto }
-  >({
+  const updateCategoryMutation = useMutation<ApiResponse<CategoryDto>, Error, { id: number; data: UpdateCategoryDto }>({
     mutationFn: ({ id, data }) => categoriesAPI.updateCategory(id, data),
     onSuccess: (response) => {
       if (response.success) {
-        toast.showSuccess(
-          response.message || "Kategori başarıyla güncellendi!"
-        );
+        toast.showSuccess(response.message || "Kategori başarıyla güncellendi!");
         queryClient.invalidateQueries({ queryKey: ["categories"] });
         setIsModalOpen(false);
         setEditingCategory(null);
-        setCategoryForm({ name: "", description: "", colorCode: "" });
       } else {
-        toast.showError(
-          response.message || "Kategori güncellenirken bir hata oluştu."
-        );
+        toast.showError(response.message || "Kategori güncellenirken bir hata oluştu.");
       }
     },
     onError: (err) => {
-      toast.showError(
-        err.message || "Kategori güncellenirken bir hata oluştu."
-      );
+      toast.showError(err.message || "Kategori güncellenirken bir hata oluştu.");
     },
   });
 
-  // Kategori silme mutasyonu
-  const deleteCategoryMutation = useMutation<
-    ApiResponse<object>,
-    Error,
-    number
-  >({
+  const deleteCategoryMutation = useMutation<ApiResponse<void>, Error, number>({
     mutationFn: categoriesAPI.deleteCategory,
     onSuccess: (response) => {
       if (response.success) {
         toast.showSuccess(response.message || "Kategori başarıyla silindi!");
         queryClient.invalidateQueries({ queryKey: ["categories"] });
-        setIsConfirmModalOpen(false);
-        setCategoryToDelete(null);
       } else {
-        toast.showError(
-          response.message || "Kategori silinirken bir hata oluştu."
-        );
+        toast.showError(response.message || "Kategori silinirken bir hata oluştu.");
       }
     },
     onError: (err) => {
@@ -124,13 +102,14 @@ const Categories: React.FC = () => {
     },
   });
 
-  const handleOpenCreateModal = () => {
+  // Event handlers
+  const handleAddCategory = () => {
     setEditingCategory(null);
     setCategoryForm({ name: "", description: "", colorCode: "" });
     setIsModalOpen(true);
   };
 
-  const handleOpenEditModal = (category: CategoryDto) => {
+  const handleEditCategory = (category: CategoryDto) => {
     setEditingCategory(category);
     setCategoryForm({
       name: category.name,
@@ -140,204 +119,149 @@ const Categories: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingCategory(null);
-    setCategoryForm({ name: "", description: "", colorCode: "" });
+  const handleDeleteCategory = (categoryId: number) => {
+    setCategoryToDelete(categoryId);
+    setIsConfirmModalOpen(true);
   };
 
-  const handleSubmitCategory = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (editingCategory) {
       updateCategoryMutation.mutate({
         id: editingCategory.id,
-        data: categoryForm,
+        data: categoryForm as UpdateCategoryDto,
       });
     } else {
       createCategoryMutation.mutate(categoryForm as CreateCategoryDto);
     }
   };
 
-  const handleOpenConfirmDeleteModal = (categoryId: number) => {
-    setCategoryToDelete(categoryId);
-    setIsConfirmModalOpen(true);
-  };
-
-  const handleConfirmDelete = () => {
-    if (categoryToDelete !== null) {
+  const confirmDelete = () => {
+    if (categoryToDelete) {
       deleteCategoryMutation.mutate(categoryToDelete);
+      setIsConfirmModalOpen(false);
+      setCategoryToDelete(null);
     }
   };
 
-  const handleCancelDelete = () => {
-    setIsConfirmModalOpen(false);
-    setCategoryToDelete(null);
-  };
+  const categories = categoriesResponse?.data || [];
 
   if (isLoading) {
     return (
-      <div>
-        <div className="flex justify-center items-center h-64">
-          <p>Kategoriler yükleniyor...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div>
-        <div className="text-red-600 text-center py-8">
-          Kategoriler yüklenirken bir hata oluştu: {error?.message}
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-red-600 mb-2">Hata Oluştu</h2>
+          <p className="text-gray-600">
+            {error?.message || "Kategoriler yüklenirken bir hata oluştu."}
+          </p>
         </div>
       </div>
     );
   }
 
-  const categories = categoriesResponse?.data || []; // data.data yerine data kullanıldı
-
   return (
-    <div>
-      <div className="flex justify-end mb-6">
-        <Button onClick={handleOpenCreateModal} variant="default">
-          Yeni Kategori Ekle
-        </Button>
-      </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <CategoriesHeader
+        onAddCategory={handleAddCategory}
+        categoriesCount={categories.length}
+      />
 
+      {/* Categories Grid */}
       {categories.length === 0 ? (
-        <Card>
-          <p className="text-center text-gray-500 py-8">
-            Henüz bir kategori oluşturmadınız. İlk kategorinizi oluşturmak için
-            "Yeni Kategori Ekle" butonuna tıklayın.
+        <Card className="p-12 text-center">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            Henüz kategori yok
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            İlk kategorinizi oluşturmak için "Yeni Kategori" butonuna tıklayın.
           </p>
+          <Button onClick={handleAddCategory}>
+            Yeni Kategori Ekle
+          </Button>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {categories.map(
-            (
-              category: CategoryDto // category parametresine tip atandı
-            ) => (
-              <Card
-                key={category.id}
-                className="p-6 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center mb-3">
-                    <span
-                      className="w-3 h-3 rounded-full mr-2"
-                      style={{
-                        backgroundColor: category.colorCode || "#9ca3af",
-                      }}
-                    ></span>
-                    <h3 className="text-lg font-semibold text-gray-900 truncate">
-                      {category.name}
-                    </h3>
-                  </div>
-                  <p className="text-gray-600 text-sm mb-4">
-                    {category.description || "Açıklama yok"}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Görev Sayısı: {category.taskCount}
-                  </p>
-                </div>
-                <div className="mt-4 flex space-x-2">
-                  <Button
-                    onClick={() => handleOpenEditModal(category)}
-                    variant="secondary"
-                    size="sm"
-                  >
-                    Düzenle
-                  </Button>
-                  <Button
-                    onClick={() => handleOpenConfirmDeleteModal(category.id)}
-                    variant="outline"
-                    size="sm"
-                    className="text-red-600 border-red-600 hover:bg-red-50"
-                  >
-                    Sil
-                  </Button>
-                </div>
-              </Card>
-            )
-          )}
+          {categories.map((category) => (
+            <CategoryCard
+              key={category.id}
+              category={category}
+              onEdit={handleEditCategory}
+              onDelete={handleDeleteCategory}
+            />
+          ))}
         </div>
       )}
 
-      {/* Create/Edit Category Modal */}
+      {/* Category Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md">
-            <h2 className="text-2xl font-bold mb-6 text-gray-900">
-              {editingCategory ? "Kategoriyi Düzenle" : "Yeni Kategori Oluştur"}
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-semibold mb-4">
+              {editingCategory ? "Kategori Düzenle" : "Yeni Kategori"}
             </h2>
-            <form onSubmit={handleSubmitCategory} className="space-y-4">
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
               <Input
                 label="Kategori Adı"
-                id="categoryName"
-                name="name"
                 value={categoryForm.name}
-                onChange={(e) =>
-                  setCategoryForm({ ...categoryForm, name: e.target.value })
-                }
+                onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
                 required
               />
+              
               <Input
-                label="Açıklama (Opsiyonel)"
-                id="categoryDescription"
-                name="description"
-                value={categoryForm.description}
-                onChange={(e) =>
-                  setCategoryForm({
-                    ...categoryForm,
-                    description: e.target.value,
-                  })
-                }
+                label="Açıklama"
+                value={categoryForm.description || ""}
+                onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
               />
+              
               <Input
-                label="Renk Kodu (Opsiyonel, örn: #FF0000 veya blue)"
-                id="categoryColorCode"
-                name="colorCode"
-                value={categoryForm.colorCode}
-                onChange={(e) =>
-                  setCategoryForm({
-                    ...categoryForm,
-                    colorCode: e.target.value,
-                  })
-                }
+                label="Renk Kodu"
+                type="color"
+                value={categoryForm.colorCode || "#3B82F6"}
+                onChange={(e) => setCategoryForm({ ...categoryForm, colorCode: e.target.value })}
               />
-              <div className="flex justify-end space-x-3 mt-6">
+              
+              <div className="flex gap-3 pt-4">
                 <Button
                   type="button"
-                  variant="secondary"
-                  onClick={handleCloseModal}
+                  variant="outline"
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex-1"
                 >
                   İptal
                 </Button>
                 <Button
                   type="submit"
-                  variant="default"
-                  isLoading={
-                    createCategoryMutation.isPending ||
-                    updateCategoryMutation.isPending
-                  }
+                  isLoading={createCategoryMutation.isPending || updateCategoryMutation.isPending}
+                  className="flex-1"
                 >
-                  {editingCategory ? "Kaydet" : "Oluştur"}
+                  {editingCategory ? "Güncelle" : "Oluştur"}
                 </Button>
               </div>
             </form>
-          </Card>
+          </div>
         </div>
       )}
 
-      {/* Confirm Delete Modal */}
+      {/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={isConfirmModalOpen}
-        onConfirm={handleConfirmDelete}
-        onCancel={handleCancelDelete}
-        title="Kategori Silme Onayı"
-        message="Bu kategoriyi silmek istediğinize emin misiniz? Bu kategoriye bağlı tüm görevler 'Genel' kategorisine taşınacaktır."
-        confirmButtonText="Evet, Sil"
-        cancelButtonText="İptal Et"
+        title="Kategori Sil"
+        message="Bu kategoriyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
+        confirmButtonText="Sil"
+        cancelButtonText="İptal"
+        onConfirm={confirmDelete}
+        onCancel={() => setIsConfirmModalOpen(false)}
       />
     </div>
   );
