@@ -57,42 +57,46 @@ const ForgotPassword: React.FC = () => {
       title="Şifremi Unuttum"
       description="Hesabınızla ilişkili e-posta adresinizi girin. Size şifrenizi sıfırlamanız için bir bağlantı göndereceğiz."
     >
-      <form className="mt-10 space-y-8" onSubmit={handleSubmit}>
-        <div className="space-y-6">
+      <form className="space-y-6" onSubmit={handleSubmit}>
+        <div>
           <Input
             id="email"
             name="email"
             type="email"
             autoComplete="email"
             required
-            label="E-posta Adresi"
             placeholder="E-posta adresinizi girin"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={isLoading}
+            className="w-full"
           />
         </div>
 
-        <div>
-          <Button
-            type="submit"
-            variant="default"
-            className="w-full py-4 text-lg font-medium"
-            isLoading={isLoading}
-          >
-            Şifre Sıfırlama Bağlantısı Gönder
-          </Button>
-        </div>
+                 <Button
+           type="submit"
+           variant="default"
+           className="w-full"
+           disabled={isLoading}
+         >
+          {isLoading ? (
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <span>Gönderiliyor...</span>
+            </div>
+          ) : (
+            'Şifre Sıfırlama Bağlantısı Gönder'
+          )}
+        </Button>
       </form>
-      <div className="mt-10 text-center">
-        <p className="text-base text-neutral-500 font-light">
-          <Link
-            to="/login"
-            className="font-medium text-primary-500 hover:text-primary-600 transition-all duration-200 hover:underline"
-          >
-            Giriş sayfasına geri dön
-          </Link>
-        </p>
+      
+      <div className="mt-6 text-center">
+                 <Link
+           to="/login"
+           className="text-sm text-blue-600 hover:text-blue-500 transition-colors"
+         >
+          Giriş sayfasına geri dön
+        </Link>
       </div>
     </AuthLayout>
   );

@@ -6,7 +6,7 @@ import type {
   RegisterRequest,
   User,
   AuthResponse,
-} from "../types/auth.types";
+} from "../types/auth";
 import { useToast } from "../hooks/useToast";
 import { useNavigate } from "react-router-dom"; // useNavigate'i import et
 import { setOnUnauthorizedCallback } from "../services/api"; // setOnUnauthorizedCallback'i import et
@@ -471,3 +471,6 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
+
+// Alias for backward compatibility
+export const useAuthContext = useAuth;

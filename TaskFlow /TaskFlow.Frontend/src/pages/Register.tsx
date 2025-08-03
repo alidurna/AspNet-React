@@ -8,7 +8,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import type { RegisterRequest } from "../types/auth.types";
+import type { RegisterRequest } from "../types/auth/auth.types";
 import AuthLayout from "../components/layout/AuthLayout";
 import RegisterForm from "../components/auth/RegisterForm";
 import { captchaAPI } from "../services/api";
@@ -69,6 +69,7 @@ const Register: React.FC = () => {
         phoneNumber: formData.phoneNumber || '',
         password: formData.password,
         confirmPassword: formData.confirmPassword,
+        acceptTerms: true, // Form submit edilmişse terms kabul edilmiş demektir
       };
 
       // Authentication context üzerinden register işlemi
@@ -92,8 +93,8 @@ const Register: React.FC = () => {
   // ===== RENDER =====
   return (
     <AuthLayout
-      title="Hesap Oluştur"
-      description="TaskFlow'a katılın ve görevlerinizi organize edin"
+      title="TaskFlow'a Katılın"
+      description="Hesap oluşturun ve görev yönetimine başlayın"
     >
       <div className="space-y-6">
         {/* Main Register Form */}
@@ -107,13 +108,13 @@ const Register: React.FC = () => {
 
         {/* Login Link */}
         <div className="text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-gray-600">
             Zaten hesabınız var mı?{" "}
             <Link
               to="/login"
-              className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+              className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
             >
-              Giriş Yap
+              Giriş yapın
             </Link>
           </p>
         </div>

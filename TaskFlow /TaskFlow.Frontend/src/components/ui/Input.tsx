@@ -147,24 +147,18 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId} // Accessibility için unique ID
             type={inputType} // Dynamic type (password toggle için)
             className={`
-              w-full px-4 py-3 border-2 border-neutral-100 rounded-xl shadow-sm
-              placeholder-neutral-400 text-neutral-700 text-base bg-white
-              focus:outline-none focus:ring-4 focus:ring-primary-50 focus:border-primary-200
-              hover:border-neutral-200 hover:shadow-md
-              transition-all duration-300 ease-out
-              dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-400
-              dark:focus:ring-primary-900 dark:focus:border-primary-600
-              dark:hover:border-neutral-500 dark:hover:shadow-none
+              w-full px-4 py-3 border-2 border-blue-300 rounded-2xl
+              placeholder-gray-400 text-gray-700 text-base bg-white
+              focus:outline-none focus:ring-0 focus:border-blue-500
+              hover:border-blue-400
+              transition-all duration-200 ease-out
               ${icon ? "pl-10" : ""} // Sol ikon varsa padding ekle
               ${
                 showPasswordToggle ? "pr-10" : ""
               } // Şifre toggle varsa sağ padding
               ${
-                error ? "border-error-200 focus:ring-error-100 focus:border-error-300 dark:border-error-500 dark:focus:ring-error-900 dark:focus:border-error-600" : ""
+                error ? "border-red-300 focus:border-red-500" : ""
               } // Hata durumunda kırmızı border
-              ${
-                isFocused ? "ring-4 ring-primary-50 border-primary-200 shadow-lg dark:ring-primary-900 dark:border-primary-600 dark:shadow-none" : ""
-              } // Focus durumunda mavi ring
               ${className} // Dışarıdan gelen ek class'lar
             `}
             onFocus={() => setIsFocused(true)} // Focus olunca state güncelle

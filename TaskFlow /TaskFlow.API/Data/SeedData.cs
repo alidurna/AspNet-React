@@ -1,5 +1,6 @@
 using TaskFlow.API.Models;
 using Microsoft.EntityFrameworkCore;
+using BCrypt.Net;
 
 namespace TaskFlow.API.Data
 {
@@ -9,44 +10,56 @@ namespace TaskFlow.API.Data
     public static class SeedData
     {
         /// <summary>
+        /// Password hash'i oluşturur (BCrypt kullanır)
+        /// </summary>
+        /// <param name="password">Plain text password</param>
+        /// <returns>Hashed password</returns>
+        private static string HashPassword(string password)
+        {
+            return BCrypt.Net.BCrypt.HashPassword(password, 12);
+        }
+
+        /// <summary>
         /// Database'e test verisi ekler
         /// </summary>
         /// <param name="context">Database context</param>
         public static async Task SeedAsync(TaskFlowDbContext context)
         {
-                    // Test kullanıcısı oluştur
-        var testUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "test@taskflow.com");
-        if (testUser == null)
-        {
-            testUser = new User
+            // Test kullanıcısı oluştur
+            var testUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "test@taskflow.com");
+            if (testUser == null)
             {
-                Email = "test@taskflow.com",
-                FirstName = "Test",
-                LastName = "Kullanıcı",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456"), // Test şifresi
-                IsEmailVerified = true,
-                CreatedAt = DateTime.UtcNow
-            };
+                testUser = new User
+                {
+                    Email = "test@taskflow.com",
+                    FirstName = "Test",
+                    LastName = "Kullanıcı",
+                    PasswordHash = HashPassword("123456"),
+                    IsEmailVerified = true,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
 
-            await context.Users.AddAsync(testUser);
-            await context.SaveChangesAsync();
-        }
+                await context.Users.AddAsync(testUser);
+                await context.SaveChangesAsync();
+            }
 
-        // Kategorileri ekle
-        if (!await context.Categories.AnyAsync())
-        {
-            var categories = new List<Category>
+            // Kategorileri ekle
+            if (!await context.Categories.AnyAsync())
             {
-                new Category { Name = "İş", Description = "İş ile ilgili görevler", ColorCode = "#3B82F6", UserId = testUser.Id },
-                new Category { Name = "Kişisel", Description = "Kişisel görevler", ColorCode = "#10B981", UserId = testUser.Id },
-                new Category { Name = "Eğitim", Description = "Eğitim ile ilgili görevler", ColorCode = "#F59E0B", UserId = testUser.Id },
-                new Category { Name = "Sağlık", Description = "Sağlık ile ilgili görevler", ColorCode = "#EF4444", UserId = testUser.Id },
-                new Category { Name = "Alışveriş", Description = "Alışveriş listesi", ColorCode = "#8B5CF6", UserId = testUser.Id }
-            };
+                var categories = new List<Category>
+                {
+                    new Category { Name = "İş", Description = "İş ile ilgili görevler", ColorCode = "#3B82F6", UserId = testUser.Id },
+                    new Category { Name = "Kişisel", Description = "Kişisel görevler", ColorCode = "#10B981", UserId = testUser.Id },
+                    new Category { Name = "Eğitim", Description = "Eğitim ile ilgili görevler", ColorCode = "#F59E0B", UserId = testUser.Id },
+                    new Category { Name = "Sağlık", Description = "Sağlık ile ilgili görevler", ColorCode = "#EF4444", UserId = testUser.Id },
+                    new Category { Name = "Alışveriş", Description = "Alışveriş listesi", ColorCode = "#8B5CF6", UserId = testUser.Id }
+                };
 
-            await context.Categories.AddRangeAsync(categories);
-            await context.SaveChangesAsync();
-        }
+                await context.Categories.AddRangeAsync(categories);
+                await context.SaveChangesAsync();
+            }
 
             // Test görevleri oluştur
             if (!await context.TodoTasks.AnyAsync())
@@ -105,21 +118,6 @@ namespace TaskFlow.API.Data
                         UserId = testUser.Id,
                         User = testUser,
                         CreatedAt = DateTime.UtcNow.AddDays(-3)
-                    },
-                    new TodoTask
-                    {
-                        Title = "Kitap oku",
-                        Description = "Günlük 30 dakika kitap okuma hedefini tamamla",
-                        DueDate = DateTime.UtcNow,
-                        Priority = Priority.Normal,
-                        IsCompleted = true,
-                        Progress = 100,
-                        CompletionPercentage = 100,
-                        CompletedAt = DateTime.UtcNow,
-                        CategoryId = categories.FirstOrDefault(c => c.Name == "Kişisel")?.Id,
-                        UserId = testUser.Id,
-                        User = testUser,
-                        CreatedAt = DateTime.UtcNow.AddDays(-7)
                     }
                 };
 

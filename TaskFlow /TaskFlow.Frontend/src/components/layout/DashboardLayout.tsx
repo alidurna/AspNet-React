@@ -79,7 +79,7 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 
 interface BreadcrumbItem {
-  name: string;
+  label: string;
   href?: string;
 }
 
@@ -121,27 +121,23 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   // Loading state
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center dark:bg-transparent">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center dark:bg-neutral-900">
         {/* Loading Spinner */}
         <div className="flex flex-col items-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 dark:border-primary-400"></div>
-          <p className="text-neutral-600 dark:text-neutral-300">Yükleniyor...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+          <p className="text-gray-600 dark:text-gray-300">Yükleniyor...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-transparent">
+    <div className="min-h-screen bg-gray-50 dark:bg-neutral-900">
       {/* Sidebar */}
       <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
 
       {/* Main Content Area */}
-      <div
-        className={`flex-1 transition-all duration-300 ease-in-out ${
-          isSidebarOpen ? "ml-64" : "ml-0"
-        }`}
-      >
+      <div className="lg:ml-64 flex flex-col min-h-screen">
         {/* Header */}
         <Header
           onSidebarToggle={toggleSidebar}
@@ -150,8 +146,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         />
 
         {/* Page Content */}
-        <main className="p-6">
-          <div className="max-w-7xl mx-auto">{children}</div>
+        <main className="flex-1 p-3 sm:p-4 lg:p-6">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
         </main>
       </div>
     </div>

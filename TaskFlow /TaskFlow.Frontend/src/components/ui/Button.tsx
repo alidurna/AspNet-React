@@ -53,22 +53,22 @@ import { cva, type VariantProps } from "class-variance-authority";
 import React from "react";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-2xl text-base font-medium transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-100 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-2xl text-base font-medium transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg hover:from-primary-600 hover:to-primary-700 focus:from-primary-600 focus:to-primary-700 hover:shadow-xl hover:-translate-y-0.5 dark:from-primary-600 dark:to-primary-700 dark:hover:from-primary-700 dark:hover:to-primary-800",
-        destructive: "bg-gradient-to-r from-error-500 to-error-600 text-white shadow-lg hover:from-error-600 hover:to-error-700 focus:from-error-600 focus:to-error-700 hover:shadow-xl hover:-translate-y-0.5",
-        outline: "border-2 border-neutral-100 bg-white text-neutral-700 shadow-sm hover:bg-neutral-50 hover:text-neutral-900 hover:border-neutral-200 hover:shadow-md hover:-translate-y-0.5 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:hover:border-neutral-600",
-        secondary: "bg-gradient-to-r from-secondary-500 to-secondary-600 text-white shadow-lg hover:from-secondary-600 hover:to-secondary-700 focus:from-secondary-600 focus:to-secondary-700 hover:shadow-xl hover:-translate-y-0.5",
-        ghost: "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 hover:shadow-sm dark:text-neutral-200 dark:hover:bg-neutral-700 dark:hover:text-neutral-50",
-        link: "text-primary-500 underline-offset-4 hover:underline",
+        default: "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm hover:from-blue-600 hover:to-blue-700 focus:from-blue-600 focus:to-blue-700 hover:shadow-md",
+        destructive: "bg-red-600 text-white shadow-sm hover:bg-red-700 focus:bg-red-700 hover:shadow-md",
+        outline: "border border-gray-200 bg-white text-gray-600 shadow-sm hover:bg-gray-50 hover:text-gray-700 hover:border-gray-300 hover:shadow-md",
+        secondary: "bg-gray-600 text-white shadow-sm hover:bg-gray-700 focus:bg-gray-700 hover:shadow-md",
+        ghost: "text-gray-700 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm",
+        link: "text-blue-600 underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-10 px-6 py-2.5",
-        sm: "h-8 rounded-lg px-4 py-2 text-sm",
-        lg: "h-12 rounded-xl px-8 py-3 text-lg",
-        icon: "h-10 w-10",
+        default: "h-12 px-6 py-3",
+        sm: "h-10 rounded-xl px-4 py-2 text-sm",
+        lg: "h-14 rounded-3xl px-8 py-4 text-lg",
+        icon: "h-12 w-12",
       },
     },
     defaultVariants: {

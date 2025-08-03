@@ -10,9 +10,9 @@ export { apiClient, tokenManager, setOnUnauthorizedCallback, type ApiResponse } 
 
 // Re-export all API modules
 export { authAPI, twoFactorAPI, captchaAPI, webAuthnAPI } from './authAPI';
-export { userAPI, fileAPI } from './userAPI';
+export { userAPI, fileAPI, profileAPI } from './userAPI';
 export { taskAPI } from './taskAPI';
-export { categoryAPI } from './categoryAPI';
+export { categoryAPI as categoriesAPI } from './categoryAPI';
 export { searchAPI } from './searchAPI';
 
 // Import for default export
@@ -26,22 +26,22 @@ import { searchAPI } from './searchAPI';
 // Legacy exports for backward compatibility
 export const api = {
   // Auth
-  ...require('./authAPI').authAPI,
+  ...authAPI,
   
   // User
-  ...require('./userAPI').userAPI,
+  ...userAPI,
   
   // Tasks
-  ...require('./taskAPI').taskAPI,
+  ...taskAPI,
   
   // Categories
-  ...require('./categoryAPI').categoryAPI,
+  ...categoryAPI,
   
   // Search
-  ...require('./searchAPI').searchAPI,
+  ...searchAPI,
   
   // Files
-  ...require('./userAPI').fileAPI,
+  ...fileAPI,
 };
 
 // Specific legacy exports
@@ -50,49 +50,49 @@ export const {
   twoFactorAPI: twoFactor,
   captchaAPI: captcha,
   webAuthnAPI: webAuthn,
-} = require('./authAPI');
+} = { authAPI, twoFactorAPI, captchaAPI, webAuthnAPI };
 
 export const {
   userAPI: users,
   fileAPI: files,
-} = require('./userAPI');
+} = { userAPI, fileAPI };
 
 export const {
   taskAPI: tasks,
-} = require('./taskAPI');
+} = { taskAPI };
 
 export const {
   categoryAPI: categories,
-} = require('./categoryAPI');
+} = { categoryAPI };
 
 export const {
   searchAPI: search,
-} = require('./searchAPI');
+} = { searchAPI };
 
 // Type re-exports
 export type {
   UserStatsDto,
   PasswordResetRequestDto,
   PasswordResetDto,
-} from '../../types/auth.types';
+} from '../../types/auth';
 
 export type {
   TodoTaskDto,
   CreateTodoTaskDto,
   UpdateTodoTaskDto,
   TodoTaskFilterDto,
-} from '../../types/task.types';
+} from '../../types/tasks';
 
 export type {
   CategoryDto,
   CreateCategoryDto,
   UpdateCategoryDto,
-} from '../../types/category.types';
+} from '../../types/tasks';
 
 export type {
   AttachmentDto,
   UploadLimitsDto,
-} from '../../types/file.types';
+} from '../../types/common';
 
 // Default export for easier imports
 export default {

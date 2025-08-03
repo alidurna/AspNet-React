@@ -19,8 +19,10 @@ export interface ApiResponse<T> {
 /**
  * Base API Client Configuration
  */
+import { environment } from "../../config/environment";
+
 export const apiClient = axios.create({
-  baseURL: "http://localhost:5281/api",
+  baseURL: environment.apiBaseUrl,
   headers: {
     "Content-Type": "application/json",
   },
@@ -151,7 +153,7 @@ apiClient.interceptors.response.use(
         try {
           console.log("🔄 Attempting token refresh...");
           const response = await axios.post(
-            "http://localhost:5281/api/auth/refresh",
+            `${environment.apiBaseUrl}/auth/refresh`,
             { refreshToken }
           );
 

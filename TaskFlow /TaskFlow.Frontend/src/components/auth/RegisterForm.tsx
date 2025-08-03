@@ -11,7 +11,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Input from "../ui/Input";
 import { Button } from "../ui/Button";
-import type { RegisterRequest } from "../../types/auth.types";
+import type { RegisterRequest } from "../../types/auth/auth.types";
 import PasswordStrengthIndicator from "../ui/PasswordStrength";
 import Captcha from "../security/Captcha";
 import type { CaptchaRef } from "../security/Captcha";
@@ -79,9 +79,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
 
-  // Animation hooks
-  const { handleClick } = useClickAnimation();
-
   // Form hook
   const {
     register,
@@ -129,110 +126,140 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       {/* Error Display */}
       {error && (
-        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+        <div className="p-4 bg-red-50 border border-red-200 rounded-2xl">
+          <p className="text-sm text-red-600">{error}</p>
         </div>
       )}
 
-      {/* Personal Information */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-          👤 Kişisel Bilgiler
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* First Name */}
-          <div>
-            <Input
-              {...register("firstName")}
-              type="text"
-              placeholder="Adınız"
-              error={errors.firstName?.message}
-              className="w-full"
-              autoComplete="given-name"
-            />
-          </div>
-
-          {/* Last Name */}
-          <div>
-            <Input
-              {...register("lastName")}
-              type="text"
-              placeholder="Soyadınız"
-              error={errors.lastName?.message}
-              className="w-full"
-              autoComplete="family-name"
-            />
-          </div>
+      {/* Name Fields - Two Columns */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* First Name */}
+        <div>
+          <Input
+            {...register("firstName")}
+            type="text"
+            placeholder="Adınız"
+            error={errors.firstName?.message}
+            className="w-full"
+            autoComplete="given-name"
+          />
         </div>
 
-        {/* Email */}
-        <Input
-          {...register("email")}
-          type="email"
-          placeholder="Email adresiniz"
-          error={errors.email?.message}
-          className="w-full"
-          autoComplete="email"
-        />
-
-        {/* Phone Number (Optional) */}
-        <Input
-          {...register("phoneNumber")}
-          type="tel"
-          placeholder="Telefon numaranız (opsiyonel)"
-          error={errors.phoneNumber?.message}
-          className="w-full"
-          autoComplete="tel"
-        />
+        {/* Last Name */}
+        <div>
+          <Input
+            {...register("lastName")}
+            type="text"
+            placeholder="Soyadınız"
+            error={errors.lastName?.message}
+            className="w-full"
+            autoComplete="family-name"
+          />
+        </div>
       </div>
 
-      {/* Password Section */}
+      {/* Email - Full Width */}
+      <Input
+        {...register("email")}
+        type="email"
+        placeholder="Email Adresi"
+        error={errors.email?.message}
+        className="w-full"
+        autoComplete="email"
+      />
+
+      {/* Phone Number (Optional) - Full Width */}
+      <Input
+        {...register("phoneNumber")}
+        type="tel"
+        placeholder="Telefon Numarası (Opsiyonel)"
+        error={errors.phoneNumber?.message}
+        className="w-full"
+        autoComplete="tel"
+      />
+
+      {/* Password Fields - Two Columns with More Space for Error Messages */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-          🔒 Şifre Bilgileri
-        </h3>
-        {/* Password */}
-        <div className="relative">
-          <Input
-            {...register("password")}
-            type={showPassword ? "text" : "password"}
-            placeholder="Şifreniz"
-            error={errors.password?.message}
-            className="w-full pr-10"
-            autoComplete="new-password"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-          >
-            {showPassword ? "🙈" : "👁️"}
-          </button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Password - Container with Enough Space */}
+          <div className="space-y-2">
+            <div className="relative">
+              <Input
+                {...register("password")}
+                type={showPassword ? "text" : "password"}
+                placeholder="Şifre"
+                error=""
+                className="w-full pr-10"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showPassword ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+            {/* Error Message Area - More Space */}
+            <div className="min-h-[2.5rem]">
+              {errors.password?.message && (
+                <p className="text-sm text-red-600 leading-tight">{errors.password.message}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Confirm Password - Container with Enough Space */}
+          <div className="space-y-2">
+            <div className="relative">
+              <Input
+                {...register("confirmPassword")}
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Şifre Tekrarı"
+                error=""
+                className="w-full pr-10"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showConfirmPassword ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+            {/* Error Message Area - More Space */}
+            <div className="min-h-[2.5rem]">
+              {errors.confirmPassword?.message && (
+                <p className="text-sm text-red-600 leading-tight">{errors.confirmPassword.message}</p>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Password Strength Indicator */}
+        {/* Password Strength Indicator - Separated Area */}
         {watchedPassword && (
-          <PasswordStrengthIndicator password={watchedPassword} />
+          <div className="mt-4">
+            <PasswordStrengthIndicator password={watchedPassword} />
+          </div>
         )}
-
-        {/* Confirm Password */}
-        <div className="relative">
-          <Input
-            {...register("confirmPassword")}
-            type={showConfirmPassword ? "text" : "password"}
-            placeholder="Şifrenizi tekrar giriniz"
-            error={errors.confirmPassword?.message}
-            className="w-full pr-10"
-            autoComplete="new-password"
-          />
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-          >
-            {showConfirmPassword ? "🙈" : "👁️"}
-          </button>
-        </div>
       </div>
 
       {/* Captcha */}
@@ -251,15 +278,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           id="acceptTerms"
           checked={acceptTerms}
           onChange={(e) => setAcceptTerms(e.target.checked)}
-          className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+          className="mt-1 h-4 w-4 text-blue-600 border-blue-300 rounded-md focus:ring-blue-500"
         />
         <label
           htmlFor="acceptTerms"
-          className="text-sm text-gray-700 dark:text-gray-300"
+          className="text-sm text-gray-600"
         >
-          <span className="font-medium">Kullanım Koşulları</span> ve{" "}
-          <span className="font-medium">Gizlilik Politikası</span>'nı okudum ve
-          kabul ediyorum.
+          Kullanım Şartları ve Gizlilik Politikası'nı kabul ediyorum
         </label>
       </div>
 
@@ -270,7 +295,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         size="lg"
         className="w-full"
         disabled={isLoading || isSubmitting || !acceptTerms}
-        onClick={handleClick}
       >
         {isLoading || isSubmitting ? (
           <div className="flex items-center justify-center space-x-2">

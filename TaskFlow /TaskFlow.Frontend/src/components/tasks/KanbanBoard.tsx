@@ -1,15 +1,15 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { TodoTaskDto } from "../../types/task.types";
-import type { CategoryDto } from "../../types/category.types";
-import { FaCheck, FaEllipsisV, FaEdit, FaTrash, FaCalendarAlt } from "react-icons/fa";
+import type { TodoTaskDto } from "../../types/tasks";
+import type { CategoryDto } from "../../types/tasks";
+import { FaCheck, FaEdit, FaTrash, FaCalendarAlt } from "react-icons/fa";
 import ProgressSlider from "./ProgressSlider";
 
 interface KanbanBoardProps {
   tasks: TodoTaskDto[];
   categories: CategoryDto[];
-  onEdit: (task: TodoTaskDto) => void;
-  onDelete: (taskId: number) => void;
+  onEditTask: (task: TodoTaskDto) => void;
+  onDeleteTask: (taskId: number) => void;
   onToggleComplete: (taskId: number, isCompleted: boolean) => void;
   onProgressChange: (taskId: number, progress: number) => void;
 }
@@ -17,8 +17,8 @@ interface KanbanBoardProps {
 const KanbanBoard: React.FC<KanbanBoardProps> = ({
   tasks,
   categories,
-  onEdit,
-  onDelete,
+  onEditTask,
+  onDeleteTask,
   onToggleComplete,
   onProgressChange,
 }) => {
@@ -79,13 +79,13 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                       
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => onEdit(task)}
+                                                        onClick={() => onEditTask(task)}
                           className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
                         >
                           <FaEdit className="w-3 h-3" />
                         </button>
                         <button
-                          onClick={() => onDelete(task.id)}
+                                                        onClick={() => onDeleteTask(task.id)}
                           className="p-1 text-gray-400 hover:text-red-500 transition-colors"
                         >
                           <FaTrash className="w-3 h-3" />

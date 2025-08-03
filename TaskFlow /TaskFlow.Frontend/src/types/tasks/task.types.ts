@@ -46,6 +46,8 @@ export interface UpdateTodoTaskDto {
   priority?: number; // 0: Low, 1: Normal, 2: High, 3: Critical
   categoryId?: number;
   parentTaskId?: number;
+  isCompleted?: boolean;
+  progress?: number; // 0-100 arası
 }
 
 export interface TasksResponse {

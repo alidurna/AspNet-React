@@ -35,7 +35,7 @@ export const GoogleLoginProvider: React.FC<GoogleLoginProviderProps> = ({
     try {
       // OAuth popup window aç
       const popup = window.open(
-        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5281/api'}/oauth/google`,
+        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5282/api'}/oauth/google`,
         'google_oauth',
         'width=500,height=600,scrollbars=yes,resizable=yes'
       );

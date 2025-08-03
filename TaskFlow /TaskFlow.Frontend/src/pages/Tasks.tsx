@@ -13,8 +13,7 @@ import type {
   TodoTaskDto,
   CreateTodoTaskDto,
   UpdateTodoTaskDto,
-} from "../types/task.types";
-import type { CategoryDto } from "../types/category.types";
+} from "../types/tasks";
 
 // Modular Components
 import TasksHeader from "./components/TasksHeader";
@@ -65,7 +64,7 @@ const Tasks: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       showSuccess('Görev başarıyla oluşturuldu!');
-      trackEvent('task_created');
+      trackEvent('user_action', 'task_created');
       setIsTaskModalOpen(false);
     },
     onError: () => showError('Görev oluşturulurken hata oluştu'),
@@ -77,7 +76,7 @@ const Tasks: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       showSuccess('Görev başarıyla güncellendi!');
-      trackEvent('task_updated');
+      trackEvent('user_action', 'task_updated');
       setIsTaskModalOpen(false);
       setEditingTask(null);
     },
@@ -89,7 +88,7 @@ const Tasks: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       showSuccess('Görev başarıyla silindi!');
-      trackEvent('task_deleted');
+      trackEvent('user_action', 'task_deleted');
     },
     onError: () => showError('Görev silinirken hata oluştu'),
   });
@@ -175,59 +174,70 @@ const Tasks: React.FC = () => {
 
   // ===== RENDER =====
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <TasksHeader
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        showFilters={showFilters}
-        onToggleFilters={() => setShowFilters(!showFilters)}
-        onCreateTask={handleCreateTask}
-        tasksCount={filteredTasks.length}
-        completedCount={completedCount}
-      />
-
-      {/* Filters */}
-      {showFilters && (
-        <TaskFilters
-          categories={categories}
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
-          selectedPriority={selectedPriority}
-          onPriorityChange={setSelectedPriority}
-          selectedStatus={selectedStatus}
-          onStatusChange={setSelectedStatus}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-indigo-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
+      {/* Background decorations */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-blue-100/20 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-purple-100/20 to-transparent rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[32rem] h-[32rem] bg-gradient-to-r from-indigo-100/10 via-blue-100/10 to-purple-100/10 rounded-full blur-3xl" />
+      </div>
+      
+      <div className="relative z-10 container mx-auto px-4 py-8 space-y-6">
+        {/* Header */}
+        <TasksHeader
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          showFilters={showFilters}
+          onToggleFilters={() => setShowFilters(!showFilters)}
+          onCreateTask={handleCreateTask}
+          tasksCount={filteredTasks.length}
+          completedCount={completedCount}
         />
-      )}
 
-      {/* Content */}
-      <TasksContent
-        tasks={filteredTasks}
-        categories={categories}
-        viewMode={viewMode}
-        isLoading={tasksLoading || categoriesLoading}
-        onEditTask={handleEditTask}
-        onDeleteTask={handleDeleteTask}
-        onToggleComplete={handleToggleComplete}
-        onProgressChange={handleProgressChange}
-      />
+        {/* Filters */}
+        {showFilters && (
+          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 shadow-lg">
+            <TaskFilters
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              selectedPriority={selectedPriority}
+              onPriorityChange={setSelectedPriority}
+              selectedStatus={selectedStatus}
+              onStatusChange={setSelectedStatus}
+            />
+          </div>
+        )}
 
-      {/* Task Modal */}
-      {isTaskModalOpen && (
-        <TaskModal
-          isOpen={isTaskModalOpen}
-          onClose={() => {
-            setIsTaskModalOpen(false);
-            setEditingTask(null);
-          }}
-          onSubmit={handleTaskSubmit}
-          task={editingTask}
+        {/* Content */}
+        <TasksContent
+          tasks={filteredTasks}
           categories={categories}
-          isLoading={createTaskMutation.isPending || updateTaskMutation.isPending}
+          viewMode={viewMode}
+          isLoading={tasksLoading || categoriesLoading}
+          onEditTask={handleEditTask}
+          onDeleteTask={handleDeleteTask}
+          onToggleComplete={handleToggleComplete}
+          onProgressChange={handleProgressChange}
         />
-      )}
+
+        {/* Task Modal */}
+        {isTaskModalOpen && (
+          <TaskModal
+            isOpen={isTaskModalOpen}
+            onClose={() => {
+              setIsTaskModalOpen(false);
+              setEditingTask(null);
+            }}
+            onSubmit={handleTaskSubmit}
+            task={editingTask}
+            categories={categories}
+            isLoading={createTaskMutation.isPending || updateTaskMutation.isPending}
+          />
+        )}
+      </div>
     </div>
   );
 };

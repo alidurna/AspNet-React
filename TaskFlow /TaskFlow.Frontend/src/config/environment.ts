@@ -10,7 +10,7 @@
 
 export const environment = {
   // API Configuration
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5281/api',
+  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5282/api/v1',
   
   // OAuth Configuration
   oauth: {

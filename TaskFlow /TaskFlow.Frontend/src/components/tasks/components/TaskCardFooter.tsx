@@ -13,7 +13,7 @@ import type { CategoryDto } from '../../../types/category.types';
 import ProgressSlider from '../ProgressSlider';
 
 interface TaskCardFooterProps {
-  categoryId: number;
+  categoryId?: number;
   categories: CategoryDto[];
   dueDate?: string;
   progress?: number;

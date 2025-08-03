@@ -26,8 +26,8 @@ import ProfileStats from "../components/profile/ProfileStats";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
 import { useToast } from "../hooks/useToast";
 
-// API Services (feature-based)
-import { profileAPI } from "../services/features/authAPI";
+// API Services (modular)
+import { userAPI } from "../services/api";
 
 /**
  * Profile Page Component
@@ -40,12 +40,12 @@ const Profile: React.FC = () => {
   // ===== DATA FETCHING =====
   const { data: profileResponse, isLoading: profileLoading, error: profileError } = useQuery({
     queryKey: ['profile'],
-    queryFn: () => profileAPI.getProfile(),
+    queryFn: () => userAPI.getProfile(),
   });
 
   const { data: statsResponse, isLoading: statsLoading } = useQuery({
     queryKey: ['user-stats'],
-    queryFn: () => profileAPI.getUserStats(),
+    queryFn: () => userAPI.getUserStats(),
   });
 
   const profile = profileResponse?.data;
@@ -53,7 +53,7 @@ const Profile: React.FC = () => {
 
   // ===== MUTATIONS =====
   const updateProfileMutation = useMutation({
-    mutationFn: (profileData: any) => profileAPI.updateProfile(profileData),
+    mutationFn: (profileData: any) => userAPI.updateProfile(profileData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       toast.showSuccess('Profil bilgileri başarıyla güncellendi!');
