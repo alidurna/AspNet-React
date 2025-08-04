@@ -13,7 +13,6 @@ import ConfirmModal from "../ui/ConfirmModal";
 
 interface SidebarUserSectionProps {
   isOpen?: boolean;
-  onLogout?: () => void;
 }
 
 /**
@@ -23,8 +22,7 @@ interface SidebarUserSectionProps {
  * Collapsible user menu sağlar.
  */
 export const SidebarUserSection: React.FC<SidebarUserSectionProps> = ({
-  isOpen = true,
-  onLogout
+  isOpen = true
 }) => {
   // ===== HOOKS =====
   const navigate = useNavigate();
@@ -42,9 +40,6 @@ export const SidebarUserSection: React.FC<SidebarUserSectionProps> = ({
     try {
       await logout();
       setShowLogoutModal(false);
-      if (onLogout) {
-        onLogout();
-      }
       navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
@@ -91,61 +86,84 @@ export const SidebarUserSection: React.FC<SidebarUserSectionProps> = ({
 
   return (
     <>
-      {/* User Section */}
-      <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+      {/* Standard User Section */}
+      <div className="p-4">
         <div className="flex items-center">
-          {/* User Avatar */}
+          {/* Standard User Avatar */}
           <div className="flex-shrink-0">
-            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
               {getUserInitials()}
             </div>
           </div>
 
-          {/* User Info */}
-          {isOpen && (
-            <div className="ml-3 flex-1 min-w-0">
-              <button
-                onClick={toggleUserMenu}
-                className="w-full text-left flex items-center justify-between group"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                    {getUserDisplayName()}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {user.email}
-                  </p>
-                </div>
-                <div className="ml-2 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300">
-                  {isUserMenuExpanded ? (
-                    <FiChevronUp className="w-4 h-4" />
-                  ) : (
-                    <FiChevronDown className="w-4 h-4" />
-                  )}
-                </div>
-              </button>
+          {/* Standard User Info */}
+          <div className="ml-3 flex-1 min-w-0">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleUserMenu();
+              }}
+              className="w-full text-left flex items-center justify-between group"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  {getUserDisplayName()}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  {user.email}
+                </p>
+              </div>
+              <div className="ml-2 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300">
+                {isUserMenuExpanded ? (
+                  <FiChevronUp className="w-4 h-4" />
+                ) : (
+                  <FiChevronDown className="w-4 h-4" />
+                )}
+              </div>
+            </button>
 
-              {/* Expanded User Menu */}
-              {isUserMenuExpanded && (
-                <div className="mt-2 space-y-1">
-                  <button
-                    onClick={() => navigate('/profile')}
-                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 rounded-md flex items-center"
-                  >
-                    <FiUser className="w-4 h-4 mr-2" />
-                    Profili Görüntüle
-                  </button>
-                  <button
-                    onClick={() => setShowLogoutModal(true)}
-                    className="w-full text-left px-3 py-2 text-sm text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-md flex items-center"
-                  >
-                    <FiLogOut className="w-4 h-4 mr-2" />
-                    Çıkış Yap
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+            {/* Standard Expanded User Menu */}
+            {isUserMenuExpanded && (
+              <div className="mt-2 space-y-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Sidebar'ı her zaman açık tut
+                    localStorage.setItem('sidebarOpen', 'true');
+                    
+                    // Sidebar'ı zorla açık tut
+                    setTimeout(() => {
+                      localStorage.setItem('sidebarOpen', 'true');
+                    }, 100);
+                    
+                    navigate('/profile');
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-md flex items-center"
+                >
+                  <FiUser className="w-4 h-4 mr-2" />
+                  Profili Görüntüle
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Sidebar'ı her zaman açık tut
+                    localStorage.setItem('sidebarOpen', 'true');
+                    
+                    // Sidebar'ı zorla açık tut
+                    setTimeout(() => {
+                      localStorage.setItem('sidebarOpen', 'true');
+                    }, 100);
+                    
+                    setShowLogoutModal(true);
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-md flex items-center"
+                >
+                  <FiLogOut className="w-4 h-4 mr-2" />
+                  Çıkış Yap
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

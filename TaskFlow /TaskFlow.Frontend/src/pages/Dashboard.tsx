@@ -1,24 +1,15 @@
 /**
- * Dashboard Page - Refactored Version
+ * Dashboard Page - Soft & Minimal Design
  * 
- * Bu dosya, ana dashboard sayfasının refactored edilmiş halidir.
- * Mega dosya sorunu çözülmüş, küçük ve yönetilebilir componentlere bölünmüştür.
- * 
- * Ana Özellikler:
- * - Modüler component yapısı
- * - Clean code principles
- * - Separation of concerns
- * - Better maintainability
- * - Improved performance
- * 
- * @version 3.0.0 - Refactored
+ * Yeniden tasarlanmış, soft ve minimal dashboard.
+ * Karmaşık gradient'lar ve gereksiz elementler kaldırıldı.
  */
 
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
-// Refactored Components
+// Components
 import DashboardStats from "../components/dashboard/DashboardStats";
 import DashboardRecentTasks from "../components/dashboard/DashboardRecentTasks";
 import DashboardQuickActions from "../components/dashboard/DashboardQuickActions";
@@ -27,7 +18,7 @@ import DashboardQuickActions from "../components/dashboard/DashboardQuickActions
 import LoadingSpinner from "../components/ui/LoadingSpinner";
 import { useToast } from "../hooks/useToast";
 
-// API Services (modular)
+// API Services
 import { taskAPI } from "../services/api";
 
 /**
@@ -47,9 +38,6 @@ const Dashboard: React.FC = () => {
   const tasks = tasksResponse?.data?.tasks || [];
 
   // ===== DATA PREPARATION =====
-  /**
-   * İstatistik verilerini hazırlar
-   */
   const dashboardStats = React.useMemo(() => {
     const totalTasks = tasks.length;
     const completedTasks = tasks.filter((task: any) => task.isCompleted).length;
@@ -70,9 +58,6 @@ const Dashboard: React.FC = () => {
     };
   }, [tasks]);
 
-  /**
-   * Son aktiviteleri hazırlar
-   */
   const recentTasks = React.useMemo(() => {
     return tasks
       .map((task: any) => ({
@@ -88,7 +73,7 @@ const Dashboard: React.FC = () => {
         categoryName: task.categoryName
       }))
       .sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-      .slice(0, 10);
+      .slice(0, 5);
   }, [tasks]);
 
   // ===== EVENT HANDLERS =====
@@ -136,160 +121,117 @@ const Dashboard: React.FC = () => {
 
   // ===== RENDER =====
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Debug Info */}
-      <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded">
-        <p><strong>Debug Info:</strong></p>
-        <p>Tasks Loading: {tasksLoading ? 'Yes' : 'No'}</p>
-        <p>Tasks Count: {tasks.length}</p>
-        <p>Dashboard Stats: {JSON.stringify(dashboardStats)}</p>
-        <p>Recent Tasks Count: {recentTasks.length}</p>
-        <p>API Response: {JSON.stringify(tasksResponse)}</p>
-      </div>
-
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-4 sm:p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold mb-2">
-              Hoş Geldiniz! 👋
+    <div className="space-y-6 xl:space-y-8">
+      {/* Welcome Section - Centered */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 sm:p-8 xl:p-10 max-w-7xl mx-auto">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl xl:text-4xl font-light text-gray-900 dark:text-white mb-3">
+              Hoş Geldiniz
             </h1>
-            <p className="text-blue-100 text-sm sm:text-base">
-              TaskFlow ile görevlerinizi organize edin ve verimliliğinizi artırın
+            <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base xl:text-lg">
+              Bugün neler yapmak istiyorsunuz?
             </p>
           </div>
           
-          <div className="hidden md:block">
-            <div className="text-right">
-              <div className="text-2xl sm:text-3xl font-bold">
-                {new Date().toLocaleDateString('tr-TR', { day: 'numeric' })}
-              </div>
-              <div className="text-blue-100 text-sm">
-                {new Date().toLocaleDateString('tr-TR', { 
-                  month: 'long', 
-                  year: 'numeric' 
-                })}
-              </div>
+          <div className="text-center lg:text-right">
+            <div className="text-3xl sm:text-4xl xl:text-5xl font-light text-gray-400 dark:text-gray-500">
+              {new Date().toLocaleDateString('tr-TR', { day: 'numeric' })}
+            </div>
+            <div className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
+              {new Date().toLocaleDateString('tr-TR', {
+                month: 'long',
+                year: 'numeric',
+              })}
             </div>
           </div>
         </div>
       </div>
 
-      {/* İstatistik Kartları */}
+      {/* Stats Section */}
       <DashboardStats 
         stats={dashboardStats}
         isLoading={tasksLoading}
       />
 
-      {/* Ana İçerik */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* Sol Sütun: Hızlı İşlemler */}
-        <div className="lg:col-span-1">
-          <DashboardQuickActions
-            onCreateTask={handleCreateTask}
-            onViewTasks={handleViewTasks}
-            onViewCategories={handleViewCategories}
-            onViewAnalytics={handleViewAnalytics}
-            onViewCalendar={handleViewCalendar}
-            onSearch={handleSearch}
-          />
-        </div>
-
-        {/* Sağ Sütun: Son Aktiviteler */}
-        <div className="lg:col-span-2">
-          <DashboardRecentTasks
-            tasks={recentTasks}
-            isLoading={tasksLoading}
-            onViewTask={handleViewTask}
-            onViewAllTasks={handleViewAllTasks}
-          />
-        </div>
-      </div>
-
-      {/* Alt Bölüm: Ek Özellikler */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* Günlük Hedefler */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6 h-full">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
-            📅 Günlük Hedefler
-          </h3>
-          <div className="space-y-2 sm:space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Tamamlanan Görevler</span>
-              <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
-                {dashboardStats.completedTasks} / {Math.max(dashboardStats.totalTasks, 5)}
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div
-                className="h-2 rounded-full bg-green-500 transition-all duration-300"
-                style={{
-                  width: `${Math.min((dashboardStats.completedTasks / Math.max(dashboardStats.totalTasks, 5)) * 100, 100)}%`
-                }}
-              />
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Bugünkü hedefinize ulaşmak için kalan: {Math.max(0, Math.max(dashboardStats.totalTasks, 5) - dashboardStats.completedTasks)} görev
-            </p>
+      {/* Main Content Grid - Centered */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6 xl:gap-8 max-w-7xl mx-auto">
+        {/* Quick Actions - Fixed Width */}
+        <div className="md:col-span-1 lg:col-span-1 xl:col-span-2">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 md:p-6 xl:p-8 h-fit">
+            <h2 className="text-lg md:text-xl xl:text-xl font-medium text-gray-900 dark:text-white mb-4 md:mb-6">
+              Hızlı İşlemler
+            </h2>
+            <DashboardQuickActions
+              onCreateTask={handleCreateTask}
+              onViewTasks={handleViewTasks}
+              onViewCategories={handleViewCategories}
+              onViewAnalytics={handleViewAnalytics}
+              onViewCalendar={handleViewCalendar}
+              onSearch={handleSearch}
+            />
           </div>
         </div>
 
-        {/* Verimlilik Skoru */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6 h-full">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
-            📈 Verimlilik Skoru
-          </h3>
-          <div className="text-center">
-            <div className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+        {/* Recent Tasks - Flexible Width */}
+        <div className="md:col-span-1 lg:col-span-2 xl:col-span-3">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 md:p-6 xl:p-8">
+            <h2 className="text-lg md:text-xl xl:text-xl font-medium text-gray-900 dark:text-white mb-4 md:mb-6">
+              Son Aktiviteler
+            </h2>
+            <DashboardRecentTasks
+              tasks={recentTasks}
+              isLoading={tasksLoading}
+              onViewTask={handleViewTask}
+              onViewAllTasks={handleViewAllTasks}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Progress Section - Centered */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 xl:p-8 max-w-7xl mx-auto">
+        <h2 className="text-lg xl:text-xl font-medium text-gray-900 dark:text-white mb-6">
+          Bugünkü İlerleme
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 xl:gap-6">
+          <div className="text-center p-4 xl:p-6 bg-gray-50 dark:bg-gray-700 rounded-xl">
+            <div className="text-2xl xl:text-3xl font-light text-gray-900 dark:text-white mb-2">
+              {dashboardStats.completedTasks}
+            </div>
+            <div className="text-sm xl:text-base text-gray-600 dark:text-gray-400">
+              Tamamlanan
+            </div>
+          </div>
+          
+          <div className="text-center p-4 xl:p-6 bg-gray-50 dark:bg-gray-700 rounded-xl">
+            <div className="text-2xl xl:text-3xl font-light text-gray-900 dark:text-white mb-2">
+              {dashboardStats.totalTasks - dashboardStats.completedTasks}
+            </div>
+            <div className="text-sm xl:text-base text-gray-600 dark:text-gray-400">
+              Kalan
+            </div>
+          </div>
+          
+          <div className="text-center p-4 xl:p-6 bg-gray-50 dark:bg-gray-700 rounded-xl">
+            <div className="text-2xl xl:text-3xl font-light text-gray-900 dark:text-white mb-2">
               {dashboardStats.totalTasks > 0 ? 
                 Math.round((dashboardStats.completedTasks / dashboardStats.totalTasks) * 100) : 0}%
             </div>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-3">
-              Bu hafta ortalama
-            </p>
-            <div className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-              <span>Çok İyi</span>
+            <div className="text-sm xl:text-base text-gray-600 dark:text-gray-400">
+              Tamamlama
+            </div>
+          </div>
+
+          <div className="text-center p-4 xl:p-6 bg-gray-50 dark:bg-gray-700 rounded-xl">
+            <div className="text-2xl xl:text-3xl font-light text-gray-900 dark:text-white mb-2">
+              {dashboardStats.inProgressTasks}
+            </div>
+            <div className="text-sm xl:text-base text-gray-600 dark:text-gray-400">
+              Devam Ediyor
             </div>
           </div>
         </div>
-
-        {/* Yaklaşan Son Tarihler */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6 h-full">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
-            ⏰ Yaklaşan Son Tarihler
-          </h3>
-          {dashboardStats.overdueTasks > 0 ? (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                <span className="text-xs sm:text-sm font-medium">
-                  {dashboardStats.overdueTasks} görev vadesi geçti
-                </span>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Bu görevleri öncelikle tamamlamanız önerilir
-              </p>
-            </div>
-          ) : (
-            <div className="text-center py-3 sm:py-4">
-              <div className="text-green-600 dark:text-green-400 mb-2">✅</div>
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                Vadesi geçen göreviniz yok!
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Alt Bilgi */}
-      <div className="text-center pt-2">
-        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-          TaskFlow ile verimliliğinizi artırın. Sorularınız için{' '}
-          <button className="text-blue-600 dark:text-blue-400 hover:underline">
-            destek ekibiyle iletişime geçin
-          </button>
-        </p>
       </div>
     </div>
   );

@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   FiHome, 
   FiCheckSquare, 
@@ -25,7 +25,6 @@ interface NavigationItem {
 
 interface SidebarNavigationProps {
   isOpen?: boolean;
-  onItemClick?: () => void;
 }
 
 /**
@@ -35,10 +34,10 @@ interface SidebarNavigationProps {
  * responsive davranış sağlar.
  */
 export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
-  isOpen = true,
-  onItemClick
+  isOpen = true
 }) => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   // ===== NAVIGATION ITEMS =====
   const navigationItems: NavigationItem[] = [
@@ -86,17 +85,18 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
   };
 
   /**
-   * Handle navigation item click
+   * Handle navigation item click - KALDIRILDI
    */
-  const handleItemClick = () => {
-    if (onItemClick) {
-      onItemClick();
-    }
-  };
+  // const handleItemClick = () => {
+  //   // Sidebar'ı kapatma - artık kapanmayacak
+  //   // if (onItemClick) {
+  //   //   onItemClick();
+  //   // }
+  // };
 
   // ===== RENDER =====
   return (
-    <nav className="flex-1 px-2 py-4 space-y-2">
+    <nav className="px-2 py-4 space-y-1">
       {navigationItems.map((item) => {
         const isActive = isActiveRoute(item.href);
         const Icon = item.icon;
@@ -105,12 +105,23 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
           <Link
             key={item.name}
             to={item.href}
-            onClick={handleItemClick}
+            onClick={(e) => {
+              // Link tıklamasında sidebar'ı her zaman açık tut
+              e.stopPropagation();
+              
+              // Sidebar'ı her zaman açık tut
+              localStorage.setItem('sidebarOpen', 'true');
+              
+              // Sidebar'ı zorla açık tut
+              setTimeout(() => {
+                localStorage.setItem('sidebarOpen', 'true');
+              }, 100);
+            }}
             className={`
-              group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200
+              group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200
               ${isActive
-                ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-                : "text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white"
+                ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                : "text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
               }
             `}
           >
@@ -125,17 +136,14 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
             />
             
             {/* Menu Text */}
-            <span className={`${!isOpen ? "lg:hidden" : ""} transition-opacity duration-200`}>
+            <span>
               {item.name}
             </span>
 
             {/* Badge (if exists) */}
             {item.badge && item.badge > 0 && (
               <span
-                className={`
-                  ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full
-                  ${!isOpen ? "lg:hidden" : ""}
-                `}
+                className="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full"
               >
                 {item.badge > 99 ? "99+" : item.badge}
               </span>

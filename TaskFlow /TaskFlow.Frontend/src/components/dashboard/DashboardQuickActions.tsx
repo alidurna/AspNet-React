@@ -1,8 +1,7 @@
 /**
  * DashboardQuickActions Component
  * 
- * Dashboard sayfasının hızlı işlemler bölümünü gösteren component.
- * Kullanıcının sık kullandığı işlemlere hızlı erişim sağlar.
+ * Soft ve minimal tasarım için yeniden düzenlenmiş hızlı işlemler.
  */
 
 import React from 'react';
@@ -11,7 +10,6 @@ import { FaPlus, FaTasks, FaFolderOpen, FaChartBar, FaCalendarAlt, FaSearch } fr
 interface QuickAction {
   id: string;
   title: string;
-  description: string;
   icon: React.ReactNode;
   color: string;
   bgColor: string;
@@ -38,21 +36,10 @@ const QuickActionCard: React.FC<QuickActionCardProps> = ({ action }) => {
   return (
     <button
       onClick={action.onClick}
-      className={`w-full p-3 sm:p-4 ${action.bgColor} rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 group text-left`}
+      className={`w-full h-8 sm:h-10 md:h-12 lg:h-14 p-2 sm:p-3 md:p-4 lg:p-5 ${action.bgColor} rounded-md sm:rounded-lg border border-gray-100 dark:border-gray-700 hover:shadow-sm hover:scale-101 transition-all duration-200 group text-left flex items-center justify-center`}
     >
-      <div className="flex items-start gap-2 sm:gap-3">
-        <div className={`w-8 h-8 sm:w-10 sm:h-10 ${action.color} bg-white dark:bg-gray-800 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
-          {action.icon}
-        </div>
-        
-        <div className="flex-1 min-w-0">
-          <h4 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white mb-1">
-            {action.title}
-          </h4>
-          <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-            {action.description}
-          </p>
-        </div>
+      <div className={`w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 ${action.color} bg-white/90 dark:bg-gray-800/90 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-sm`}>
+        {action.icon}
       </div>
     </button>
   );
@@ -76,104 +63,83 @@ const DashboardQuickActions: React.FC<DashboardQuickActionsProps> = ({
     {
       id: 'create-task',
       title: 'Yeni Görev',
-      description: 'Hızlıca yeni bir görev oluşturun',
-      icon: <FaPlus className="w-4 h-4 sm:w-5 sm:h-5" />,
-      color: 'text-blue-600 dark:text-blue-400',
+      icon: <FaPlus className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7" />,
+      color: 'text-blue-500',
       bgColor: 'bg-blue-50 dark:bg-blue-900/20',
       onClick: onCreateTask || (() => {})
     },
     {
       id: 'view-tasks',
       title: 'Görev Listesi',
-      description: 'Tüm görevlerinizi görüntüleyin',
-      icon: <FaTasks className="w-4 h-4 sm:w-5 sm:h-5" />,
-      color: 'text-green-600 dark:text-green-400',
+      icon: <FaTasks className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7" />,
+      color: 'text-green-500',
       bgColor: 'bg-green-50 dark:bg-green-900/20',
       onClick: onViewTasks || (() => {})
     },
     {
       id: 'view-categories',
       title: 'Kategoriler',
-      description: 'Kategori yönetimi yapın',
-      icon: <FaFolderOpen className="w-4 h-4 sm:w-5 sm:h-5" />,
-      color: 'text-orange-600 dark:text-orange-400',
+      icon: <FaFolderOpen className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7" />,
+      color: 'text-orange-500',
       bgColor: 'bg-orange-50 dark:bg-orange-900/20',
       onClick: onViewCategories || (() => {})
     },
     {
       id: 'view-analytics',
       title: 'İstatistikler',
-      description: 'Detaylı analiz ve raporlar',
-      icon: <FaChartBar className="w-4 h-4 sm:w-5 sm:h-5" />,
-      color: 'text-purple-600 dark:text-purple-400',
+      icon: <FaChartBar className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7" />,
+      color: 'text-purple-500',
       bgColor: 'bg-purple-50 dark:bg-purple-900/20',
       onClick: onViewAnalytics || (() => {})
     },
     {
       id: 'view-calendar',
       title: 'Takvim',
-      description: 'Görevleri takvim görünümünde inceleyin',
-      icon: <FaCalendarAlt className="w-4 h-4 sm:w-5 sm:h-5" />,
-      color: 'text-indigo-600 dark:text-indigo-400',
+      icon: <FaCalendarAlt className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7" />,
+      color: 'text-indigo-500',
       bgColor: 'bg-indigo-50 dark:bg-indigo-900/20',
       onClick: onViewCalendar || (() => {})
     },
     {
       id: 'search',
       title: 'Arama',
-      description: 'Görev ve kategorilerde arama yapın',
-      icon: <FaSearch className="w-4 h-4 sm:w-5 sm:h-5" />,
-      color: 'text-gray-600 dark:text-gray-400',
+      icon: <FaSearch className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7" />,
+      color: 'text-gray-500',
       bgColor: 'bg-gray-50 dark:bg-gray-900/20',
       onClick: onSearch || (() => {})
     }
   ];
 
   return (
-    <div className="mb-4 sm:mb-6">
-      <div className="mb-4 sm:mb-6">
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2">
-          Hızlı İşlemler
-        </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Sık kullandığınız işlemlere hızlı erişim
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+    <div className="space-y-2 sm:space-y-3 md:space-y-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-1 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-5">
         {quickActions.map((action) => (
           <QuickActionCard key={action.id} action={action} />
         ))}
       </div>
 
       {/* Klavye Kısayolları Bilgisi */}
-      <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-900/20 dark:to-blue-900/20 rounded-lg border border-gray-200 dark:border-gray-700">
-        <h4 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white mb-2">
-          💡 Klavye Kısayolları
-        </h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs text-gray-600 dark:text-gray-400">
-          <div className="flex items-center gap-2">
-            <kbd className="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-xs">Ctrl+N</kbd>
-            <span className="text-xs">Yeni Görev</span>
+      <div className="mt-3 sm:mt-4 md:mt-5 p-2 sm:p-3 md:p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-md sm:rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
+        <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+          <div className="w-4 h-4 sm:w-5 sm:h-5 bg-yellow-100 dark:bg-yellow-900/30 rounded-md flex items-center justify-center">
+            <span className="text-yellow-600 dark:text-yellow-400 text-xs">💡</span>
           </div>
-          <div className="flex items-center gap-2">
-            <kbd className="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-xs">Ctrl+T</kbd>
-            <span className="text-xs">Görev Listesi</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <kbd className="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-xs">Ctrl+K</kbd>
-            <span className="text-xs">Arama</span>
-          </div>
+          <h4 className="text-xs sm:text-sm md:text-base font-semibold text-gray-900 dark:text-white">
+            Klavye Kısayolları
+          </h4>
         </div>
-      </div>
-
-      {/* İpuçları */}
-      <div className="mt-3 sm:mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-        <div className="flex items-start gap-2">
-          <span className="text-yellow-600 dark:text-yellow-400 text-xs sm:text-sm">💡</span>
-          <div className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200">
-            <p className="font-medium mb-1">İpucu:</p>
-            <p>Görevlerinizi kategorilere ayırarak daha organize çalışabilir ve raporlarınızı daha detaylı inceleyebilirsiniz.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-2 text-xs sm:text-sm">
+          <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600 hover:shadow-sm transition-shadow duration-200">
+            <kbd className="px-2 sm:px-3 py-1 bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-xs font-mono font-semibold text-gray-700 dark:text-gray-300">Ctrl+N</kbd>
+            <span className="text-gray-700 dark:text-gray-300 font-medium truncate">Yeni Görev</span>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600 hover:shadow-sm transition-shadow duration-200">
+            <kbd className="px-2 sm:px-3 py-1 bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-xs font-mono font-semibold text-gray-700 dark:text-gray-300">Ctrl+T</kbd>
+            <span className="text-gray-700 dark:text-gray-300 font-medium truncate">Görev Listesi</span>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600 hover:shadow-sm transition-shadow duration-200">
+            <kbd className="px-2 sm:px-3 py-1 bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-xs font-mono font-semibold text-gray-700 dark:text-gray-300">Ctrl+K</kbd>
+            <span className="text-gray-700 dark:text-gray-300 font-medium truncate">Arama</span>
           </div>
         </div>
       </div>

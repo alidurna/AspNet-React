@@ -174,15 +174,8 @@ const Tasks: React.FC = () => {
 
   // ===== RENDER =====
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-indigo-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
-      {/* Background decorations */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-blue-100/20 to-transparent rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-purple-100/20 to-transparent rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[32rem] h-[32rem] bg-gradient-to-r from-indigo-100/10 via-blue-100/10 to-purple-100/10 rounded-full blur-3xl" />
-      </div>
-      
-      <div className="relative z-10 container mx-auto px-4 py-8 space-y-6">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
+      <div className="container mx-auto px-4 py-8 space-y-6">
         {/* Header */}
         <TasksHeader
           viewMode={viewMode}
@@ -198,7 +191,7 @@ const Tasks: React.FC = () => {
 
         {/* Filters */}
         {showFilters && (
-          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 shadow-lg">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
             <TaskFilters
               categories={categories}
               selectedCategory={selectedCategory}

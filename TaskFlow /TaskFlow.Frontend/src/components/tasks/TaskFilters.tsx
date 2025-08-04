@@ -6,7 +6,6 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { FaFilter, FaCalendarAlt, FaFlag, FaUser, FaTimes } from 'react-icons/fa';
 import type { CategoryDto } from '../../types/tasks';
 
@@ -71,13 +70,9 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({
   const activeFilterCount = getActiveFilterCount();
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="p-6"
-    >
+    <div className="p-4 sm:p-6">
       {/* Filtre başlığı */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
         <div className="flex items-center space-x-3">
           <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
             <FaFilter className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -93,29 +88,20 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({
         </div>
         
         {activeFilterCount > 0 && (
-          <motion.button
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <button
             onClick={clearAllFilters}
             className="flex items-center space-x-2 px-3 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-sm font-medium"
           >
             <FaTimes className="w-3 h-3" />
             <span>Temizle ({activeFilterCount})</span>
-          </motion.button>
+          </button>
         )}
       </div>
 
       {/* Filtre kartları grid'i */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Kategori Filtresi */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="space-y-3"
-        >
+        <div className="space-y-3">
           <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
             <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded">
               <FaUser className="w-3 h-3 text-purple-600 dark:text-purple-400" />
@@ -126,7 +112,7 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({
             <select
               value={selectedCategory || ''}
               onChange={(e) => onCategoryChange(e.target.value ? Number(e.target.value) : null)}
-              className="w-full appearance-none px-4 py-3 bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm border border-gray-300/60 dark:border-gray-600/60 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 dark:text-white transition-all duration-200 shadow-sm hover:shadow-md"
+              className="w-full appearance-none px-3 py-2.5 sm:px-4 sm:py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 dark:text-white transition-all duration-200"
             >
               <option value="">Tüm Kategoriler</option>
               {categories.map((category) => (
@@ -141,15 +127,10 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({
               </svg>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Öncelik Filtresi */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-3"
-        >
+        <div className="space-y-3">
           <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
             <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded">
               <FaFlag className="w-3 h-3 text-orange-600 dark:text-orange-400" />
@@ -160,7 +141,7 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({
             <select
               value={selectedPriority || ''}
               onChange={(e) => onPriorityChange(e.target.value ? Number(e.target.value) : null)}
-              className="w-full appearance-none px-4 py-3 bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm border border-gray-300/60 dark:border-gray-600/60 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 dark:text-white transition-all duration-200 shadow-sm hover:shadow-md"
+              className="w-full appearance-none px-3 py-2.5 sm:px-4 sm:py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 dark:text-white transition-all duration-200"
             >
               <option value="">Tüm Öncelikler</option>
               {priorityOptions.map((priority) => (
@@ -175,15 +156,10 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({
               </svg>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Durum Filtresi */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="space-y-3"
-        >
+        <div className="space-y-3">
           <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
             <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded">
               <FaCalendarAlt className="w-3 h-3 text-green-600 dark:text-green-400" />
@@ -194,7 +170,7 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({
             <select
               value={selectedStatus}
               onChange={(e) => onStatusChange(e.target.value as 'all' | 'completed' | 'pending')}
-              className="w-full appearance-none px-4 py-3 bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm border border-gray-300/60 dark:border-gray-600/60 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 dark:text-white transition-all duration-200 shadow-sm hover:shadow-md"
+              className="w-full appearance-none px-3 py-2.5 sm:px-4 sm:py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 dark:text-white transition-all duration-200"
             >
               {statusOptions.map((status) => (
                 <option key={status.value} value={status.value}>
@@ -208,24 +184,20 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({
               </svg>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Aktif filtreler göstergesi */}
       {activeFilterCount > 0 && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
-        >
-          <div className="flex items-center justify-between">
+        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
               <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
                 {activeFilterCount} filtre aktif
               </span>
             </div>
-            <div className="flex items-center space-x-4 text-xs text-blue-600 dark:text-blue-400">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
               {selectedCategory && (
                 <span className="px-2 py-1 bg-blue-100 dark:bg-blue-800 rounded">
                   Kategori: {categories.find(c => c.id === selectedCategory)?.name}
@@ -243,9 +215,9 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({
               )}
             </div>
           </div>
-        </motion.div>
+        </div>
       )}
-    </motion.div>
+    </div>
   );
 };
 

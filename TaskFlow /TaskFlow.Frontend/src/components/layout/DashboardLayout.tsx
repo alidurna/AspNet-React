@@ -74,7 +74,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 
@@ -95,17 +95,31 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   breadcrumbs = [],
 }) => {
   // State
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Varsayılan olarak açık
   const [isLoading, setIsLoading] = useState(true);
 
   // Hooks
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Sidebar toggle handler
+  // Sidebar toggle handler - sadece manuel kapatma için
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+
+  // Sidebar'ı her zaman açık tut - sadece manuel kapatma ile kapanır
+  useEffect(() => {
+    // Sidebar'ı her zaman açık tut
+    setIsSidebarOpen(true);
+    localStorage.setItem('sidebarOpen', 'true');
+  }, [location.pathname]); // Sayfa değişikliklerinde sidebar'ı açık tut
+
+  // İlk yüklemede sidebar'ı açık tut
+  useEffect(() => {
+    setIsSidebarOpen(true);
+    localStorage.setItem('sidebarOpen', 'true');
+  }, []);
 
   // Authentication check
   useEffect(() => {
@@ -132,25 +146,66 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-neutral-900">
-      {/* Sidebar */}
-      <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
-
-      {/* Main Content Area */}
-      <div className="lg:ml-64 flex flex-col min-h-screen">
-        {/* Header */}
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
+      {/* Mobile Layout */}
+      <div className="lg:hidden">
+        {/* Mobile Header */}
         <Header
           onSidebarToggle={toggleSidebar}
           title={title}
           breadcrumbs={breadcrumbs}
         />
-
-        {/* Page Content */}
-        <main className="flex-1 p-3 sm:p-4 lg:p-6">
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
+        
+        {/* Mobile Content */}
+        <main className="p-4 sm:p-6">
+          {children}
         </main>
+      </div>
+
+      {/* Tablet Layout */}
+      <div className="hidden lg:hidden md:flex md:h-screen">
+        {/* Sidebar */}
+        <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
+
+        {/* Main Content Area */}
+        <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'md:ml-64' : 'md:ml-0'}`}>
+          {/* Header */}
+          <Header
+            onSidebarToggle={toggleSidebar}
+            title={title}
+            breadcrumbs={breadcrumbs}
+          />
+
+          {/* Page Content */}
+          <main className="flex-1 p-4 md:p-6 overflow-y-auto">
+            <div className="w-full max-w-6xl mx-auto">
+              {children}
+            </div>
+          </main>
+        </div>
+      </div>
+
+      {/* Desktop Layout */}
+      <div className="hidden lg:flex lg:h-screen">
+        {/* Sidebar */}
+        <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
+
+        {/* Main Content Area */}
+        <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-0'}`}>
+          {/* Header */}
+          <Header
+            onSidebarToggle={toggleSidebar}
+            title={title}
+            breadcrumbs={breadcrumbs}
+          />
+
+          {/* Page Content */}
+          <main className="flex-1 p-6 xl:p-8 overflow-y-auto">
+            <div className="w-full max-w-7xl mx-auto">
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   );

@@ -36,7 +36,7 @@ const useSignalR = () => {
       // console.log("[SignalR] Kullanılan JWT token:", token); // Debug amaçlı log kaldırıldı
 
       // SignalR bağlantısı için backend URL'si (Proxy kullanılıyorsa /api ile başlamalı)
-      const hubUrl = 'http://localhost:5282/api/v1.0/hubs/taskflow'; 
+      const hubUrl = 'http://localhost:5282/api/hubs/taskflow'; 
 
       const newConnection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {
@@ -89,7 +89,7 @@ const useSignalR = () => {
       newConnection.onreconnecting((error?: Error) => {
         console.warn("SignalR: Yeniden bağlanılıyor...", error);
         setIsConnected(false);
-        showInfo("SignalR bağlantısı yeniden kuruluyor...");
+        // showInfo("SignalR bağlantısı yeniden kuruluyor..."); // Bu satır kaldırıldı
       });
 
       newConnection.onreconnected((connectionId?: string) => {
