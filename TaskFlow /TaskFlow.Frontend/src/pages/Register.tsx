@@ -11,7 +11,7 @@ import { useAuth } from "../contexts/AuthContext";
 import type { RegisterRequest } from "../types/auth/auth.types";
 import AuthLayout from "../components/layout/AuthLayout";
 import RegisterForm from "../components/auth/RegisterForm";
-import { captchaAPI } from "../services/api";
+import { authAPI } from "../services/api";
 import { useToast } from "../hooks/useToast";
 
 /**
@@ -38,7 +38,7 @@ const Register: React.FC = () => {
   useEffect(() => {
     const loadCaptchaConfig = async () => {
       try {
-        const response = await captchaAPI.getConfig();
+        const response = await authAPI.captchaAPI.getConfig();
         if (response.success && response.data.enabled && response.data.siteKey) {
           setCaptchaEnabled(true);
           setCaptchaSiteKey(response.data.siteKey);

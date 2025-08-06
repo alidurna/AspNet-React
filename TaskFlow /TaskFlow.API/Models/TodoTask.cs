@@ -125,11 +125,43 @@ namespace TaskFlow.API.Models
         // Göreve ait ekli dosyalar
         public virtual ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
 
+        // Bağımlılık ilişkileri
+        public virtual ICollection<TaskDependency> Dependencies { get; set; } = new List<TaskDependency>();
+        public virtual ICollection<TaskDependency> Prerequisites { get; set; } = new List<TaskDependency>();
+
         [NotMapped]
         public bool IsOverdue => DueDate.HasValue && DueDate.Value < DateTime.UtcNow && !IsCompleted;
 
         [NotMapped]
         public int DaysSinceCreated => (DateTime.UtcNow - CreatedAt).Days;
+
+        /// <summary>
+        /// Görevin bağımlılık nedeniyle bloke olup olmadığı
+        /// </summary>
+        [NotMapped]
+        public bool IsBlockedByDependencies => Dependencies.Any(d => d.IsActive && d.IsBlocked);
+
+        /// <summary>
+        /// Görevin başlayabilir olup olmadığı (bağımlılıklar tamamlanmış mı)
+        /// </summary>
+        [NotMapped]
+        public bool CanStart => !IsBlockedByDependencies;
+
+        /// <summary>
+        /// Görevin bağımlı olduğu görevler
+        /// </summary>
+        [NotMapped]
+        public IEnumerable<TodoTask> PrerequisiteTasks => Prerequisites
+            .Where(p => p.IsActive)
+            .Select(p => p.PrerequisiteTask);
+
+        /// <summary>
+        /// Bu göreve bağımlı olan görevler
+        /// </summary>
+        [NotMapped]
+        public IEnumerable<TodoTask> DependentTasks => Dependencies
+            .Where(d => d.IsActive)
+            .Select(d => d.DependentTask);
 
         [NotMapped]
         public TimeSpan? TimeRemaining => DueDate?.Subtract(DateTime.UtcNow);

@@ -33,6 +33,46 @@
 /* Utilities layer - utility sınıfları (margin, padding, color vs.) */
 @tailwind utilities;
 
+/* Scroll optimizasyonu */
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Scroll bar stilleri - Normal */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Dark mode scroll bar - Normal */
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
 /* ===== CUSTOM COMPONENT CLASSES ===== */
 /* Tekrar kullanılabilir component sınıfları */
 
@@ -139,6 +179,11 @@
     animation: gradient-shift 20s ease infinite;
   }
 
+  /* Gradient Text - Professional */
+  .text-gradient {
+    @apply bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent;
+  }
+
   /* ===== TEXT COMPONENTS ===== */
 
   /* Heading Primary - Ana başlık stili */
@@ -223,23 +268,6 @@
   /* Focus outline'ı kaldır (custom focus ring'ler kullanıyoruz) */
   *:focus {
     @apply outline-none;
-  }
-
-  /* Scrollbar stilleri (Webkit tabanlı tarayıcılar için) */
-  ::-webkit-scrollbar {
-    @apply w-2; /* Scrollbar genişliği */
-  }
-
-  ::-webkit-scrollbar-track {
-    @apply bg-gray-100 dark:bg-neutral-850; /* Scrollbar track rengi */
-  }
-
-  ::-webkit-scrollbar-thumb {
-    @apply bg-gray-400 rounded-full dark:bg-neutral-700; /* Scrollbar thumb rengi ve şekli */
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-500 dark:bg-neutral-600; /* Scrollbar thumb hover rengi */
   }
 }
 

@@ -5,153 +5,79 @@
  * Menü öğelerini ve active state yönetimini sağlar.
  */
 
-import React from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { 
-  FiHome, 
-  FiCheckSquare, 
-  FiFolder, 
-  FiBarChart, 
-  FiSettings,
-  FiUser
-} from "react-icons/fi";
-
-interface NavigationItem {
-  name: string;
-  href: string;
-  icon: React.ComponentType<any>;
-  badge?: number;
-}
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { FaHome, FaTasks, FaClipboardList, FaChartLine, FaUser, FaCog, FaFileAlt } from 'react-icons/fa';
 
 interface SidebarNavigationProps {
-  isOpen?: boolean;
+  onItemClick?: () => void; // Opsiyonel prop
 }
 
-/**
- * SidebarNavigation Component
- * 
- * Ana navigasyon menüsünü render eder. Active link tracking ve
- * responsive davranış sağlar.
- */
-export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
-  isOpen = true
+const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
+  onItemClick
 }) => {
   const location = useLocation();
-  const navigate = useNavigate();
 
-  // ===== NAVIGATION ITEMS =====
-  const navigationItems: NavigationItem[] = [
+  const navigationItems = [
     {
-      name: "Dashboard",
-      href: "/dashboard",
-      icon: FiHome,
+      name: 'Dashboard',
+      href: '/',
+      icon: FaHome,
     },
     {
-      name: "Görevler", 
-      href: "/tasks",
-      icon: FiCheckSquare,
+      name: 'Görevler',
+      href: '/tasks',
+      icon: FaTasks,
     },
     {
-      name: "Kategoriler",
-      href: "/categories", 
-      icon: FiFolder,
+      name: 'Kategoriler',
+      href: '/categories',
+      icon: FaClipboardList,
     },
     {
-      name: "İstatistikler",
-      href: "/statistics",
-      icon: FiBarChart,
+      name: 'Şablonlar',
+      href: '/templates',
+      icon: FaFileAlt,
     },
     {
-      name: "Profil",
-      href: "/profile",
-      icon: FiUser,
+      name: 'İstatistikler',
+      href: '/statistics',
+      icon: FaChartLine,
     },
     {
-      name: "Ayarlar",
-      href: "/security",
-      icon: FiSettings,
+      name: 'Profil',
+      href: '/profile',
+      icon: FaUser,
+    },
+    {
+      name: 'Ayarlar',
+      href: '/settings',
+      icon: FaCog,
     },
   ];
 
-  // ===== HELPER FUNCTIONS =====
-  /**
-   * Check if current path is active
-   */
-  const isActiveRoute = (href: string): boolean => {
-    if (href === "/dashboard") {
-      return location.pathname === "/" || location.pathname === "/dashboard";
-    }
-    return location.pathname.startsWith(href);
-  };
-
-  /**
-   * Handle navigation item click - KALDIRILDI
-   */
-  // const handleItemClick = () => {
-  //   // Sidebar'ı kapatma - artık kapanmayacak
-  //   // if (onItemClick) {
-  //   //   onItemClick();
-  //   // }
-  // };
-
-  // ===== RENDER =====
   return (
-    <nav className="px-2 py-4 space-y-1">
-      {navigationItems.map((item) => {
-        const isActive = isActiveRoute(item.href);
-        const Icon = item.icon;
-
-        return (
+    <ul className="space-y-2">
+      {navigationItems.map((item) => (
+        <li key={item.name}>
           <Link
-            key={item.name}
             to={item.href}
-            onClick={(e) => {
-              // Link tıklamasında sidebar'ı her zaman açık tut
-              e.stopPropagation();
-              
-              // Sidebar'ı her zaman açık tut
-              localStorage.setItem('sidebarOpen', 'true');
-              
-              // Sidebar'ı zorla açık tut
-              setTimeout(() => {
-                localStorage.setItem('sidebarOpen', 'true');
-              }, 100);
-            }}
-            className={`
-              group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200
-              ${isActive
-                ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-                : "text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
-              }
+            className={`flex items-center gap-3 p-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-700 dark:hover:text-blue-400 transition-colors duration-200 group 
+              ${location.pathname === item.href ? 'bg-blue-100 dark:bg-blue-700 text-blue-800 dark:text-white font-semibold' : ''}
             `}
+            onClick={onItemClick}
           >
-            <Icon
-              className={`
-                mr-3 h-5 w-5 transition-colors duration-200
-                ${isActive
-                  ? "text-blue-600 dark:text-blue-400"
-                  : "text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-300"
-                }
-              `}
-            />
-            
-            {/* Menu Text */}
-            <span>
+            <item.icon className={`w-5 h-5 flex-shrink-0 ${
+              location.pathname === item.href ? 'text-blue-600 dark:text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
+            }`} />
+            <span className="text-sm flex-1">
               {item.name}
             </span>
-
-            {/* Badge (if exists) */}
-            {item.badge && item.badge > 0 && (
-              <span
-                className="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full"
-              >
-                {item.badge > 99 ? "99+" : item.badge}
-              </span>
-            )}
+            {/* İlerleme veya bildirim badge'i buraya eklenebilir */}
           </Link>
-        );
-      })}
-    </nav>
+        </li>
+      ))}
+    </ul>
   );
 };
 

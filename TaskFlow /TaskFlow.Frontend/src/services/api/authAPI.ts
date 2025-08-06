@@ -33,9 +33,6 @@ import type {
   WebAuthnAuthenticationComplete,
 } from "../../types/auth/auth.types";
 
-/**
- * Basic Authentication API
- */
 export const authAPI = {
   login: (credentials: LoginRequest): Promise<ApiResponse<AuthResponse>> =>
     apiClient.post<ApiResponse<AuthResponse>>("/v1/Auth/login", credentials).then(res => res.data),
@@ -49,14 +46,12 @@ export const authAPI = {
   refreshToken: (refreshToken: string): Promise<ApiResponse<AuthResponse>> =>
     apiClient.post<ApiResponse<AuthResponse>>("/v1/Auth/refresh", { refreshToken }).then(res => res.data),
 
-  // Email verification
   sendEmailVerification: (data: EmailVerificationRequest): Promise<ApiResponse<object>> =>
     apiClient.post<ApiResponse<object>>("/v1/users/email-verification-request", data).then(res => res.data),
 
   verifyEmail: (data: EmailVerification): Promise<ApiResponse<object>> =>
     apiClient.post<ApiResponse<object>>("/v1/users/email-verification", data).then(res => res.data),
 
-  // Password reset
   requestPasswordReset: (data: PasswordResetRequestDto): Promise<ApiResponse<object>> =>
     apiClient.post<ApiResponse<object>>("/v1/users/password-reset-request", data).then(res => res.data),
 
@@ -66,17 +61,21 @@ export const authAPI = {
   changePassword: (data: ChangePasswordRequest): Promise<ApiResponse<object>> =>
     apiClient.post<ApiResponse<object>>("/v1/users/change-password", data).then(res => res.data),
 
-  // 2FA with recovery code login
   login2FA: (data: Login2FARequest): Promise<ApiResponse<AuthResponse>> =>
     apiClient.post<ApiResponse<AuthResponse>>("/v1/Auth/login-2fa", data).then(res => res.data),
 
   loginWithRecovery: (data: LoginRecoveryRequest): Promise<ApiResponse<AuthResponse>> =>
     apiClient.post<ApiResponse<AuthResponse>>("/v1/Auth/login-recovery", data).then(res => res.data),
+
+  captchaAPI: {
+    getConfig: (): Promise<ApiResponse<CaptchaConfig>> =>
+      apiClient.get<ApiResponse<CaptchaConfig>>('/v1/Captcha/config').then(res => res.data),
+
+    verify: (data: CaptchaVerification): Promise<ApiResponse<object>> =>
+      apiClient.post<ApiResponse<object>>('/v1/Captcha/verify', data).then(res => res.data),
+  },
 };
 
-/**
- * Two-Factor Authentication API
- */
 export const twoFactorAPI = {
   getStatus: (): Promise<ApiResponse<TwoFactorStatus>> =>
     apiClient.get<ApiResponse<TwoFactorStatus>>('/v1/TwoFactorAuth/status').then(res => res.data),
@@ -97,36 +96,19 @@ export const twoFactorAPI = {
     apiClient.post<ApiResponse<any>>('/v1/TwoFactorAuth/recovery', data).then(res => res.data),
 };
 
-/**
- * Captcha API
- */
-export const captchaAPI = {
-  getConfig: (): Promise<ApiResponse<CaptchaConfig>> =>
-    apiClient.get<ApiResponse<CaptchaConfig>>('/v1/Captcha/config').then(res => res.data),
-
-  verify: (data: CaptchaVerification): Promise<ApiResponse<any>> =>
-    apiClient.post<ApiResponse<any>>('/v1/Captcha/verify', data).then(res => res.data),
-};
-
-/**
- * WebAuthn API
- */
 export const webAuthnAPI = {
   getStatus: (): Promise<ApiResponse<WebAuthnStatus>> =>
     apiClient.get<ApiResponse<WebAuthnStatus>>('/v1/WebAuthn/status').then(res => res.data),
 
-  startRegistration: (data: WebAuthnRegistrationRequest): Promise<ApiResponse<WebAuthnRegistrationResponse>> =>
-    apiClient.post<ApiResponse<WebAuthnRegistrationResponse>>('/v1/WebAuthn/register/start', data).then(res => res.data),
+  beginRegistration: (): Promise<ApiResponse<WebAuthnRegistrationResponse>> =>
+    apiClient.get<ApiResponse<WebAuthnRegistrationResponse>>('/v1/WebAuthn/register/begin').then(res => res.data),
 
-  completeRegistration: (data: WebAuthnRegistrationComplete): Promise<ApiResponse<any>> =>
-    apiClient.post<ApiResponse<any>>('/v1/WebAuthn/register/complete', data).then(res => res.data),
+  completeRegistration: (data: WebAuthnRegistrationComplete): Promise<ApiResponse<object>> =>
+    apiClient.post<ApiResponse<object>>('/v1/WebAuthn/register/complete', data).then(res => res.data),
 
-  startAuthentication: (data: WebAuthnAuthenticationRequest): Promise<ApiResponse<WebAuthnAuthenticationResponse>> =>
-    apiClient.post<ApiResponse<WebAuthnAuthenticationResponse>>('/v1/WebAuthn/authenticate/start', data).then(res => res.data),
+  beginAuthentication: (): Promise<ApiResponse<WebAuthnAuthenticationResponse>> =>
+    apiClient.get<ApiResponse<WebAuthnAuthenticationResponse>>('/v1/WebAuthn/authenticate/begin').then(res => res.data),
 
-  completeAuthentication: (data: WebAuthnAuthenticationComplete): Promise<ApiResponse<any>> =>
-    apiClient.post<ApiResponse<any>>('/v1/WebAuthn/authenticate/complete', data).then(res => res.data),
-
-  deleteCredential: (credentialId: string): Promise<ApiResponse<any>> =>
-    apiClient.delete<ApiResponse<any>>(`/v1/WebAuthn/credentials/${credentialId}`).then(res => res.data),
+  completeAuthentication: (data: WebAuthnAuthenticationComplete): Promise<ApiResponse<AuthResponse>> =>
+    apiClient.post<ApiResponse<AuthResponse>>('/v1/WebAuthn/authenticate/complete', data).then(res => res.data),
 }; 

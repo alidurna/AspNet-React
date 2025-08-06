@@ -1,259 +1,297 @@
 /**
- * TaskCard Component - Refactored
+ * TaskCard Component - Yeni Tasarım
  * 
- * Görev kartlarını render eden bağımsız component.
- * Grid, List ve Kanban görünümlerini destekler.
- * Modüler sub-components kullanır.
+ * Görev kartlarını render eden modern component.
  */
 
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { FaCheck, FaEdit, FaTrash, FaCalendarAlt, FaEllipsisH, FaListUl, FaPlus, FaEye, FaLink, FaUnlink } from 'react-icons/fa';
 import type { TodoTaskDto } from '../../types/tasks';
 import type { CategoryDto } from '../../types/tasks';
 
-// Sub-components
-import TaskCardHeader from './components/TaskCardHeader';
-import TaskCardContent from './components/TaskCardContent';
-import TaskCardFooter from './components/TaskCardFooter';
-
 interface TaskCardProps {
   task: TodoTaskDto;
-  viewMode: 'grid' | 'list' | 'kanban';
+  categories: CategoryDto[];
   onEdit: () => void;
   onDelete: () => void;
   onToggleComplete: (isCompleted: boolean) => void;
   onProgressChange: (taskId: number, progress: number) => void;
-  categories: CategoryDto[];
+  onViewSubTasks?: (taskId: number) => void;
+  onAddSubTask?: (taskId: number) => void;
+  onViewDependencies?: (taskId: number) => void;
+  onAddDependency?: (taskId: number) => void;
 }
 
-/**
- * TaskCard Component - Refactored
- */
 const TaskCard: React.FC<TaskCardProps> = ({
   task,
-  viewMode,
+  categories,
   onEdit,
   onDelete,
   onToggleComplete,
   onProgressChange,
-  categories
+  onViewSubTasks,
+  onAddSubTask,
+  onViewDependencies,
+  onAddDependency,
 }) => {
-  /**
-   * Progress değişikliğini handle eder
-   */
-  const handleProgressChange = (progress: number) => {
+  const [showActions, setShowActions] = useState(false);
+
+  // Progress durumuna göre buton ve metin belirleme - Soft renkler
+  const getProgressInfo = () => {
+    if (task.isCompleted) {
+      return { text: 'Tamamlandı', color: 'bg-green-100 hover:bg-green-200 text-green-700 border-green-200', icon: '✅' };
+    } else if (task.progress >= 75) {
+      return { text: 'Neredeyse Tamam', color: 'bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-200', icon: '🔄' };
+    } else if (task.progress >= 50) {
+      return { text: 'Yarısı Bitti', color: 'bg-yellow-100 hover:bg-yellow-200 text-yellow-700 border-yellow-200', icon: '⏳' };
+    } else if (task.progress >= 25) {
+      return { text: 'Başladı', color: 'bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-200', icon: '🚀' };
+    } else {
+      return { text: 'Başla', color: 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-200', icon: '▶️' };
+    }
+  };
+
+  const progressInfo = getProgressInfo();
+
+  const handleProgressClick = () => {
+    let newProgress = 0;
+    
+    if (task.progress < 25) {
+      newProgress = 25; // Başladı
+    } else if (task.progress < 50) {
+      newProgress = 50; // Yarısı bitti
+    } else if (task.progress < 75) {
+      newProgress = 75; // Neredeyse tamam
+    } else if (task.progress < 100) {
+      newProgress = 100; // Tamamlandı
+    } else {
+      newProgress = 0; // Başa dön
+    }
+    
+    onProgressChange(task.id, newProgress);
+  };
+
+  const handleProgressBarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const progress = parseInt(e.target.value);
     onProgressChange(task.id, progress);
   };
 
-  /**
-   * Base card wrapper with enhanced modern animation and styling
-   */
-  const CardWrapper: React.FC<{ children: React.ReactNode; className?: string }> = ({ 
-    children, 
-    className = '' 
-  }) => (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.95, y: 20 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95, y: -20 }}
-      whileHover={{ 
-        y: -4, 
-        scale: 1.02,
-        transition: { duration: 0.2, ease: "easeOut" }
-      }}
-      className={`
-        relative overflow-hidden
-        bg-gradient-to-br from-white via-white to-gray-50/30
-        dark:from-gray-800 dark:via-gray-800 dark:to-gray-900/30
-        backdrop-blur-sm border border-gray-200/60 dark:border-gray-700/60 
-        rounded-xl shadow-md hover:shadow-xl hover:shadow-blue-500/10
-        transition-all duration-300 ease-out
-        before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/5 before:to-transparent
-        before:translate-x-[-100%] hover:before:translate-x-[100%] before:transition-transform before:duration-700
-        ${task.isCompleted ? 'opacity-75 grayscale-[0.3]' : ''}
-        ${className}
-      `}
-    >
-      {/* Subtle gradient overlay for depth */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none" />
+  // Alt görev sayısını hesapla
+  const subTasksCount = task.subTasks?.length || 0;
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all duration-300">
       
-      {/* Priority indicator bar */}
-      <div className={`absolute top-0 left-0 w-full h-1 ${
-        task.priority === 1 ? 'bg-gradient-to-r from-red-400 to-red-600' :
-        task.priority === 2 ? 'bg-gradient-to-r from-orange-400 to-orange-600' :
-        task.priority === 3 ? 'bg-gradient-to-r from-blue-400 to-blue-600' :
-        'bg-gradient-to-r from-gray-300 to-gray-400'
-      }`} />
-      
-      <div className="relative z-10">
-        {children}
-      </div>
-    </motion.div>
-  );
-
-  // Grid View
-  if (viewMode === 'grid') {
-    return (
-      <CardWrapper className="p-6 h-full flex flex-col">
-        <TaskCardHeader
-          isCompleted={task.isCompleted}
-          priority={task.priority}
-          onToggleComplete={onToggleComplete}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
-
-        <div className="flex-1 mb-4">
-          <TaskCardContent
-            title={task.title}
-            description={task.description}
-            isCompleted={task.isCompleted}
-          />
-        </div>
-
-        <TaskCardFooter
-          categoryId={task.categoryId}
-          categories={categories}
-          dueDate={task.dueDate}
-          progress={task.progress ?? 0}
-          isCompleted={task.isCompleted}
-          onProgressChange={handleProgressChange}
-          compact={false}
-        />
-      </CardWrapper>
-    );
-  }
-
-  // List View
-  if (viewMode === 'list') {
-    return (
-      <CardWrapper className="p-5 mb-3">
-        <div className="flex items-center gap-6">
-          {/* Left - Enhanced Checkbox and Content */}
-          <div className="flex items-center gap-4 flex-1 min-w-0">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
+      {/* Header */}
+      <div className="p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3 flex-1">
+            <button
               onClick={() => onToggleComplete(!task.isCompleted)}
-              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 flex-shrink-0 shadow-sm ${
+              className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
                 task.isCompleted
-                  ? 'bg-gradient-to-r from-green-400 to-green-600 border-green-500 text-white shadow-green-200'
-                  : 'border-gray-300 hover:border-green-400 hover:shadow-md bg-white dark:bg-gray-800'
+                  ? 'bg-green-500 border-green-500 text-white'
+                  : 'border-gray-300 dark:border-gray-600 hover:border-green-400'
               }`}
             >
-              {task.isCompleted && (
-                <motion.span 
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="text-xs font-bold"
-                >
-                  ✓
-                </motion.span>
-              )}
-            </motion.button>
-
+              {task.isCompleted && <FaCheck className="w-3 h-3" />}
+            </button>
             <div className="flex-1 min-w-0">
-              <h3 className={`font-semibold text-lg text-gray-900 dark:text-white truncate transition-all duration-200 ${
-                task.isCompleted ? 'line-through text-gray-500 dark:text-gray-400' : ''
+              <h3 className={`text-lg font-semibold mb-1 ${
+                task.isCompleted 
+                  ? 'text-gray-500 dark:text-gray-400 line-through' 
+                  : 'text-gray-900 dark:text-white'
               }`}>
                 {task.title}
               </h3>
-              
               {task.description && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 truncate mt-1">
+                <p className={`text-sm ${
+                  task.isCompleted 
+                    ? 'text-gray-400 dark:text-gray-500 line-through' 
+                    : 'text-gray-600 dark:text-gray-300'
+                }`}>
                   {task.description}
                 </p>
               )}
             </div>
           </div>
+          
+          {/* Actions Menu */}
+          <div className="relative flex-shrink-0">
+            <button
+              onClick={() => setShowActions(!showActions)}
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+            >
+              <FaEllipsisH className="w-4 h-4" />
+            </button>
+            
+            {showActions && (
+              <div className="absolute top-full right-0 mt-1 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 py-2 z-10">
+                {onViewSubTasks && (
+                  <button
+                    onClick={() => {
+                      onViewSubTasks(task.id);
+                      setShowActions(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors duration-200"
+                  >
+                    <FaEye className="w-4 h-4" />
+                    Alt Görevleri Görüntüle ({subTasksCount})
+                  </button>
+                )}
+                {onAddSubTask && (
+                  <button
+                    onClick={() => {
+                      onAddSubTask(task.id);
+                      setShowActions(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors duration-200"
+                  >
+                    <FaPlus className="w-4 h-4" />
+                    Alt Görev Ekle
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    onEdit();
+                    setShowActions(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors duration-200"
+                >
+                  <FaEdit className="w-4 h-4" />
+                  Düzenle
+                </button>
+                <button
+                  onClick={() => {
+                    onDelete();
+                    setShowActions(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
+                >
+                  <FaTrash className="w-4 h-4" />
+                  Sil
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
 
-          {/* Center - Enhanced Progress */}
-          <div className="w-32 flex-shrink-0">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+        {/* Metadata */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            {task.categoryId && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium text-blue-700 bg-blue-100 border border-blue-200">
+                {categories.find(c => c.id === task.categoryId)?.name}
+              </span>
+            )}
+            {/* Alt Görev Sayısı Badge */}
+            {subTasksCount > 0 && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-purple-700 bg-purple-100 border border-purple-200">
+                <FaListUl className="w-3 h-3 mr-1" />
+                {subTasksCount} alt görev
+              </span>
+            )}
+          </div>
+          
+          {task.dueDate && (
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full">
+              <FaCalendarAlt className="w-3.5 h-3.5" />
+              {new Date(task.dueDate).toLocaleDateString('tr-TR')}
+            </div>
+          )}
+        </div>
+
+        {/* Alt Görev ve Bağımlılık Butonları */}
+        <div className="space-y-3 mb-4">
+          {/* Alt Görev Butonları */}
+          <div className="flex gap-2">
+            {onViewSubTasks && (
+              <button
+                onClick={() => onViewSubTasks(task.id)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-100 to-purple-200 hover:from-purple-200 hover:to-purple-300 text-purple-700 border border-purple-300 rounded-lg font-medium transition-all duration-200"
+              >
+                <FaEye className="w-4 h-4" />
+                <span className="text-sm">Alt Görevleri Görüntüle</span>
+              </button>
+            )}
+            {onAddSubTask && (
+              <button
+                onClick={() => onAddSubTask(task.id)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-100 to-green-200 hover:from-green-200 hover:to-green-300 text-green-700 border border-green-300 rounded-lg font-medium transition-all duration-200"
+              >
+                <FaPlus className="w-4 h-4" />
+                <span className="text-sm">Alt Görev Ekle</span>
+              </button>
+            )}
+          </div>
+
+          {/* Bağımlılık Butonları */}
+          <div className="flex gap-2">
+            {onViewDependencies && (
+              <button
+                onClick={() => onViewDependencies(task.id)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 text-blue-700 border border-blue-300 rounded-lg font-medium transition-all duration-200"
+              >
+                <FaLink className="w-4 h-4" />
+                <span className="text-sm">Bağımlılıkları Görüntüle</span>
+              </button>
+            )}
+            {onAddDependency && (
+              <button
+                onClick={() => onAddDependency(task.id)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-100 to-indigo-200 hover:from-indigo-200 hover:to-indigo-300 text-indigo-700 border border-indigo-300 rounded-lg font-medium transition-all duration-200"
+              >
+                <FaUnlink className="w-4 h-4" />
+                <span className="text-sm">Bağımlılık Ekle</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Progress Section */}
+        <div className="space-y-3">
+          {/* Progress Bar */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 İlerleme
               </span>
-              <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
-                {task.progress || 0}%
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                {task.progress}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 shadow-inner">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${task.progress || 0}%` }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-                className="bg-gradient-to-r from-blue-400 to-blue-600 h-2.5 rounded-full shadow-sm"
+            <div className="relative">
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={task.progress}
+                onChange={handleProgressBarChange}
+                className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+                style={{
+                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${task.progress}%, #e5e7eb ${task.progress}%, #e5e7eb 100%)`
+                }}
               />
             </div>
           </div>
 
-          {/* Right - Enhanced Category and Actions */}
-          <div className="flex items-center gap-4 flex-shrink-0">
-            <div className="text-center">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                {categories.find(cat => cat.id === task.categoryId)?.name || 'Kategori Yok'}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={onEdit}
-                className="p-2 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all duration-200 group"
-              >
-                <span className="text-sm group-hover:scale-110 transition-transform duration-200">✏️</span>
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={onDelete}
-                className="p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30 transition-all duration-200 group"
-              >
-                <span className="text-sm group-hover:scale-110 transition-transform duration-200">🗑️</span>
-              </motion.button>
-            </div>
+          {/* Progress Button */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              Durum
+            </span>
+            <button
+              onClick={handleProgressClick}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 border ${progressInfo.color}`}
+            >
+              <span className="text-sm">{progressInfo.icon}</span>
+              <span className="text-sm">{progressInfo.text}</span>
+            </button>
           </div>
         </div>
-      </CardWrapper>
-    );
-  }
-
-  // Kanban View
-  if (viewMode === 'kanban') {
-    return (
-      <CardWrapper className="p-4 mb-4 hover:rotate-1 hover:scale-105">
-        <TaskCardHeader
-          isCompleted={task.isCompleted}
-          priority={task.priority}
-          onToggleComplete={onToggleComplete}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
-
-        <div className="mb-3">
-          <TaskCardContent
-            title={task.title}
-            description={task.description}
-            isCompleted={task.isCompleted}
-          />
-        </div>
-
-        <TaskCardFooter
-          categoryId={task.categoryId}
-          categories={categories}
-          dueDate={task.dueDate}
-          progress={task.progress ?? 0}
-          isCompleted={task.isCompleted}
-          onProgressChange={handleProgressChange}
-          compact={true}
-        />
-      </CardWrapper>
-    );
-  }
-
-  return null;
+      </div>
+    </div>
+  );
 };
 
 export default TaskCard; 

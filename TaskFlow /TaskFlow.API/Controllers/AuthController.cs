@@ -41,6 +41,58 @@ namespace TaskFlow.API.Controllers
         }
 
         /// <summary>
+        /// Token yenileme
+        /// </summary>
+        [HttpPost("refresh")]
+        [AllowAnonymous]
+        public async Task<ActionResult<ApiResponseModel<AuthResponseDto>>> RefreshToken([FromBody] RefreshTokenRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("Token refresh attempt");
+
+                // TokenRefreshRequestDto oluştur - AccessToken olmadan sadece RefreshToken ile
+                var tokenRefreshRequest = new TokenRefreshRequestDto
+                {
+                    AccessToken = "", // Bu alan UserService'de kullanılmıyor
+                    RefreshToken = request.RefreshToken
+                };
+
+                // UserService üzerinden token yenileme işlemi
+                var authResponse = await _userService.RefreshTokenAsync(tokenRefreshRequest);
+                
+                // TokenRefreshResponseDto'da Success property'si yok, bu yüzden null check yapıyoruz
+                if (authResponse != null && !string.IsNullOrEmpty(authResponse.AccessToken))
+                {
+                    _logger.LogInformation("Token refresh successful");
+                    
+                    // TokenRefreshResponseDto'yu AuthResponseDto'ya dönüştür
+                    var authResponseDto = new AuthResponseDto
+                    {
+                        Token = authResponse.AccessToken,
+                        RefreshToken = authResponse.RefreshToken,
+                        ExpiresInMinutes = authResponse.ExpiresInMinutes,
+                        ExpiresAt = authResponse.ExpiresAt,
+                        Success = true,
+                        Message = "Token yenilendi"
+                    };
+                    
+                    return Ok(ApiResponseModel<AuthResponseDto>.SuccessResponse("Token yenilendi", authResponseDto));
+                }
+                else
+                {
+                    _logger.LogWarning("Token refresh failed");
+                    return BadRequest(ApiResponseModel<AuthResponseDto>.ErrorResponse("Token yenileme başarısız"));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Token refresh error");
+                return StatusCode(500, ApiResponseModel<AuthResponseDto>.ServerErrorResponse());
+            }
+        }
+
+        /// <summary>
         /// Normal kullanıcı girişi
         /// </summary>
         [HttpPost("login")]
@@ -537,6 +589,11 @@ namespace TaskFlow.API.Controllers
         public string Provider { get; set; } = "";
         public string Token { get; set; } = "";
         public SocialUserData UserData { get; set; } = new();
+    }
+
+    public class RefreshTokenRequest
+    {
+        public string RefreshToken { get; set; } = "";
     }
 
     /// <summary>

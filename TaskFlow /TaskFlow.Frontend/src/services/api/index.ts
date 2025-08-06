@@ -8,20 +8,24 @@
 // Re-export base client and utilities
 export { apiClient, tokenManager, setOnUnauthorizedCallback, type ApiResponse } from './apiClient';
 
-// Re-export all API modules
-export { authAPI, twoFactorAPI, captchaAPI, webAuthnAPI } from './authAPI';
-export { userAPI, fileAPI, profileAPI } from './userAPI';
-export { taskAPI } from './taskAPI';
-export { categoryAPI as categoriesAPI } from './categoryAPI';
-export { searchAPI } from './searchAPI';
-
-// Import for default export
+// Import all API modules
 import { apiClient, tokenManager } from './apiClient';
-import { authAPI, twoFactorAPI, captchaAPI, webAuthnAPI } from './authAPI';
+import { authAPI, twoFactorAPI, webAuthnAPI } from './authAPI';
 import { userAPI, fileAPI } from './userAPI';
 import { taskAPI } from './taskAPI';
 import { categoryAPI } from './categoryAPI';
 import { searchAPI } from './searchAPI';
+import { dependencyAPI } from './dependencyAPI';
+import { templateAPI } from './templateAPI';
+
+// Re-export all API modules as named exports
+export { authAPI, twoFactorAPI, webAuthnAPI } from './authAPI';
+export { userAPI, fileAPI } from './userAPI';
+export { taskAPI } from './taskAPI';
+export { categoryAPI } from './categoryAPI';
+export { searchAPI } from './searchAPI';
+export { dependencyAPI } from './dependencyAPI';
+export { templateAPI } from './templateAPI';
 
 // Legacy exports for backward compatibility
 export const api = {
@@ -42,15 +46,20 @@ export const api = {
   
   // Files
   ...fileAPI,
+  
+  // Template
+  ...templateAPI,
+  
+  // Dependencies
+  ...dependencyAPI,
 };
 
 // Specific legacy exports
 export const {
   authAPI: auth,
   twoFactorAPI: twoFactor,
-  captchaAPI: captcha,
   webAuthnAPI: webAuthn,
-} = { authAPI, twoFactorAPI, captchaAPI, webAuthnAPI };
+} = { authAPI, twoFactorAPI, webAuthnAPI };
 
 export const {
   userAPI: users,
@@ -68,6 +77,18 @@ export const {
 export const {
   searchAPI: search,
 } = { searchAPI };
+
+export const {
+  dependencyAPI: dependencies,
+} = { dependencyAPI };
+
+export const {
+  templateAPI: templates,
+} = { templateAPI };
+
+// Explicit exports for direct access
+export const captcha = authAPI.captchaAPI;
+export const categoriesAPI = categoryAPI;
 
 // Type re-exports
 export type {
@@ -105,6 +126,8 @@ export default {
   search: searchAPI,
   files: fileAPI,
   twoFactor: twoFactorAPI,
-  captcha: captchaAPI,
+  captcha: captcha,
   webAuthn: webAuthnAPI,
+  dependencies: dependencyAPI,
+  templates: templateAPI,
 }; 

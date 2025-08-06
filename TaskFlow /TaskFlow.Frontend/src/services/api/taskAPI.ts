@@ -30,6 +30,14 @@ export const taskAPI = {
   createTask: (taskData: CreateTodoTaskDto): Promise<ApiResponse<TodoTaskDto>> =>
     apiClient.post<ApiResponse<TodoTaskDto>>("/v1/TodoTasks", taskData).then(res => res.data),
 
+  // Alt görevler için - backend'deki özel endpoint'i kullanıyoruz
+  createSubTask: (parentId: number, taskData: CreateTodoTaskDto): Promise<ApiResponse<TodoTaskDto>> =>
+    apiClient.post<ApiResponse<TodoTaskDto>>(`/v1/TodoTasks/${parentId}/subtasks`, taskData).then(res => res.data),
+
+  // Alt görevleri getir
+  getSubTasks: (parentId: number): Promise<ApiResponse<TodoTaskDto[]>> =>
+    apiClient.get<ApiResponse<TodoTaskDto[]>>(`/v1/TodoTasks/${parentId}/subtasks`).then(res => res.data),
+
   updateTask: (id: number, taskData: UpdateTodoTaskDto): Promise<ApiResponse<TodoTaskDto>> =>
     apiClient.put<ApiResponse<TodoTaskDto>>(`/v1/TodoTasks/${id}`, taskData).then(res => res.data),
 

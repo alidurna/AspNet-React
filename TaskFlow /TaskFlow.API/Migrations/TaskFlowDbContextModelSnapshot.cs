@@ -605,6 +605,108 @@ namespace TaskFlow.API.Migrations
                     b.ToTable("PerformanceMetrics");
                 });
 
+            modelBuilder.Entity("TaskFlow.API.Models.TaskDependency", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("DependencyType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DependentTaskId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
+                    b.Property<int>("PrerequisiteTaskId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PrerequisiteTaskId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("DependentTaskId", "PrerequisiteTaskId")
+                        .IsUnique();
+
+                    b.ToTable("TaskDependencies");
+                });
+
+            modelBuilder.Entity("TaskFlow.API.Models.TaskTemplate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("CategoryId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EstimatedHours")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Tags")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TaskTemplates");
+                });
+
             modelBuilder.Entity("TaskFlow.API.Models.TodoTask", b =>
                 {
                     b.Property<int>("Id")
@@ -1107,6 +1209,50 @@ namespace TaskFlow.API.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("TaskFlow.API.Models.TaskDependency", b =>
+                {
+                    b.HasOne("TaskFlow.API.Models.TodoTask", "DependentTask")
+                        .WithMany("Dependencies")
+                        .HasForeignKey("DependentTaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TaskFlow.API.Models.TodoTask", "PrerequisiteTask")
+                        .WithMany("Prerequisites")
+                        .HasForeignKey("PrerequisiteTaskId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TaskFlow.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DependentTask");
+
+                    b.Navigation("PrerequisiteTask");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("TaskFlow.API.Models.TaskTemplate", b =>
+                {
+                    b.HasOne("TaskFlow.API.Models.Category", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId");
+
+                    b.HasOne("TaskFlow.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("TaskFlow.API.Models.TodoTask", b =>
                 {
                     b.HasOne("TaskFlow.API.Models.User", "AssignedUser")
@@ -1168,6 +1314,10 @@ namespace TaskFlow.API.Migrations
             modelBuilder.Entity("TaskFlow.API.Models.TodoTask", b =>
                 {
                     b.Navigation("Attachments");
+
+                    b.Navigation("Dependencies");
+
+                    b.Navigation("Prerequisites");
 
                     b.Navigation("SubTasks");
                 });

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
-import { authAPI, tokenManager, profileAPI, type ApiResponse } from "../services/api";
+import { authAPI, tokenManager, userAPI, type ApiResponse } from "../services/api";
 import type {
   LoginRequest,
   RegisterRequest,
@@ -326,7 +326,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const updateUser = useCallback(async (userData: Partial<User>): Promise<void> => {
     setIsLoading(true);
     try {
-      const response = await profileAPI.updateProfile(userData as any);
+      const response = await userAPI.updateProfile(userData as any);
       if (response.success && response.data) {
         setUser({
           id: response.data.id,
@@ -396,7 +396,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log("✅ Valid token found, attempting to fetch user profile...");
         
         // Kullanıcı bilgisini almak için profileAPI.getProfile kullan
-        const response = await profileAPI.getProfile();
+        const response = await userAPI.getProfile();
         console.log("✅ Profile API response:", response);
         if (response.success && response.data) {
           console.log("✅ Profile fetched successfully for:", response.data.email);

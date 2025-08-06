@@ -5,181 +5,88 @@
  * Kullanıcı bilgileri, avatar ve logout işlemlerini yönetir.
  */
 
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { FiLogOut, FiUser, FiChevronUp, FiChevronDown } from "react-icons/fi";
-import { useAuth } from "../../contexts/AuthContext";
-import ConfirmModal from "../ui/ConfirmModal";
+import React, { useState } from 'react';
+import { FaChevronDown, FaChevronUp, FaUserCircle, FaSignOutAlt } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import ConfirmModal from '../ui/ConfirmModal';
 
 interface SidebarUserSectionProps {
-  isOpen?: boolean;
+  onLogout?: () => void; // Opsiyonel prop
 }
 
-/**
- * SidebarUserSection Component
- * 
- * Kullanıcı profil bilgilerini ve logout işlemlerini yönetir.
- * Collapsible user menu sağlar.
- */
-export const SidebarUserSection: React.FC<SidebarUserSectionProps> = ({
-  isOpen = true
+const SidebarUserSection: React.FC<SidebarUserSectionProps> = ({
+  onLogout
 }) => {
-  // ===== HOOKS =====
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  
-  // ===== STATE =====
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isUserMenuExpanded, setIsUserMenuExpanded] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const navigate = useNavigate();
+  const { logout, user } = useAuth();
 
-  // ===== EVENT HANDLERS =====
-  /**
-   * Handle logout confirmation
-   */
-  const handleLogoutConfirm = async () => {
-    try {
-      await logout();
-      setShowLogoutModal(false);
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+  const currentUser = {
+    name: user ? `${user.firstName} ${user.lastName}`.trim() || user.email?.split('@')[0] || 'Kullanıcı' : 'Kullanıcı',
+    email: user?.email || 'kullanici@taskflow.com',
   };
 
-  /**
-   * Handle logout cancel
-   */
-  const handleLogoutCancel = () => {
-    setShowLogoutModal(false);
+  const handleLogoutConfirm = () => {
+    logout();
+    onLogout?.(); // Eğer prop varsa çağır
+    setIsConfirmModalOpen(false);
+    navigate('/login');
   };
-
-  /**
-   * Toggle user menu
-   */
-  const toggleUserMenu = () => {
-    setIsUserMenuExpanded(!isUserMenuExpanded);
-  };
-
-  // ===== HELPER FUNCTIONS =====
-  /**
-   * Get user initials for avatar
-   */
-  const getUserInitials = (): string => {
-    if (!user) return "U";
-    const firstName = user.firstName || "";
-    const lastName = user.lastName || "";
-    return (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
-  };
-
-  /**
-   * Get user display name
-   */
-  const getUserDisplayName = (): string => {
-    if (!user) return "Kullanıcı";
-    return `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email || "Kullanıcı";
-  };
-
-  // ===== RENDER =====
-  if (!user) {
-    return null;
-  }
 
   return (
-    <>
-      {/* Standard User Section */}
-      <div className="p-4">
-        <div className="flex items-center">
-          {/* Standard User Avatar */}
-          <div className="flex-shrink-0">
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-              {getUserInitials()}
-            </div>
-          </div>
-
-          {/* Standard User Info */}
-          <div className="ml-3 flex-1 min-w-0">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleUserMenu();
-              }}
-              className="w-full text-left flex items-center justify-between group"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {getUserDisplayName()}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  {user.email}
-                </p>
-              </div>
-              <div className="ml-2 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300">
-                {isUserMenuExpanded ? (
-                  <FiChevronUp className="w-4 h-4" />
-                ) : (
-                  <FiChevronDown className="w-4 h-4" />
-                )}
-              </div>
-            </button>
-
-            {/* Standard Expanded User Menu */}
-            {isUserMenuExpanded && (
-              <div className="mt-2 space-y-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Sidebar'ı her zaman açık tut
-                    localStorage.setItem('sidebarOpen', 'true');
-                    
-                    // Sidebar'ı zorla açık tut
-                    setTimeout(() => {
-                      localStorage.setItem('sidebarOpen', 'true');
-                    }, 100);
-                    
-                    navigate('/profile');
-                  }}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-md flex items-center"
-                >
-                  <FiUser className="w-4 h-4 mr-2" />
-                  Profili Görüntüle
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Sidebar'ı her zaman açık tut
-                    localStorage.setItem('sidebarOpen', 'true');
-                    
-                    // Sidebar'ı zorla açık tut
-                    setTimeout(() => {
-                      localStorage.setItem('sidebarOpen', 'true');
-                    }, 100);
-                    
-                    setShowLogoutModal(true);
-                  }}
-                  className="w-full text-left px-3 py-2 text-sm text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-md flex items-center"
-                >
-                  <FiLogOut className="w-4 h-4 mr-2" />
-                  Çıkış Yap
-                </button>
-              </div>
-            )}
+    <div className="relative">
+      <button
+        onClick={() => setIsUserMenuExpanded(!isUserMenuExpanded)}
+        className="w-full flex items-center justify-between p-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+      >
+        <div className="flex items-center gap-3">
+          <FaUserCircle className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+          <div className="flex flex-col items-start">
+            <span className="text-sm font-semibold truncate max-w-[120px]">
+              {currentUser.name}
+            </span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[120px]">
+              {currentUser.email}
+            </span>
           </div>
         </div>
-      </div>
+        {isUserMenuExpanded ? <FaChevronUp className="w-4 h-4 text-gray-500" /> : <FaChevronDown className="w-4 h-4 text-gray-500" />}
+      </button>
 
-      {/* Logout Confirmation Modal */}
-      {showLogoutModal && (
-        <ConfirmModal
-          isOpen={showLogoutModal}
-          title="Çıkış Yap"
-          message="Oturumunuzu kapatmak istediğinizden emin misiniz?"
-          confirmButtonText="Çıkış Yap"
-          cancelButtonText="İptal"
-          onConfirm={handleLogoutConfirm}
-          onCancel={handleLogoutCancel}
-        />
+      {isUserMenuExpanded && (
+        <div className="absolute bottom-full left-0 w-full bg-white dark:bg-gray-700 rounded-lg shadow-xl py-2 mb-2 z-50 border border-gray-200 dark:border-gray-600 animate-fade-in-up transform-gpu will-change-transform">
+          <button
+            onClick={() => {
+              navigate('/profile');
+              setIsUserMenuExpanded(false);
+            }}
+            className="flex items-center gap-3 w-full px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
+          >
+            <FaUserCircle className="w-4 h-4" />
+            <span className="text-sm">Profilim</span>
+          </button>
+          <button
+            onClick={() => setIsConfirmModalOpen(true)}
+            className="flex items-center gap-3 w-full px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-b-lg transition-colors duration-200"
+          >
+            <FaSignOutAlt className="w-4 h-4" />
+            <span className="text-sm">Çıkış Yap</span>
+          </button>
+        </div>
       )}
-    </>
+
+      <ConfirmModal
+        isOpen={isConfirmModalOpen}
+        onCancel={() => setIsConfirmModalOpen(false)}
+        onConfirm={handleLogoutConfirm}
+        title="Çıkış Yap"
+        message="Hesabınızdan çıkış yapmak istediğinizden emin misiniz?"
+        confirmButtonText="Evet, Çıkış Yap"
+        cancelButtonText="İptal"
+      />
+    </div>
   );
 };
 

@@ -253,6 +253,12 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 // Task Service - Görev yönetimi için
 builder.Services.AddScoped<ITaskService, TaskService>();
 
+// Task Dependency Service - Görev bağımlılıkları yönetimi için
+builder.Services.AddScoped<ITaskDependencyService, TaskDependencyService>();
+
+// Task Template Service - Görev şablonları yönetimi için
+builder.Services.AddScoped<ITaskTemplateService, TaskTemplateService>();
+
 // File Upload Service - Dosya upload ve resim resize işlemleri için
 builder.Services.AddScoped<IFileUploadService, FileUploadService>();
 
@@ -399,7 +405,7 @@ builder.Services.AddAuthentication(options =>
         ),
         
         // Clock skew - server saatleri arasındaki fark toleransı
-        ClockSkew = TimeSpan.Zero // Sıfır tolerans
+        ClockSkew = TimeSpan.FromMinutes(5) // 5 dakika tolerans
     };
     
     // JWT Bearer events - debugging ve logging için
@@ -449,7 +455,7 @@ builder.Services.AddAuthentication(options =>
             var path = context.HttpContext.Request.Path;
 
             if (!string.IsNullOrEmpty(accessToken) &&
-                (path.StartsWithSegments("/api/v1.0/hubs/taskflow")))
+                (path.StartsWithSegments("/api/hubs/taskflow")))
             {
                 context.Token = accessToken; // Token'ı context'e set et
             }
@@ -687,13 +693,13 @@ app.MapControllers();
  * - Achievement notifications
  * - Typing indicators
  */
-app.MapHub<TaskFlow.API.Hubs.TaskFlowHub>("/api/v1.0/hubs/taskflow").RequireCors("AllowReactApp"); // CORS policy uygulandı
+app.MapHub<TaskFlow.API.Hubs.TaskFlowHub>("/api/hubs/taskflow").RequireCors("AllowReactApp"); // CORS policy uygulandı
 
 // Debug amaçlı: SignalR bağlantı kesilmelerini dinle
 app.Use(async (context, next) =>
 {
     var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-    if (context.Request.Path.StartsWithSegments("/api/v1.0/hubs/taskflow") && context.WebSockets.IsWebSocketRequest)
+    if (context.Request.Path.StartsWithSegments("/api/hubs/taskflow") && context.WebSockets.IsWebSocketRequest)
     {
         logger.LogDebug("SignalR WebSocket bağlantısı kuruluyor: {Path}", context.Request.Path);
         // Bağlantı kesildiğinde tetiklenecek bir olay dinleyicisi ekle

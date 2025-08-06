@@ -312,14 +312,19 @@ namespace TaskFlow.API.DTOs
         /// <summary>
         /// Güncellenecek öncelik
         /// </summary>
-        [RegularExpression("^(Low|Normal|High|Critical)$", ErrorMessage = "Geçerli öncelik seviyesi seçiniz")]
-        public string? Priority { get; set; }
+        [Range(0, 3, ErrorMessage = "Öncelik 0-3 arasında olmalıdır")]
+        public int? Priority { get; set; }
 
         /// <summary>
-        /// Güncellenecek tamamlanma yüzdesi
+        /// Güncellenecek tamamlanma durumu
         /// </summary>
-        [Range(0, 100, ErrorMessage = "Tamamlanma yüzdesi 0-100 arasında olmalıdır")]
-        public int? CompletionPercentage { get; set; }
+        public bool? IsCompleted { get; set; }
+
+        /// <summary>
+        /// Güncellenecek ilerleme yüzdesi
+        /// </summary>
+        [Range(0, 100, ErrorMessage = "İlerleme yüzdesi 0-100 arasında olmalıdır")]
+        public int? Progress { get; set; }
 
         /// <summary>
         /// Güncellenecek bitiş tarihi

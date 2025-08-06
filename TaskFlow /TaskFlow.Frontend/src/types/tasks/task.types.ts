@@ -70,6 +70,7 @@ export interface TodoTaskFilterDto {
   DueDateTo?: string; // Changed from dueDateEnd to match backend
   IsCompleted?: boolean; // Changed from isCompleted to match backend
   IncludeSubTasks?: boolean; // Changed from includeSubTasks to match backend
+  OnlyParentTasks?: boolean; // Sadece parent taskları getir
   SortBy?: string; // Changed from sortBy to match backend
   SortAscending?: boolean; // Changed from sortOrder to match backend
   Page?: number; // Changed from pageNumber to match backend

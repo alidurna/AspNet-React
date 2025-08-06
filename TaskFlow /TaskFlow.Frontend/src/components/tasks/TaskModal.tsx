@@ -1,176 +1,278 @@
 /**
- * TaskModal Component - Refactored
+ * TaskModal Component - Yeni Tasarım
  * 
- * Görev ekleme ve düzenleme işlemleri için modal component.
- * Modüler sub-components kullanır.
+ * Görev oluşturma ve düzenleme modal'ı.
  */
 
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes, FaSave } from 'react-icons/fa';
-import type { TodoTaskDto, CreateTodoTaskDto, UpdateTodoTaskDto } from '../../types/task.types';
-import type { CategoryDto } from '../../types/category.types';
-
-// Sub-components
-import TaskFormFields from './forms/TaskFormFields';
-import { 
-  validateTaskForm, 
-  formatTaskFormData, 
-  hasValidationErrors,
-  clearFieldError,
-  type TaskFormData,
-  type ValidationErrors 
-} from './forms/TaskFormValidation';
+import React, { useState, useEffect, useRef } from 'react';
+import { FaTimes, FaSave, FaCalendarAlt } from 'react-icons/fa';
+import type { TodoTaskDto } from '../../types/tasks';
+import type { CategoryDto } from '../../types/tasks';
 
 interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (task: CreateTodoTaskDto | UpdateTodoTaskDto) => void;
-  task: TodoTaskDto | null;
+  onSave: (task: Partial<TodoTaskDto>) => void;
+  task?: TodoTaskDto;
   categories: CategoryDto[];
-  isLoading?: boolean;
 }
 
-/**
- * TaskModal Component - Refactored
- */
 const TaskModal: React.FC<TaskModalProps> = ({
   isOpen,
   onClose,
-  onSubmit,
+  onSave,
   task,
   categories,
-  isLoading = false
 }) => {
-  // Form state
-  const [formData, setFormData] = useState<TaskFormData>({
+  const [formData, setFormData] = useState({
     title: '',
     description: '',
-    categoryId: categories[0]?.id || 1,
-    priority: 2,
-    dueDate: ''
+    categoryId: undefined as number | undefined,
+    dueDate: '',
+    priority: 1,
   });
 
-  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize form data
   useEffect(() => {
     if (task) {
       setFormData({
         title: task.title,
         description: task.description || '',
         categoryId: task.categoryId,
-        priority: Number(task.priority ?? 2),
-        dueDate: task.dueDate ? task.dueDate.split('T')[0] : ''
+        dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
+        priority: task.priority || 1,
       });
     } else {
       setFormData({
         title: '',
         description: '',
-        categoryId: categories[0]?.id ?? 1,
-        priority: 2,
-        dueDate: ''
+        categoryId: undefined,
+        dueDate: '',
+        priority: 1,
       });
     }
     setErrors({});
-  }, [task, categories, isOpen]);
+  }, [task, isOpen]);
 
-  /**
-   * Handle input changes
-   */
-  const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
 
-    // Clear field error if exists
-    if (errors[field]) {
-      setErrors(prev => clearFieldError(prev, field));
+    if (!formData.title.trim()) {
+      newErrors.title = 'Başlık gereklidir';
     }
+
+    if (formData.dueDate && new Date(formData.dueDate) < new Date()) {
+      newErrors.dueDate = 'Bitiş tarihi bugünden önce olamaz';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  /**
-   * Handle form submission
-   */
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validate form
-    const validationErrors = validateTaskForm(formData);
     
-    if (hasValidationErrors(validationErrors)) {
-      setErrors(validationErrors);
+    if (!validateForm()) {
       return;
     }
 
-    // Format and submit data
-    const formattedData = formatTaskFormData(formData);
-    onSubmit(formattedData);
+    setIsSubmitting(true);
+
+    try {
+      const taskData = {
+        ...formData,
+        dueDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : undefined,
+      };
+
+      await onSave(taskData);
+      onClose();
+    } catch (error) {
+      console.error('Görev kaydedilirken hata:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  /**
-   * Handle modal close
-   */
-  const handleClose = () => {
-    if (!isLoading) {
-      onClose();
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Hata mesajını temizle
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  const handleDateClick = () => {
+    if (dateInputRef.current) {
+      dateInputRef.current.showPicker();
+    }
+  };
+
+  const formatDateForDisplay = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('tr-TR');
   };
 
   if (!isOpen) return null;
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          transition={{ duration: 0.2 }}
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
-        >
+    <>
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 z-[9999]"
+        onClick={onClose}
+      />
+      
+      {/* Modal */}
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+          
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              {task ? 'Görevi Düzenle' : 'Yeni Görev Ekle'}
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {task ? 'Görevi Düzenle' : 'Yeni Görev'}
             </h2>
             <button
-              onClick={handleClose}
-              disabled={isLoading}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
             >
-              <FaTimes className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <FaTimes className="w-5 h-5" />
             </button>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto p-6">
-              <TaskFormFields
-                formData={formData}
-                categories={categories}
-                errors={errors}
-                onInputChange={handleInputChange}
-              />
+          <form onSubmit={handleSubmit} className="p-6">
+            <div className="space-y-6">
+              
+              {/* Title */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Başlık *
+                </label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${
+                    errors.title 
+                      ? 'border-red-500 focus:ring-red-500' 
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}
+                  placeholder="Görev başlığını girin"
+                  required
+                />
+                {errors.title && (
+                  <p className="mt-1 text-sm text-red-500">{errors.title}</p>
+                )}
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Açıklama
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  placeholder="Görev açıklamasını girin"
+                />
+              </div>
+
+              {/* Category */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Kategori
+                </label>
+                <select
+                  value={formData.categoryId || ''}
+                  onChange={(e) => handleInputChange('categoryId', e.target.value ? parseInt(e.target.value) : undefined)}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">Kategori seçin</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Due Date */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Bitiş Tarihi
+                </label>
+                <div className="relative">
+                  <input
+                    ref={dateInputRef}
+                    type="date"
+                    value={formData.dueDate}
+                    onChange={(e) => handleInputChange('dueDate', e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${
+                      errors.dueDate 
+                        ? 'border-red-500 focus:ring-red-500' 
+                        : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                    style={{ 
+                      colorScheme: 'light',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleDateClick}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
+                  >
+                    <FaCalendarAlt className="w-4 h-4" />
+                  </button>
+                </div>
+                {errors.dueDate && (
+                  <p className="mt-1 text-sm text-red-500">{errors.dueDate}</p>
+                )}
+              </div>
+
+              {/* Priority */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Öncelik
+                </label>
+                <select
+                  value={formData.priority}
+                  onChange={(e) => handleInputChange('priority', parseInt(e.target.value))}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                >
+                  <option value={1}>Düşük</option>
+                  <option value={2}>Orta</option>
+                  <option value={3}>Yüksek</option>
+                </select>
+              </div>
             </div>
 
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
               <button
                 type="button"
-                onClick={handleClose}
-                disabled={isLoading}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="px-6 py-3 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 İptal
               </button>
               <button
                 type="submit"
-                disabled={isLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                disabled={isSubmitting}
+                className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? (
+                {isSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     Kaydediliyor...
@@ -178,15 +280,15 @@ const TaskModal: React.FC<TaskModalProps> = ({
                 ) : (
                   <>
                     <FaSave className="w-4 h-4" />
-                    {task ? 'Güncelle' : 'Kaydet'}
+                    {task ? 'Güncelle' : 'Oluştur'}
                   </>
                 )}
               </button>
             </div>
           </form>
-        </motion.div>
+        </div>
       </div>
-    </AnimatePresence>
+    </>
   );
 };
 

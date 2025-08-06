@@ -146,66 +146,21 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
-      {/* Mobile Layout */}
-      <div className="lg:hidden">
-        {/* Mobile Header */}
-        <Header
-          onSidebarToggle={toggleSidebar}
-          title={title}
-          breadcrumbs={breadcrumbs}
-        />
-        
-        {/* Mobile Content */}
-        <main className="p-4 sm:p-6">
-          {children}
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 font-sans text-gray-900 dark:text-gray-100 antialiased overflow-hidden">
+      {/* Sidebar */}
+      <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out">
+        {/* Header */}
+        <Header onToggleSidebar={toggleSidebar} />
+
+        {/* Page Content - Only this part scrolls */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 lg:p-8 custom-scrollbar">
+          <div className="max-w-screen-2xl mx-auto py-4">
+            {children}
+          </div>
         </main>
-      </div>
-
-      {/* Tablet Layout */}
-      <div className="hidden lg:hidden md:flex md:h-screen">
-        {/* Sidebar */}
-        <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
-
-        {/* Main Content Area */}
-        <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'md:ml-64' : 'md:ml-0'}`}>
-          {/* Header */}
-          <Header
-            onSidebarToggle={toggleSidebar}
-            title={title}
-            breadcrumbs={breadcrumbs}
-          />
-
-          {/* Page Content */}
-          <main className="flex-1 p-4 md:p-6 overflow-y-auto">
-            <div className="w-full max-w-6xl mx-auto">
-              {children}
-            </div>
-          </main>
-        </div>
-      </div>
-
-      {/* Desktop Layout */}
-      <div className="hidden lg:flex lg:h-screen">
-        {/* Sidebar */}
-        <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
-
-        {/* Main Content Area */}
-        <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-0'}`}>
-          {/* Header */}
-          <Header
-            onSidebarToggle={toggleSidebar}
-            title={title}
-            breadcrumbs={breadcrumbs}
-          />
-
-          {/* Page Content */}
-          <main className="flex-1 p-6 xl:p-8 overflow-y-auto">
-            <div className="w-full max-w-7xl mx-auto">
-              {children}
-            </div>
-          </main>
-        </div>
       </div>
     </div>
   );

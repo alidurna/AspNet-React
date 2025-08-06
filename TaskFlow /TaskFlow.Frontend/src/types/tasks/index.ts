@@ -2,5 +2,6 @@
  * Tasks Types Export
  */
 
-export * from './task.types';
-export * from './category.types'; 
+export * from "./template.types";
+export * from "./task.types";
+export * from "./category.types"; 

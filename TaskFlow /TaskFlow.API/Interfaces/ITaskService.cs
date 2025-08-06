@@ -177,6 +177,15 @@ namespace TaskFlow.API.Interfaces
         /// <returns>Güncellenmiş TodoTaskDto</returns>
         Task<TodoTaskDto> RemoveParentTaskAsync(int userId, int taskId);
 
+        /// <summary>
+        /// Alt görevleri yeniden sıralar.
+        /// </summary>
+        /// <param name="userId">Kullanıcının ID'si.</param>
+        /// <param name="parentTaskId">Parent görevin ID'si.</param>
+        /// <param name="subTaskIds">Yeni sıralama için alt görev ID'leri.</param>
+        /// <returns>Sıralanmış alt görevlerin DTO'ları.</returns>
+        Task<List<TodoTaskDto>> ReorderSubTasksAsync(int userId, int parentTaskId, List<int> subTaskIds);
+
         #endregion
 
         #region Search & Filter Operations

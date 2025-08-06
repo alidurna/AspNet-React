@@ -774,7 +774,7 @@ namespace TaskFlow.API.Controllers
 
         #endregion
 
-        #region Hierarchy Endpoints
+        #region Sub-Tasks Endpoints
 
         /// <summary>
         /// Belirli bir task'ın alt task'larını getirir
@@ -812,6 +812,119 @@ namespace TaskFlow.API.Controllers
                 _logger.LogError(ex, "Error getting sub-tasks for parent {ParentId}", parentId);
                 return StatusCode(500, ApiResponseModel<List<TodoTaskDto>>.ErrorResponse(
                     "Alt görevler getirilirken bir hata oluştu"));
+            }
+        }
+
+        /// <summary>
+        /// Belirli bir task için alt task oluşturur
+        /// </summary>
+        /// <param name="parentId">Parent task ID'si</param>
+        /// <param name="createDto">Alt task oluşturma bilgileri</param>
+        /// <returns>Oluşturulan alt task</returns>
+        /// <response code="201">Alt task başarıyla oluşturuldu</response>
+        /// <response code="400">Geçersiz veri</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
+        /// <response code="500">Sunucu hatası</response>
+        [HttpPost("{parentId:int}/subtasks")]
+        [ProducesResponseType(typeof(ApiResponseModel<TodoTaskDto>), 201)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+        public async Task<ActionResult<ApiResponseModel<TodoTaskDto>>> CreateSubTask(
+            int parentId,
+            [FromBody] CreateTodoTaskDto createDto)
+        {
+            try
+            {
+                // JWT token'dan user ID'yi al
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+                }
+
+                // Parent task'ı kontrol et
+                var parentTask = await _taskService.GetTaskByIdAsync(userId.Value, parentId);
+                if (parentTask == null)
+                {
+                    return NotFound(ApiResponseModel<object>.ErrorResponse("Parent görev bulunamadı"));
+                }
+
+                // Alt task oluştur
+                createDto.ParentTaskId = parentId;
+                var subTask = await _taskService.CreateTaskAsync(userId.Value, createDto);
+
+                _logger.LogInformation("Sub-task created successfully: {SubTaskId} for parent {ParentId}", 
+                    subTask.Id, parentId);
+
+                return CreatedAtAction(
+                    actionName: nameof(GetTask),
+                    routeValues: new { id = subTask.Id },
+                    value: ApiResponseModel<TodoTaskDto>.SuccessResponse(
+                        "Alt görev başarıyla oluşturuldu",
+                        subTask
+                    )
+                );
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning("Sub-task creation failed: {Error}", ex.Message);
+                return BadRequest(ApiResponseModel<object>.ErrorResponse(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating sub-task for parent {ParentId}", parentId);
+                return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
+                    "Alt görev oluşturulurken bir hata oluştu"));
+            }
+        }
+
+        /// <summary>
+        /// Alt görevleri sıralar
+        /// </summary>
+        /// <param name="parentId">Parent task ID'si</param>
+        /// <param name="subTaskIds">Sıralanacak alt görev ID'leri</param>
+        /// <returns>Güncellenmiş alt görevler</returns>
+        /// <response code="200">Alt görevler başarıyla sıralandı</response>
+        /// <response code="400">Geçersiz veri</response>
+        /// <response code="401">Token geçersiz veya eksik</response>
+        /// <response code="500">Sunucu hatası</response>
+        [HttpPut("{parentId:int}/subtasks/reorder")]
+        [ProducesResponseType(typeof(ApiResponseModel<List<TodoTaskDto>>), 200)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 400)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 401)]
+        [ProducesResponseType(typeof(ApiResponseModel<object>), 500)]
+        public async Task<ActionResult<ApiResponseModel<List<TodoTaskDto>>>> ReorderSubTasks(
+            int parentId,
+            [FromBody] List<int> subTaskIds)
+        {
+            try
+            {
+                // JWT token'dan user ID'yi al
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized(ApiResponseModel<object>.ErrorResponse("Geçersiz token"));
+                }
+
+                // Alt görevleri sırala
+                var reorderedSubTasks = await _taskService.ReorderSubTasksAsync(userId.Value, parentId, subTaskIds);
+
+                return Ok(ApiResponseModel<List<TodoTaskDto>>.SuccessResponse(
+                    "Alt görevler başarıyla sıralandı",
+                    reorderedSubTasks
+                ));
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning("Sub-task reordering failed: {Error}", ex.Message);
+                return BadRequest(ApiResponseModel<object>.ErrorResponse(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reordering sub-tasks for parent {ParentId}", parentId);
+                return StatusCode(500, ApiResponseModel<object>.ErrorResponse(
+                    "Alt görevler sıralanırken bir hata oluştu"));
             }
         }
 

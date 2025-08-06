@@ -623,23 +623,11 @@ namespace TaskFlow.API.Services
             {
                 _logger.LogInformation("Token refresh request");
 
-                // Access token'dan user ID'yi al (expire olmuş olabilir)
-                var userId = _jwtService.GetUserIdFromToken(tokenRefreshRequestDto.AccessToken);
-                if (!userId.HasValue)
-                {
-                    throw new UnauthorizedAccessException("Geçersiz access token");
-                }
-
+                // Refresh token ile user'ı bul
                 var user = await _context.Users
-                    .FirstOrDefaultAsync(u => u.Id == userId.Value && u.IsActive);
+                    .FirstOrDefaultAsync(u => u.RefreshToken == tokenRefreshRequestDto.RefreshToken && u.IsActive);
 
                 if (user == null)
-                {
-                    throw new UnauthorizedAccessException("Kullanıcı bulunamadı");
-                }
-
-                // Refresh token kontrolü
-                if (user.RefreshToken != tokenRefreshRequestDto.RefreshToken)
                 {
                     throw new UnauthorizedAccessException("Geçersiz refresh token");
                 }

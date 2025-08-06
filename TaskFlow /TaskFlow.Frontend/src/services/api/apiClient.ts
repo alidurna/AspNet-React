@@ -153,18 +153,18 @@ apiClient.interceptors.response.use(
         try {
           console.log("🔄 Attempting token refresh...");
           const response = await axios.post(
-            `${environment.apiBaseUrl}/auth/refresh`,
+            `${environment.apiBaseUrl}/v1/Auth/refresh`,
             { refreshToken }
           );
 
           if (response.data.success) {
-            const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+            const { token, refreshToken: newRefreshToken } = response.data.data;
             const rememberMe = !!localStorage.getItem("taskflow_token");
             
-            tokenManager.setToken(accessToken, rememberMe);
+            tokenManager.setToken(token, rememberMe);
             tokenManager.setRefreshToken(newRefreshToken, rememberMe);
             
-            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+            originalRequest.headers.Authorization = `Bearer ${token}`;
             console.log("✅ Token refreshed successfully");
             return apiClient(originalRequest);
           }

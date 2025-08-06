@@ -213,6 +213,7 @@ namespace TaskFlow.API.Services
                 var query = _context.TodoTasks
                     .Include(t => t.Category)
                     .Include(t => t.ParentTask)
+                    .Include(t => t.SubTasks.Where(st => st.IsActive)) // Alt görevleri dahil et
                     .Where(t => t.UserId == userId && t.IsActive);
 
                 // Filtreleme
@@ -293,7 +294,7 @@ namespace TaskFlow.API.Services
 
                 foreach (var task in tasks)
                 {
-                    taskDtos.Add(await MapToDtoAsync(task));
+                    taskDtos.Add(await MapToDtoAsync(task, true)); // Alt görevleri dahil et
                 }
 
                 return (taskDtos, pagination);
@@ -364,11 +365,37 @@ namespace TaskFlow.API.Services
                         : updateDto.Description.Trim();
                 }
 
-                if (!string.IsNullOrWhiteSpace(updateDto.Priority))
+                if (updateDto.Priority.HasValue)
                 {
-                    if (Enum.TryParse<Priority>(updateDto.Priority, out var priority))
+                    task.Priority = (Priority)updateDto.Priority.Value;
+                }
+
+                if (updateDto.IsCompleted.HasValue)
+                {
+                    task.IsCompleted = updateDto.IsCompleted.Value;
+                    if (updateDto.IsCompleted.Value)
                     {
-                        task.Priority = priority;
+                        task.CompletedAt = DateTime.UtcNow;
+                    }
+                    else
+                    {
+                        task.CompletedAt = null;
+                    }
+                }
+
+                if (updateDto.Progress.HasValue)
+                {
+                    task.CompletionPercentage = updateDto.Progress.Value;
+                    
+                    if (updateDto.Progress.Value == 100)
+                    {
+                        task.IsCompleted = true;
+                        task.CompletedAt = DateTime.UtcNow;
+                    }
+                    else if (updateDto.Progress.Value == 0)
+                    {
+                        task.IsCompleted = false;
+                        task.CompletedAt = null;
                     }
                 }
 
@@ -401,22 +428,6 @@ namespace TaskFlow.API.Services
                     }
                     
                     task.CategoryId = updateDto.CategoryId.Value;
-                }
-
-                if (updateDto.CompletionPercentage.HasValue)
-                {
-                    task.CompletionPercentage = updateDto.CompletionPercentage.Value;
-                    
-                    if (updateDto.CompletionPercentage.Value == 100)
-                    {
-                        task.IsCompleted = true;
-                        task.CompletedAt = DateTime.UtcNow;
-                    }
-                    else if (updateDto.CompletionPercentage.Value == 0)
-                    {
-                        task.IsCompleted = false;
-                        task.CompletedAt = null;
-                    }
                 }
 
                 task.UpdatedAt = DateTime.UtcNow;
@@ -746,6 +757,62 @@ namespace TaskFlow.API.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error removing parent task for task {TaskId}", taskId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Alt görevleri yeniden sıralar.
+        /// </summary>
+        /// <param name="userId">Kullanıcının ID'si.</param>
+        /// <param name="parentTaskId">Parent görevin ID'si.</param>
+        /// <param name="subTaskIds">Yeni sıralama için alt görev ID'leri.</param>
+        /// <returns>Sıralanmış alt görevlerin DTO'ları.</returns>
+        /// <exception cref="InvalidOperationException">Parent görev bulunamadığında.</exception>
+        /// <exception cref="Exception">Genel bir hata oluşursa.</exception>
+        public async Task<List<TodoTaskDto>> ReorderSubTasksAsync(int userId, int parentTaskId, List<int> subTaskIds)
+        {
+            try
+            {
+                // Parent görevi kontrol et
+                var parentTask = await _context.TodoTasks
+                    .FirstOrDefaultAsync(t => t.Id == parentTaskId && t.UserId == userId && t.IsActive);
+
+                if (parentTask == null)
+                {
+                    throw new InvalidOperationException("Parent görev bulunamadı");
+                }
+
+                // Alt görevleri getir
+                var subTasks = await _context.TodoTasks
+                    .Where(t => t.ParentTaskId == parentTaskId && t.UserId == userId && t.IsActive)
+                    .ToListAsync();
+
+                // Sıralama için yeni bir alan ekleyelim (OrderIndex)
+                // Şimdilik sadece ID'leri kontrol edelim
+                var validSubTaskIds = subTasks.Select(t => t.Id).ToList();
+                var invalidIds = subTaskIds.Except(validSubTaskIds).ToList();
+
+                if (invalidIds.Any())
+                {
+                    throw new InvalidOperationException($"Geçersiz alt görev ID'leri: {string.Join(", ", invalidIds)}");
+                }
+
+                // Alt görevleri güncelle (şimdilik sadece UpdatedAt'i güncelle)
+                foreach (var subTask in subTasks)
+                {
+                    subTask.UpdatedAt = DateTime.UtcNow;
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Güncellenmiş alt görevleri döndür
+                var updatedSubTasks = await GetSubTasksAsync(userId, parentTaskId);
+                return updatedSubTasks;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reordering sub-tasks for parent {ParentTaskId}", parentTaskId);
                 throw;
             }
         }
@@ -1284,6 +1351,7 @@ namespace TaskFlow.API.Services
             return await _context.TodoTasks
                 .Include(t => t.Category)
                 .Include(t => t.ParentTask)
+                .Include(t => t.SubTasks.Where(st => st.IsActive)) // Alt görevleri dahil et
                 .Include(t => t.AssignedUser) // AssignedUser'ı dahil et
                 .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId && t.IsActive);
         }
@@ -1321,6 +1389,7 @@ namespace TaskFlow.API.Services
                 IsOverdue = task.DueDate.HasValue && task.DueDate.Value < DateTime.UtcNow && !task.IsCompleted,
                 DaysUntilDue = task.DueDate.HasValue ? (int)(task.DueDate.Value - DateTime.UtcNow).TotalDays : null,
                 CompletionPercentage = task.CompletionPercentage,
+                ParentTaskId = task.ParentTaskId,
                 AssignedUserId = task.AssignedUserId,
                 AssignedUserName = task.AssignedUser?.FirstName + " " + task.AssignedUser?.LastName,
                 UpdatedAt = task.UpdatedAt
@@ -1342,36 +1411,28 @@ namespace TaskFlow.API.Services
                 };
             }
 
-            // Parent task bilgisini ekle
-            if (task.ParentTask != null)
+            // Alt görevleri dahil et
+            if (includeSubTasks && task.SubTasks != null)
             {
-                dto.ParentTask = new TodoTaskDto
+                dto.SubTasks = new List<TodoTaskDto>();
+                foreach (var subTask in task.SubTasks.Where(st => st.IsActive))
                 {
-                    Id = task.ParentTask.Id,
-                    UserId = task.ParentTask.UserId,
-                    CategoryId = task.ParentTask.CategoryId,
-                    Title = task.ParentTask.Title,
-                    Priority = task.ParentTask.Priority,
-                    CompletionPercentage = task.ParentTask.CompletionPercentage,
-                    IsCompleted = task.ParentTask.IsCompleted,
-                    CreatedAt = task.ParentTask.CreatedAt,
-                    UpdatedAt = task.ParentTask.UpdatedAt
-                };
+                    dto.SubTasks.Add(await MapToDtoAsync(subTask, false)); // Recursive olarak alt görevleri de dahil etme
+                }
             }
-
-            // Sub-tasks ekle (eğer isteniyorsa)
-            if (includeSubTasks)
+            else if (includeSubTasks)
             {
+                // Eğer SubTasks navigation property boşsa, veritabanından tekrar çek
                 var subTasks = await _context.TodoTasks
                     .Where(t => t.ParentTaskId == task.Id && t.IsActive)
                     .ToListAsync();
-
+                
                 if (subTasks.Any())
                 {
                     dto.SubTasks = new List<TodoTaskDto>();
                     foreach (var subTask in subTasks)
                     {
-                        dto.SubTasks.Add(await MapToDtoAsync(subTask, false)); // Infinite recursion engellemek için
+                        dto.SubTasks.Add(await MapToDtoAsync(subTask, false));
                     }
                 }
             }

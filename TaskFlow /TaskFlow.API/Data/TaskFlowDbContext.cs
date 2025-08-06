@@ -117,6 +117,18 @@ public class TaskFlowDbContext : DbContext
     public DbSet<TodoTask> TodoTasks { get; set; } = null!;
 
     /// <summary>
+    /// Task Dependencies tablosu - Görev bağımlılıkları
+    /// Bir görevin diğer görevlere bağımlılığını temsil eder
+    /// </summary>
+    public DbSet<TaskDependency> TaskDependencies { get; set; } = null!;
+
+    /// <summary>
+    /// Task Templates tablosu - Görev şablonları
+    /// Kullanıcıların sık kullandıkları görev yapılarını şablon olarak kaydetmeleri
+    /// </summary>
+    public DbSet<TaskTemplate> TaskTemplates { get; set; } = null!;
+
+    /// <summary>
     /// Attachments tablosu - Görevlere eklenen dosyalar
     /// Her görevin birden fazla eki olabilir
     /// </summary>
@@ -305,6 +317,41 @@ public class TaskFlowDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(e => e.CredentialId).IsUnique();
+        });
+
+        // TaskDependency entity configuration
+        modelBuilder.Entity<TaskDependency>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.DependentTaskId).IsRequired();
+            entity.Property(e => e.PrerequisiteTaskId).IsRequired();
+            entity.Property(e => e.DependencyType).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+
+            // Bağımlı görev ilişkisi
+            entity.HasOne(e => e.DependentTask)
+                .WithMany(t => t.Dependencies)
+                .HasForeignKey(e => e.DependentTaskId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Ön koşul görev ilişkisi
+            entity.HasOne(e => e.PrerequisiteTask)
+                .WithMany(t => t.Prerequisites)
+                .HasForeignKey(e => e.PrerequisiteTaskId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Kullanıcı ilişkisi
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Unique constraint - aynı bağımlılık tekrar oluşturulamaz
+            entity.HasIndex(e => new { e.DependentTaskId, e.PrerequisiteTaskId })
+                .IsUnique();
         });
 
         // ===== ANALYTICS ENTITY CONFIGURATIONS =====

@@ -1,12 +1,10 @@
 /**
- * Tasks Page - Refactored to Modular Components
+ * Tasks Page - Yeni Tasarım
  * 
- * Ana görev yönetimi sayfası. Modüler sub-components kullanır.
- * 
- * @version 4.0.0 - Fully Modular
+ * Ana görev yönetimi sayfası.
  */
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../services/api";
 import type {
@@ -14,40 +12,62 @@ import type {
   CreateTodoTaskDto,
   UpdateTodoTaskDto,
 } from "../types/tasks";
+import type { CategoryDto } from "../types/tasks";
 
-// Modular Components
+// Components
 import TasksHeader from "./components/TasksHeader";
 import TasksContent from "./components/TasksContent";
 import TaskFilters from "../components/tasks/TaskFilters";
 import TaskModal from "../components/tasks/TaskModal";
+import SubTasksModal from "../components/tasks/SubTasksModal";
+import SubTaskModal from "../components/tasks/SubTaskModal";
+import DependencyModal from "../components/tasks/DependencyModal";
 
 // Hooks
 import { useToast } from "../hooks/useToast";
-import { useAnalytics } from "../hooks/useAnalytics";
 
 /**
- * Tasks Page Component - Fully Modular
+ * Tasks Page Component - Yeni Tasarım
  */
 const Tasks: React.FC = () => {
-  // ===== STATE MANAGEMENT =====
+  // State
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'kanban'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedPriority, setSelectedPriority] = useState<number | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'completed' | 'pending'>('all');
-  const [showFilters, setShowFilters] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TodoTaskDto | null>(null);
+  
+  // Alt görevler için state'ler
+  const [isSubTasksModalOpen, setIsSubTasksModalOpen] = useState(false);
+  const [selectedParentTask, setSelectedParentTask] = useState<TodoTaskDto | null>(null);
+  
+  // Alt görev modal'ı için state'ler
+  const [isSubTaskModalOpen, setIsSubTaskModalOpen] = useState(false);
+  const [editingSubTask, setEditingSubTask] = useState<TodoTaskDto | null>(null);
+  const [selectedParentForSubTask, setSelectedParentForSubTask] = useState<TodoTaskDto | null>(null);
 
-  // ===== HOOKS =====
+  // Bağımlılık modal'ı için state'ler
+  const [isDependencyModalOpen, setIsDependencyModalOpen] = useState(false);
+  const [dependencyModalMode, setDependencyModalMode] = useState<'create' | 'edit' | 'view'>('create');
+  const [selectedTaskForDependency, setSelectedTaskForDependency] = useState<TodoTaskDto | null>(null);
+
+  // Hooks
   const { showSuccess, showError } = useToast();
-  const { trackEvent } = useAnalytics();
   const queryClient = useQueryClient();
 
-  // ===== DATA FETCHING =====
+  // Sayfa yüklendiğinde cache'i temizle
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['subTasks'] });
+  }, [queryClient]);
+
+  // Data fetching
   const { data: tasksResponse, isLoading: tasksLoading } = useQuery({
     queryKey: ['tasks'],
-    queryFn: () => api.getTasks(),
+    queryFn: () => api.getTasks({ OnlyParentTasks: true }), // Sadece ana görevleri getir
   });
 
   const { data: categoriesResponse, isLoading: categoriesLoading } = useQuery({
@@ -58,73 +78,90 @@ const Tasks: React.FC = () => {
   const tasks = tasksResponse?.data?.tasks || [];
   const categories = categoriesResponse?.data || [];
 
-  // ===== MUTATIONS =====
+  // Mutations
   const createTaskMutation = useMutation({
     mutationFn: (taskData: CreateTodoTaskDto) => api.createTask(taskData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       showSuccess('Görev başarıyla oluşturuldu!');
-      trackEvent('user_action', 'task_created');
       setIsTaskModalOpen(false);
     },
     onError: () => showError('Görev oluşturulurken hata oluştu'),
   });
 
+  const createSubTaskMutation = useMutation({
+    mutationFn: ({ parentId, taskData }: { parentId: number; taskData: CreateTodoTaskDto }) => 
+      api.createSubTask(parentId, taskData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      showSuccess('Alt görev başarıyla oluşturuldu!');
+      setIsSubTaskModalOpen(false);
+      setSelectedParentForSubTask(null);
+      
+      // Alt görev oluşturduktan sonra SubTasksModal'ı yeniden aç
+      if (selectedParentForSubTask) {
+        setSelectedParentTask(selectedParentForSubTask);
+        setIsSubTasksModalOpen(true);
+      }
+    },
+    onError: () => showError('Alt görev oluşturulurken hata oluştu'),
+  });
+
   const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: UpdateTodoTaskDto }) => 
-      api.updateTask(id, data),
+    mutationFn: (taskData: UpdateTodoTaskDto) => api.updateTask(editingTask!.id, taskData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       showSuccess('Görev başarıyla güncellendi!');
-      trackEvent('user_action', 'task_updated');
       setIsTaskModalOpen(false);
       setEditingTask(null);
     },
     onError: () => showError('Görev güncellenirken hata oluştu'),
   });
 
+  const updateSubTaskMutation = useMutation({
+    mutationFn: (taskData: UpdateTodoTaskDto) => api.updateTask(editingSubTask!.id, taskData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      showSuccess('Alt görev başarıyla güncellendi!');
+      setIsSubTaskModalOpen(false);
+      setEditingSubTask(null);
+      setSelectedParentForSubTask(null);
+    },
+    onError: () => showError('Alt görev güncellenirken hata oluştu'),
+  });
+
   const deleteTaskMutation = useMutation({
-    mutationFn: (id: number) => api.deleteTask(id),
+    mutationFn: (taskId: number) => api.deleteTask(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       showSuccess('Görev başarıyla silindi!');
-      trackEvent('user_action', 'task_deleted');
     },
     onError: () => showError('Görev silinirken hata oluştu'),
   });
 
-  // ===== FILTERED TASKS =====
-  const filteredTasks = useMemo(() => {
-    return tasks.filter((task: TodoTaskDto) => {
-      // Search filter
-      if (searchTerm && !task.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-          !task.description?.toLowerCase().includes(searchTerm.toLowerCase())) {
-        return false;
-      }
+  const toggleCompleteMutation = useMutation({
+    mutationFn: ({ taskId, isCompleted }: { taskId: number; isCompleted: boolean }) =>
+      api.updateTask(taskId, { isCompleted }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      // Alt görevler için de cache'i invalidate et
+      queryClient.invalidateQueries({ queryKey: ['subTasks'] });
+    },
+    onError: () => showError('Görev durumu güncellenirken hata oluştu'),
+  });
 
-      // Category filter
-      if (selectedCategory && task.categoryId !== selectedCategory) {
-        return false;
-      }
+  const updateProgressMutation = useMutation({
+    mutationFn: ({ taskId, progress }: { taskId: number; progress: number }) =>
+      api.updateTask(taskId, { progress }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      // Alt görevler için de cache'i invalidate et
+      queryClient.invalidateQueries({ queryKey: ['subTasks'] });
+    },
+    onError: () => showError('İlerleme güncellenirken hata oluştu'),
+  });
 
-      // Priority filter
-      if (selectedPriority && task.priority !== selectedPriority) {
-        return false;
-      }
-
-      // Status filter
-      if (selectedStatus === 'completed' && !task.isCompleted) {
-        return false;
-      }
-      if (selectedStatus === 'pending' && task.isCompleted) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [tasks, searchTerm, selectedCategory, selectedPriority, selectedStatus]);
-
-  // ===== EVENT HANDLERS =====
+  // Handlers
   const handleCreateTask = () => {
     setEditingTask(null);
     setIsTaskModalOpen(true);
@@ -142,95 +179,207 @@ const Tasks: React.FC = () => {
   };
 
   const handleToggleComplete = (taskId: number, isCompleted: boolean) => {
-    const task = tasks.find((t: TodoTaskDto) => t.id === taskId);
-    if (task) {
-      updateTaskMutation.mutate({
-        id: taskId,
-        data: { ...task, isCompleted, progress: isCompleted ? 100 : task.progress }
-      });
-    }
+    toggleCompleteMutation.mutate({ taskId, isCompleted });
   };
 
   const handleProgressChange = (taskId: number, progress: number) => {
-    const task = tasks.find((t: TodoTaskDto) => t.id === taskId);
-    if (task) {
-      updateTaskMutation.mutate({
-        id: taskId,
-        data: { ...task, progress, isCompleted: progress >= 100 }
-      });
-    }
+    updateProgressMutation.mutate({ taskId, progress });
   };
 
   const handleTaskSubmit = (taskData: CreateTodoTaskDto | UpdateTodoTaskDto) => {
     if (editingTask) {
-      updateTaskMutation.mutate({ id: editingTask.id, data: taskData as UpdateTodoTaskDto });
+      updateTaskMutation.mutate(taskData as UpdateTodoTaskDto);
     } else {
       createTaskMutation.mutate(taskData as CreateTodoTaskDto);
     }
   };
 
-  // ===== STATS =====
-  const completedCount = filteredTasks.filter((task: TodoTaskDto) => task.isCompleted).length;
+  // Alt görevler için handler'lar
+  const handleViewSubTasks = (taskId: number) => {
+    const parentTask = tasks.find(task => task.id === taskId);
+    if (parentTask) {
+      setSelectedParentTask(parentTask);
+      setIsSubTasksModalOpen(true);
+    }
+  };
 
-  // ===== RENDER =====
+  const handleAddSubTask = (taskId: number) => {
+    const parentTask = tasks.find(task => task.id === taskId);
+    if (parentTask) {
+      setSelectedParentForSubTask(parentTask);
+      setEditingSubTask(null);
+      setIsSubTaskModalOpen(true);
+    }
+  };
+
+  const handleEditSubTask = (subTask: TodoTaskDto) => {
+    const parentTask = tasks.find(task => task.id === subTask.parentTaskId);
+    if (parentTask) {
+      setSelectedParentForSubTask(parentTask);
+      setEditingSubTask(subTask);
+      setIsSubTaskModalOpen(true);
+    }
+  };
+
+  const handleDeleteSubTask = (subTaskId: number) => {
+    if (window.confirm('Bu alt görevi silmek istediğinizden emin misiniz?')) {
+      deleteTaskMutation.mutate(subTaskId);
+    }
+  };
+
+  const handleToggleSubTaskComplete = (subTaskId: number, isCompleted: boolean) => {
+    console.log('Tasks.tsx - Alt görev tamamlanma durumu değişiyor:', { subTaskId, isCompleted });
+    toggleCompleteMutation.mutate({ taskId: subTaskId, isCompleted });
+  };
+
+  const handleSubTaskProgressChange = (subTaskId: number, progress: number) => {
+    console.log('Tasks.tsx - Alt görev ilerleme değişiyor:', { subTaskId, progress });
+    updateProgressMutation.mutate({ taskId: subTaskId, progress });
+  };
+
+  const handleSubTaskSubmit = (taskData: CreateTodoTaskDto | UpdateTodoTaskDto) => {
+    if (editingSubTask) {
+      updateSubTaskMutation.mutate(taskData as UpdateTodoTaskDto);
+    } else {
+      createSubTaskMutation.mutate({ 
+        parentId: selectedParentForSubTask!.id, 
+        taskData: taskData as CreateTodoTaskDto 
+      });
+    }
+  };
+
+  // Bağımlılık handler'ları
+  const handleViewDependencies = (taskId: number) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      setSelectedTaskForDependency(task);
+      setDependencyModalMode('view');
+      setIsDependencyModalOpen(true);
+    }
+  };
+
+  const handleAddDependency = (taskId: number) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      setSelectedTaskForDependency(task);
+      setDependencyModalMode('create');
+      setIsDependencyModalOpen(true);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
-      <div className="container mx-auto px-4 py-8 space-y-6">
-        {/* Header */}
-        <TasksHeader
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          showFilters={showFilters}
-          onToggleFilters={() => setShowFilters(!showFilters)}
-          onCreateTask={handleCreateTask}
-          tasksCount={filteredTasks.length}
-          completedCount={completedCount}
-        />
+    <div className="space-y-6">
+      {/* Header */}
+      <TasksHeader
+        onCreateTask={handleCreateTask}
+        tasksCount={tasks.length}
+        completedCount={tasks.filter(t => t.isCompleted).length}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        showFilters={showFilters}
+        onToggleFilters={() => setShowFilters(!showFilters)}
+      />
 
-        {/* Filters */}
-        {showFilters && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-            <TaskFilters
-              categories={categories}
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
-              selectedPriority={selectedPriority}
-              onPriorityChange={setSelectedPriority}
-              selectedStatus={selectedStatus}
-              onStatusChange={setSelectedStatus}
-            />
-          </div>
-        )}
+      {/* Filters */}
+      <TaskFilters
+        isOpen={showFilters}
+        onToggle={() => setShowFilters(!showFilters)}
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        selectedPriority={selectedPriority}
+        onPriorityChange={setSelectedPriority}
+        selectedStatus={selectedStatus}
+        onStatusChange={setSelectedStatus}
+      />
 
-        {/* Content */}
-        <TasksContent
-          tasks={filteredTasks}
+      {/* Content */}
+      <TasksContent
+        tasks={tasks}
+        categories={categories}
+        isLoading={tasksLoading || categoriesLoading}
+        viewMode={viewMode}
+        searchTerm={searchTerm}
+        selectedCategory={selectedCategory}
+        selectedPriority={selectedPriority}
+        selectedStatus={selectedStatus}
+        onEditTask={handleEditTask}
+        onDeleteTask={handleDeleteTask}
+        onToggleComplete={handleToggleComplete}
+        onProgressChange={handleProgressChange}
+        onViewSubTasks={handleViewSubTasks}
+        onAddSubTask={handleAddSubTask}
+        onViewDependencies={handleViewDependencies}
+        onAddDependency={handleAddDependency}
+      />
+
+      {/* Task Modal */}
+      <TaskModal
+        isOpen={isTaskModalOpen}
+        onClose={() => {
+          setIsTaskModalOpen(false);
+          setEditingTask(null);
+        }}
+        onSave={handleTaskSubmit}
+        task={editingTask || undefined}
+        categories={categories}
+      />
+
+      {/* SubTasks Modal */}
+      {selectedParentTask && (
+        <SubTasksModal
+          isOpen={isSubTasksModalOpen}
+          onClose={() => {
+            setIsSubTasksModalOpen(false);
+            setSelectedParentTask(null);
+          }}
+          parentTask={selectedParentTask}
           categories={categories}
-          viewMode={viewMode}
-          isLoading={tasksLoading || categoriesLoading}
-          onEditTask={handleEditTask}
-          onDeleteTask={handleDeleteTask}
-          onToggleComplete={handleToggleComplete}
-          onProgressChange={handleProgressChange}
+          onAddSubTask={handleAddSubTask}
+          onEditSubTask={handleEditSubTask}
+          onDeleteSubTask={handleDeleteSubTask}
+          onToggleSubTaskComplete={handleToggleSubTaskComplete}
+          onSubTaskProgressChange={handleSubTaskProgressChange}
         />
+      )}
 
-        {/* Task Modal */}
-        {isTaskModalOpen && (
-          <TaskModal
-            isOpen={isTaskModalOpen}
-            onClose={() => {
-              setIsTaskModalOpen(false);
-              setEditingTask(null);
-            }}
-            onSubmit={handleTaskSubmit}
-            task={editingTask}
-            categories={categories}
-            isLoading={createTaskMutation.isPending || updateTaskMutation.isPending}
-          />
-        )}
-      </div>
+      {/* SubTask Modal */}
+      {selectedParentForSubTask && (
+        <SubTaskModal
+          isOpen={isSubTaskModalOpen}
+          onClose={() => {
+            setIsSubTaskModalOpen(false);
+            setSelectedParentForSubTask(null);
+            setEditingSubTask(null);
+            
+            // Alt görev oluşturduktan sonra SubTasksModal'ı yeniden aç
+            if (selectedParentForSubTask) {
+              setSelectedParentTask(selectedParentForSubTask);
+              setIsSubTasksModalOpen(true);
+            }
+          }}
+          onSave={handleSubTaskSubmit}
+          parentTask={selectedParentForSubTask}
+          subTask={editingSubTask || undefined}
+          categories={categories}
+        />
+      )}
+
+      {/* Dependency Modal */}
+      {selectedTaskForDependency && (
+        <DependencyModal
+          isOpen={isDependencyModalOpen}
+          onClose={() => {
+            setIsDependencyModalOpen(false);
+            setSelectedTaskForDependency(null);
+            setDependencyModalMode('create');
+          }}
+          taskId={selectedTaskForDependency.id}
+          mode={dependencyModalMode}
+        />
+      )}
     </div>
   );
 };

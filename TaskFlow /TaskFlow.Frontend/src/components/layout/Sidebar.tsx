@@ -4,99 +4,52 @@
  * Standart ve basit sidebar tasarımı.
  */
 
-import React from "react";
-import { FiMenu, FiX } from "react-icons/fi";
-import SidebarNavigation from "./SidebarNavigation";
-import SidebarUserSection from "./SidebarUserSection";
+import React from 'react';
+import { FaTimes } from 'react-icons/fa';
+import SidebarNavigation from './SidebarNavigation';
+import SidebarUserSection from './SidebarUserSection';
 
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
 }
 
-/**
- * Sidebar Component
- * 
- * Standart sidebar tasarımı.
- */
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
-  // ===== EVENT HANDLERS =====
-  /**
-   * Handle overlay click - KALDIRILDI
-   */
-  // const handleOverlayClick = () => {
-  //   onToggle();
-  // };
-
-  /**
-   * Handle navigation item click - KALDIRILDI
-   */
-  // const handleNavigationClick = () => {
-  //   // Sidebar'ı kapatma - sadece mobilde kapatılacak
-  //   // if (window.innerWidth < 1024) {
-  //   //   onToggle();
-  //   // }
-  // };
-
-  /**
-   * Handle logout - KALDIRILDI
-   */
-  // const handleLogout = () => {
-  //   // Sidebar'ı kapatma - sadece mobilde kapatılacak
-  //   // if (window.innerWidth < 1024) {
-  //   //   onToggle();
-  //   // }
-  // };
-
-  // ===== RENDER =====
+const Sidebar: React.FC<SidebarProps> = ({
+  isOpen,
+  onToggle
+}) => {
   return (
-    <>
-      {/* Overlay tamamen kaldırıldı - sidebar her zaman açık kalacak */}
-
-      {/* Standard Sidebar */}
-      <div
-        className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg
-          transform transition-transform duration-300 ease-in-out
-          ${isOpen ? "translate-x-0" : "-translate-x-full"}
-        `}
-      >
-        {/* Sidebar Container */}
-        <div className="flex flex-col h-full">
-          {/* Standard Header */}
-          <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
-            {/* Logo */}
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                TaskFlow
-              </h1>
-            </div>
-
-            {/* Standard Close Button */}
-            <button
-              onClick={onToggle}
-              className="lg:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700 transition-colors"
-            >
-              <FiX className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Navigation Section */}
-          <div className="flex-1 overflow-y-auto">
-            <SidebarNavigation 
-              isOpen={isOpen}
-            />
-          </div>
-
-          {/* Standard User Section */}
-          <div className="border-t border-gray-200 dark:border-gray-700">
-            <SidebarUserSection 
-              isOpen={isOpen}
-            />
-          </div>
-        </div>
+    <div className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      {/* Top Section - Logo and Close Button */}
+      <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700">
+        <span className="text-xl font-bold text-gray-900 dark:text-white">TaskFlow</span>
+        <button
+          onClick={onToggle}
+          className="lg:hidden p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          aria-label="Sidebar'ı kapat"
+          title="Sidebar'ı kapat"
+        >
+          <FaTimes className="w-5 h-5" />
+        </button>
       </div>
-    </>
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+        <SidebarNavigation />
+      </nav>
+
+      {/* User Section */}
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+        <SidebarUserSection />
+      </div>
+
+      {/* Overlay for mobile */}
+      <div
+        className={`fixed inset-0 bg-black bg-opacity-30 z-30 lg:hidden ${isOpen ? 'block' : 'hidden'}`}
+        onClick={onToggle}
+        aria-hidden="true"
+      ></div>
+    </div>
   );
 };
 
