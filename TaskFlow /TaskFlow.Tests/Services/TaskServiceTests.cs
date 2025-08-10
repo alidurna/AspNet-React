@@ -1,11 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.SignalR;
 using Moq;
 using TaskFlow.API.Data;
 using TaskFlow.API.DTOs;
 using TaskFlow.API.Models;
 using TaskFlow.API.Services;
+using TaskFlow.API.Hubs;
 using TaskFlow.Tests.Helpers;
 using Xunit;
 
@@ -19,6 +21,7 @@ public class TaskServiceTests : IDisposable
     private readonly TaskFlowDbContext _context;
     private readonly Mock<ILogger<TaskService>> _mockLogger;
     private readonly Mock<IConfiguration> _mockConfiguration;
+    private readonly Mock<IHubContext<TaskFlowHub>> _mockHubContext;
     private readonly TaskService _taskService;
 
     public TaskServiceTests()
@@ -40,7 +43,9 @@ public class TaskServiceTests : IDisposable
         _mockConfiguration.Setup(x => x.GetSection("ApplicationSettings:BusinessRules:MaxTaskDepth"))
             .Returns(mockMaxDepthSection.Object);
         
-        _taskService = new TaskService(_context, _mockLogger.Object, _mockConfiguration.Object);
+        _mockHubContext = new Mock<IHubContext<TaskFlowHub>>();
+        
+        _taskService = new TaskService(_context, _mockLogger.Object, _mockConfiguration.Object, _mockHubContext.Object);
     }
 
     #region GetTaskByIdAsync Tests
@@ -146,7 +151,7 @@ public class TaskServiceTests : IDisposable
     {
         // Arrange
         var userId = 1;
-        var filter = new TodoTaskFilterDto { Priority = Priority.High.ToString() };
+        var filter = new TodoTaskFilterDto { Priority = ((int)Priority.High).ToString() };
 
         // Act
         var (tasks, _) = await _taskService.GetTasksAsync(userId, filter);
@@ -235,7 +240,7 @@ public class TaskServiceTests : IDisposable
             Title = "Yeni Test Görevi",
             Description = "Test açıklaması",
             CategoryId = 1,
-            Priority = Priority.Normal.ToString(),
+            Priority = (int)Priority.Normal,
             DueDate = DateTime.UtcNow.AddDays(7)
         };
 
@@ -247,7 +252,7 @@ public class TaskServiceTests : IDisposable
         Assert.Equal(createDto.Title, result.Title);
         Assert.Equal(createDto.Description, result.Description);
         Assert.Equal(createDto.CategoryId, result.CategoryId);
-        Assert.Equal(createDto.Priority, result.Priority.ToString());
+        Assert.Equal(createDto.Priority, (int)result.Priority);
         Assert.False(result.IsCompleted);
         Assert.True(result.IsActive);
 
@@ -268,7 +273,7 @@ public class TaskServiceTests : IDisposable
             Title = "Alt Görev",
             Description = "Ana görevin alt görevi",
             CategoryId = 1,
-            Priority = Priority.Low.ToString(),
+            Priority = (int)Priority.Low,
             ParentTaskId = parentTaskId
         };
 
@@ -289,7 +294,7 @@ public class TaskServiceTests : IDisposable
         {
             Title = "Test Görevi",
             CategoryId = 999, // Geçersiz kategori
-            Priority = Priority.Normal.ToString()
+            Priority = (int)Priority.Normal
         };
 
         // Act & Assert
@@ -308,7 +313,7 @@ public class TaskServiceTests : IDisposable
         {
             Title = "Test Görevi",
             CategoryId = 1,
-            Priority = "InvalidPriority"
+            Priority = 999
         };
 
         // Act
@@ -328,7 +333,7 @@ public class TaskServiceTests : IDisposable
         {
             Title = "  Test Görevi  ",
             CategoryId = 1,
-            Priority = Priority.Normal.ToString()
+            Priority = (int)Priority.Normal
         };
 
         // Act
@@ -353,8 +358,8 @@ public class TaskServiceTests : IDisposable
         {
             Title = "Güncellenmiş API Dokümantasyonu",
             Description = "Güncellenmiş açıklama",
-            Priority = Priority.Critical.ToString(),
-            CompletionPercentage = 90
+            Priority = (int)Priority.Critical,
+            Progress = 90
         };
 
         // Act
@@ -364,8 +369,8 @@ public class TaskServiceTests : IDisposable
         Assert.NotNull(result);
         Assert.Equal(updateDto.Title, result.Title);
         Assert.Equal(updateDto.Description, result.Description);
-        Assert.Equal(updateDto.Priority, result.Priority.ToString());
-        Assert.Equal(updateDto.CompletionPercentage, result.CompletionPercentage);
+        Assert.Equal(updateDto.Priority, (int)result.Priority);
+        Assert.Equal(updateDto.Progress, result.CompletionPercentage);
 
         // Database'de de güncellenmiş mi kontrol et
         var updatedTask = await _context.TodoTasks.FindAsync(taskId);
@@ -742,7 +747,8 @@ public class TaskServiceTests : IDisposable
             IsCompleted = false,
             IsActive = true,
             CreatedAt = DateTime.UtcNow.AddDays(-10),
-            UpdatedAt = DateTime.UtcNow.AddDays(-5)
+            UpdatedAt = DateTime.UtcNow.AddDays(-5),
+            User = _context.Users.First(u => u.Id == userId)
         };
         _context.TodoTasks.Add(overdueTask);
         await _context.SaveChangesAsync();
@@ -793,7 +799,8 @@ public class TaskServiceTests : IDisposable
             IsCompleted = false,
             IsActive = true,
             CreatedAt = DateTime.UtcNow.AddDays(-2),
-            UpdatedAt = DateTime.UtcNow.AddDays(-1)
+            UpdatedAt = DateTime.UtcNow.AddDays(-1),
+            User = _context.Users.First(u => u.Id == userId)
         };
         _context.TodoTasks.Add(todayTask);
         await _context.SaveChangesAsync();
@@ -828,7 +835,8 @@ public class TaskServiceTests : IDisposable
             IsCompleted = false,
             IsActive = true,
             CreatedAt = DateTime.UtcNow.AddDays(-2),
-            UpdatedAt = DateTime.UtcNow.AddDays(-1)
+            UpdatedAt = DateTime.UtcNow.AddDays(-1),
+            User = _context.Users.First(u => u.Id == userId)
         };
         _context.TodoTasks.Add(thisWeekTask);
         await _context.SaveChangesAsync();

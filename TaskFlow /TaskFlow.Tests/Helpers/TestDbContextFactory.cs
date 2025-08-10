@@ -142,7 +142,8 @@ public static class TestDbContextFactory
                 IsActive = true,
                 Tags = "api,documentation,high-priority",
                 CreatedAt = DateTime.UtcNow.AddDays(-10),
-                UpdatedAt = DateTime.UtcNow.AddDays(-1)
+                UpdatedAt = DateTime.UtcNow.AddDays(-1),
+                User = testUsers[0] // Required User property'si set edildi
             },
             new TodoTask
             {
@@ -160,7 +161,8 @@ public static class TestDbContextFactory
                 IsActive = true,
                 Tags = "swagger,setup,completed",
                 CreatedAt = DateTime.UtcNow.AddDays(-8),
-                UpdatedAt = DateTime.UtcNow.AddDays(-2)
+                UpdatedAt = DateTime.UtcNow.AddDays(-2),
+                User = testUsers[0] // Required User property'si set edildi
             },
             new TodoTask
             {
@@ -176,7 +178,8 @@ public static class TestDbContextFactory
                 IsActive = true,
                 Tags = "shopping,personal,weekly",
                 CreatedAt = DateTime.UtcNow.AddDays(-5),
-                UpdatedAt = DateTime.UtcNow.AddDays(-1)
+                UpdatedAt = DateTime.UtcNow.AddDays(-1),
+                User = testUsers[0] // Required User property'si set edildi
             },
             new TodoTask
             {
@@ -192,7 +195,8 @@ public static class TestDbContextFactory
                 IsActive = true,
                 Tags = "maintenance,server,critical",
                 CreatedAt = DateTime.UtcNow.AddDays(-3),
-                UpdatedAt = DateTime.UtcNow
+                UpdatedAt = DateTime.UtcNow,
+                User = testUsers[1] // Required User property'si set edildi
             },
             new TodoTask
             {
@@ -208,7 +212,8 @@ public static class TestDbContextFactory
                 IsActive = true,
                 Tags = "overdue,delayed",
                 CreatedAt = DateTime.UtcNow.AddDays(-20),
-                UpdatedAt = DateTime.UtcNow.AddDays(-10)
+                UpdatedAt = DateTime.UtcNow.AddDays(-10),
+                User = testUsers[0] // Required User property'si set edildi
             }
         };
 

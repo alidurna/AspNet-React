@@ -39,7 +39,7 @@ const SidebarUserSection: React.FC<SidebarUserSectionProps> = ({
     <div className="relative">
       <button
         onClick={() => setIsUserMenuExpanded(!isUserMenuExpanded)}
-        className="w-full flex items-center justify-between p-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+        className="w-full flex items-center justify-between p-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
       >
         <div className="flex items-center gap-3">
           <FaUserCircle className="w-8 h-8 text-gray-400 dark:text-gray-500" />
@@ -56,13 +56,13 @@ const SidebarUserSection: React.FC<SidebarUserSectionProps> = ({
       </button>
 
       {isUserMenuExpanded && (
-        <div className="absolute bottom-full left-0 w-full bg-white dark:bg-gray-700 rounded-lg shadow-xl py-2 mb-2 z-50 border border-gray-200 dark:border-gray-600 animate-fade-in-up transform-gpu will-change-transform">
+        <div className="absolute bottom-full left-0 w-full bg-white dark:bg-gray-600 rounded-lg shadow-xl py-2 mb-2 z-50 border border-gray-200 dark:border-gray-600 animate-fade-in-up transform-gpu will-change-transform">
           <button
             onClick={() => {
               navigate('/profile');
               setIsUserMenuExpanded(false);
             }}
-            className="flex items-center gap-3 w-full px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
+            className="flex items-center gap-3 w-full px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors duration-200"
           >
             <FaUserCircle className="w-4 h-4" />
             <span className="text-sm">Profilim</span>

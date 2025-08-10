@@ -99,6 +99,7 @@ import ProtectedRoute from "./components/common/ProtectedRoute";
 import Tasks from "./pages/Tasks";
 import Categories from "./pages/Categories";
 import Templates from "./pages/Templates"; // Eklendi
+import Pomodoro from "./pages/Pomodoro"; // Eklendi
 import DashboardLayout from "./components/layout/DashboardLayout";
 import Statistics from "./pages/Statistics";
 import LoadingSpinner from "./components/ui/LoadingSpinner"; // LoadingSpinner eklendi
@@ -159,6 +160,7 @@ function AuthAppRoutes() {
       <Route path="/tasks" element={<ProtectedRoute><DashboardLayout title="Görevler" breadcrumbs={[{ name: "Görevler" }]}><Tasks /></DashboardLayout></ProtectedRoute>} />
       <Route path="/categories" element={<ProtectedRoute><DashboardLayout title="Kategoriler" breadcrumbs={[{ name: "Kategoriler" }]}><Categories /></DashboardLayout></ProtectedRoute>} />
       <Route path="/templates" element={<ProtectedRoute><DashboardLayout title="Görev Şablonları" breadcrumbs={[{ name: "Görev Şablonları" }]}><Templates /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/pomodoro" element={<ProtectedRoute><DashboardLayout title="Pomodoro Timer" breadcrumbs={[{ name: "Pomodoro Timer" }]}><Pomodoro /></DashboardLayout></ProtectedRoute>} />
       <Route path="/statistics" element={<ProtectedRoute><DashboardLayout title="İstatistikler" breadcrumbs={[{ name: "İstatistikler" }]}><Statistics /></DashboardLayout></ProtectedRoute>} />
 
       {/* Tüm diğer bilinmeyen rotalar için - kullanıcıyı kimlik doğrulama durumuna göre yönlendirir */}

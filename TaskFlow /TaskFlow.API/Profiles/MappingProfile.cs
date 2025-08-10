@@ -73,6 +73,18 @@ namespace TaskFlow.API.Profiles
                 .ForMember(dest => dest.Progress, opt => opt.MapFrom(src => src.Progress));
 
             CreateMap<Category, CategoryDto>();
+
+            // Pomodoro Session mappings
+            CreateMap<PomodoroSession, PomodoroSessionDto>()
+                .ForMember(dest => dest.TotalDurationMinutes, opt => opt.MapFrom(src => src.TotalDurationMinutes))
+                .ForMember(dest => dest.RemainingMinutes, opt => opt.MapFrom(src => src.RemainingMinutes))
+                .ForMember(dest => dest.CompletionPercentage, opt => opt.MapFrom(src => src.CompletionPercentage))
+                .ForMember(dest => dest.IsActiveSession, opt => opt.MapFrom(src => src.IsActiveSession))
+                .ForMember(dest => dest.IsPaused, opt => opt.MapFrom(src => src.IsPaused))
+                .ForMember(dest => dest.IsFinished, opt => opt.MapFrom(src => src.IsFinished));
+
+            CreateMap<CreatePomodoroSessionDto, PomodoroSession>();
+            CreateMap<UpdatePomodoroSessionDto, PomodoroSession>();
         }
     }
 } 

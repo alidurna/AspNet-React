@@ -564,6 +564,7 @@ namespace TaskFlow.API.Services
                 Name = category.Name,
                 Description = category.Description,
                 Color = category.ColorCode,
+                ColorCode = category.ColorCode, // ColorCode property'sini de set et
                 Icon = category.Icon,
                 IsActive = category.IsActive,
                 IsDefault = category.IsDefault,

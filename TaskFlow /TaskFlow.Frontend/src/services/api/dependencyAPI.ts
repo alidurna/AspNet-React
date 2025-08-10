@@ -120,30 +120,30 @@ export interface DependenciesResponse {
 export const dependencyAPI = {
   // CRUD operations
   getDependencies: (filter?: TaskDependencyFilterDto): Promise<ApiResponse<DependenciesResponse>> =>
-    apiClient.get<ApiResponse<DependenciesResponse>>("/v1/TaskDependencies", { params: filter }).then(res => res.data),
+    apiClient.get<ApiResponse<DependenciesResponse>>("/api/v1.0/TaskDependencies", { params: filter }).then(res => res.data),
 
   getDependencyById: (id: number): Promise<ApiResponse<TaskDependencyDto>> =>
-    apiClient.get<ApiResponse<TaskDependencyDto>>(`/v1/TaskDependencies/${id}`).then(res => res.data),
+    apiClient.get<ApiResponse<TaskDependencyDto>>(`/api/v1.0/TaskDependencies/${id}`).then(res => res.data),
 
   createDependency: (dependencyData: CreateTaskDependencyDto): Promise<ApiResponse<TaskDependencyDto>> =>
-    apiClient.post<ApiResponse<TaskDependencyDto>>("/v1/TaskDependencies", dependencyData).then(res => res.data),
+    apiClient.post<ApiResponse<TaskDependencyDto>>("/api/v1.0/TaskDependencies", dependencyData).then(res => res.data),
 
   updateDependency: (id: number, dependencyData: UpdateTaskDependencyDto): Promise<ApiResponse<TaskDependencyDto>> =>
-    apiClient.put<ApiResponse<TaskDependencyDto>>(`/v1/TaskDependencies/${id}`, dependencyData).then(res => res.data),
+    apiClient.put<ApiResponse<TaskDependencyDto>>(`/api/v1.0/TaskDependencies/${id}`, dependencyData).then(res => res.data),
 
   deleteDependency: (id: number): Promise<ApiResponse<object>> =>
-    apiClient.delete<ApiResponse<object>>(`/v1/TaskDependencies/${id}`).then(res => res.data),
+    apiClient.delete<ApiResponse<object>>(`/api/v1.0/TaskDependencies/${id}`).then(res => res.data),
 
   // Analysis operations
   getTaskDependencies: (taskId: number): Promise<ApiResponse<TaskDependencyDto[]>> =>
-    apiClient.get<ApiResponse<TaskDependencyDto[]>>(`/v1/TaskDependencies/task/${taskId}/dependencies`).then(res => res.data),
+    apiClient.get<ApiResponse<TaskDependencyDto[]>>(`/api/v1.0/TaskDependencies/task/${taskId}/dependencies`).then(res => res.data),
 
   getTaskPrerequisites: (taskId: number): Promise<ApiResponse<TaskDependencyDto[]>> =>
-    apiClient.get<ApiResponse<TaskDependencyDto[]>>(`/v1/TaskDependencies/task/${taskId}/prerequisites`).then(res => res.data),
+    apiClient.get<ApiResponse<TaskDependencyDto[]>>(`/api/v1.0/TaskDependencies/task/${taskId}/prerequisites`).then(res => res.data),
 
   isTaskBlocked: (taskId: number): Promise<ApiResponse<boolean>> =>
-    apiClient.get<ApiResponse<boolean>>(`/v1/TaskDependencies/task/${taskId}/is-blocked`).then(res => res.data),
+    apiClient.get<ApiResponse<boolean>>(`/api/v1.0/TaskDependencies/task/${taskId}/is-blocked`).then(res => res.data),
 
   canTaskStart: (taskId: number): Promise<ApiResponse<boolean>> =>
-    apiClient.get<ApiResponse<boolean>>(`/v1/TaskDependencies/task/${taskId}/can-start`).then(res => res.data),
+    apiClient.get<ApiResponse<boolean>>(`/api/v1.0/TaskDependencies/task/${taskId}/can-start`).then(res => res.data),
 }; 

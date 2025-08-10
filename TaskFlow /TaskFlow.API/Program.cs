@@ -130,7 +130,9 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
             "http://localhost:3000",
             "http://localhost:3001",
-            "http://localhost:3002"
+            "http://localhost:3002",
+            "http://localhost:3003",
+            "http://localhost:3004"
         )
         .AllowAnyHeader()
         .AllowAnyMethod()
@@ -270,6 +272,9 @@ builder.Services.AddScoped<ICaptchaService, CaptchaService>();
 
 // WebAuthn Service - Biyometrik giriş için
 builder.Services.AddScoped<IWebAuthnService, WebAuthnService>();
+
+// Pomodoro Service - Zaman yönetimi için
+builder.Services.AddScoped<IPomodoroService, PomodoroService>();
 
 // Mail Service - E-posta gönderme için
 builder.Services.AddTransient<MailService>();

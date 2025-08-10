@@ -166,6 +166,12 @@ public class TaskFlowDbContext : DbContext
     /// </summary>
     public DbSet<PerformanceMetric> PerformanceMetrics { get; set; } = null!;
 
+    /// <summary>
+    /// PomodoroSessions tablosu - Pomodoro zaman yönetimi session'ları
+    /// Kullanıcıların çalışma ve mola session'larını saklar
+    /// </summary>
+    public DbSet<PomodoroSession> PomodoroSessions { get; set; } = null!;
+
     // ===== MODEL YAPILANDIRMASI (FLUENT API) =====
     /// <summary>
     /// Model konfigürasyonu - Fluent API
@@ -560,6 +566,54 @@ public class TaskFlowDbContext : DbContext
                 .WithMany(s => s.PerformanceMetrics)
                 .HasForeignKey(e => e.SessionId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // PomodoroSession entity configuration
+        modelBuilder.Entity<PomodoroSession>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.SessionType).IsRequired();
+            entity.Property(e => e.State).IsRequired();
+            entity.Property(e => e.PlannedDurationMinutes).IsRequired();
+            entity.Property(e => e.ActualDurationMinutes);
+            entity.Property(e => e.StartTime).IsRequired();
+            entity.Property(e => e.EndTime);
+            entity.Property(e => e.LastPauseTime);
+            entity.Property(e => e.TotalPauseMinutes).HasDefaultValue(0);
+            entity.Property(e => e.SessionNumber).IsRequired();
+            entity.Property(e => e.SessionsCompleted).HasDefaultValue(0);
+            entity.Property(e => e.IsCompleted).HasDefaultValue(false);
+            entity.Property(e => e.IsCancelled).HasDefaultValue(false);
+            entity.Property(e => e.Notes).HasMaxLength(1000);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+
+            // Indexes for performance
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.SessionType);
+            entity.HasIndex(e => e.State);
+            entity.HasIndex(e => e.StartTime);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.IsCompleted);
+
+            // Relationships
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Task)
+                .WithMany()
+                .HasForeignKey(e => e.TaskId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Category)
+                .WithMany()
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         SeedData(modelBuilder); // Seed data çağrısı

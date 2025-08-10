@@ -17,17 +17,17 @@ import type {
  */
 export const categoryAPI = {
   getCategories: (filter?: CategoryFilterDto): Promise<ApiResponse<CategoryDto[]>> =>
-    apiClient.get<ApiResponse<CategoryDto[]>>("/v1/Categories", { params: filter }).then(res => res.data),
+    apiClient.get<ApiResponse<CategoryDto[]>>("/api/v1.0/Categories", { params: filter }).then(res => res.data),
 
   getCategoryById: (id: number): Promise<ApiResponse<CategoryDto>> =>
-    apiClient.get<ApiResponse<CategoryDto>>(`/v1/Categories/${id}`).then(res => res.data),
+    apiClient.get<ApiResponse<CategoryDto>>(`/api/v1.0/Categories/${id}`).then(res => res.data),
 
   createCategory: (categoryData: CreateCategoryDto): Promise<ApiResponse<CategoryDto>> =>
-    apiClient.post<ApiResponse<CategoryDto>>("/v1/Categories", categoryData).then(res => res.data),
+    apiClient.post<ApiResponse<CategoryDto>>("/api/v1.0/Categories", categoryData).then(res => res.data),
 
   updateCategory: (id: number, categoryData: UpdateCategoryDto): Promise<ApiResponse<CategoryDto>> =>
-    apiClient.put<ApiResponse<CategoryDto>>(`/v1/Categories/${id}`, categoryData).then(res => res.data),
+    apiClient.put<ApiResponse<CategoryDto>>(`/api/v1.0/Categories/${id}`, categoryData).then(res => res.data),
 
   deleteCategory: (id: number): Promise<ApiResponse<object>> =>
-    apiClient.delete<ApiResponse<object>>(`/v1/Categories/${id}`).then(res => res.data),
+    apiClient.delete<ApiResponse<object>>(`/api/v1.0/Categories/${id}`).then(res => res.data),
 }; 

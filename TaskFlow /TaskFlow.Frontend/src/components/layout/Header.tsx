@@ -1,8 +1,8 @@
 /**
- * Header Component - Refactored
+ * Header Component - Responsive Design
  * 
- * Modüler component'ler kullanılarak refactor edilmiş header.
- * HeaderSearch, HeaderUserMenu gibi küçük component'lere bölündü.
+ * Responsive header tasarımı. Tüm ekran boyutlarında sidebar toggle butonu
+ * ve responsive search bar içerir.
  */
 
 import React from 'react';
@@ -23,25 +23,29 @@ const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center justify-between max-w-screen-2xl mx-auto">
         {/* Left section */}
         <div className="flex items-center gap-4">
-          {/* Sidebar toggle for mobile/tablet */}
+          {/* Sidebar toggle button - visible on all screen sizes */}
           <button 
             onClick={onToggleSidebar}
-            className="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 lg:hidden transition-colors"
+            className="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             title="Sidebar'ı aç/kapat"
+            aria-label="Sidebar'ı aç/kapat"
           >
             <FaBars className="w-5 h-5" />
           </button>
-          {/* Search bar */}
-          <div className="hidden md:block">
+          
+          {/* Search bar - hidden on mobile, visible on tablet and desktop */}
+          <div className="hidden sm:block flex-1 max-w-md">
             <HeaderSearch />
           </div>
         </div>
 
         {/* Right section */}
         <div className="flex items-center gap-3">
-          <div className="md:hidden">
+          {/* Mobile search - visible only on mobile */}
+          <div className="sm:hidden">
             <HeaderSearch />
           </div>
+          
           <ThemeToggle />
           <HeaderUserMenu />
         </div>

@@ -140,7 +140,6 @@ namespace TaskFlow.API.Services
                 var task = new TodoTask
                 {
                     UserId = userId,
-                    User = await _context.Users.FindAsync(userId) ?? throw new InvalidOperationException("Kullanıcı bulunamadı."), // User nesnesini başlat
                     CategoryId = createDto.CategoryId,
                     ParentTaskId = createDto.ParentTaskId,
                     Title = createDto.Title.Trim(),
@@ -152,7 +151,8 @@ namespace TaskFlow.API.Services
                     IsCompleted = false,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
+                    UpdatedAt = DateTime.UtcNow,
+                    User = await _context.Users.FindAsync(userId) ?? throw new InvalidOperationException("Kullanıcı bulunamadı.")
                 };
 
                 _context.TodoTasks.Add(task);
@@ -162,7 +162,11 @@ namespace TaskFlow.API.Services
 
                 // Task'ı relations ile beraber yeniden yükle
                 var createdTask = await GetTaskByIdInternalAsync(task.Id, userId);
-                var createdTaskDto = await MapToDtoAsync(createdTask!);
+                if (createdTask == null)
+                {
+                    throw new InvalidOperationException("Oluşturulan görev bulunamadı.");
+                }
+                var createdTaskDto = await MapToDtoAsync(createdTask);
 
                 // SignalR bildirimi gönder
                 var notificationData = new
@@ -437,7 +441,11 @@ namespace TaskFlow.API.Services
 
                 // Task'ı relations ile beraber yeniden yükle ve DTO'ya dönüştür
                 var updatedTask = await GetTaskByIdInternalAsync(task.Id, userId);
-                var updatedTaskDto = await MapToDtoAsync(updatedTask!);
+                if (updatedTask == null)
+                {
+                    throw new InvalidOperationException("Güncellenen görev bulunamadı.");
+                }
+                var updatedTaskDto = await MapToDtoAsync(updatedTask);
 
                 // SignalR bildirimi gönder
                 var notificationData = new
@@ -1353,6 +1361,7 @@ namespace TaskFlow.API.Services
                 .Include(t => t.ParentTask)
                 .Include(t => t.SubTasks.Where(st => st.IsActive)) // Alt görevleri dahil et
                 .Include(t => t.AssignedUser) // AssignedUser'ı dahil et
+                .Include(t => t.User) // User navigation property'sini dahil et
                 .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId && t.IsActive);
         }
 

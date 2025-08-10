@@ -34,7 +34,7 @@ namespace TaskFlow.API.Data
                     Email = "test@taskflow.com",
                     FirstName = "Test",
                     LastName = "Kullanıcı",
-                    PasswordHash = HashPassword("123456"),
+                    PasswordHash = HashPassword("Test123!"),
                     IsEmailVerified = true,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,

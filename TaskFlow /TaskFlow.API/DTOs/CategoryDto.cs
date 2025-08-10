@@ -77,6 +77,9 @@ namespace TaskFlow.API.DTOs
         [SwaggerSchema("Kategori rengi (hex)")]
         public string? Color { get; set; }
 
+        [SwaggerSchema("Kategori renk kodu (hex) - Color ile aynı")]
+        public string? ColorCode { get; set; }
+
         [SwaggerSchema("Kategorinin oluşturulma tarihi")]
         public DateTime CreatedAt { get; set; }
 

@@ -10,10 +10,10 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3002,
+    port: 3003,
     proxy: {
       "/api": {
-        target: "http://localhost:5282",
+        target: "http://localhost:5001",
         changeOrigin: true,
         secure: false,
       },
@@ -48,10 +48,10 @@ export default defineConfig({
           
           // API chunks - servis bazlı ayırım
           'api-services': [
-            './src/services/api.ts',
-            './src/services/features/authAPI.ts',
-            './src/services/features/tasksAPI.ts',
-            './src/services/features/categoriesAPI.ts'
+            './src/services/api/index.ts',
+            './src/services/api/authAPI.ts',
+            './src/services/api/taskAPI.ts',
+            './src/services/api/categoryAPI.ts'
           ]
         }
       }

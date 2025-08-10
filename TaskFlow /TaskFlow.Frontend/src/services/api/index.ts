@@ -17,6 +17,7 @@ import { categoryAPI } from './categoryAPI';
 import { searchAPI } from './searchAPI';
 import { dependencyAPI } from './dependencyAPI';
 import { templateAPI } from './templateAPI';
+import { pomodoroAPI } from './pomodoroAPI';
 
 // Re-export all API modules as named exports
 export { authAPI, twoFactorAPI, webAuthnAPI } from './authAPI';
@@ -26,6 +27,7 @@ export { categoryAPI } from './categoryAPI';
 export { searchAPI } from './searchAPI';
 export { dependencyAPI } from './dependencyAPI';
 export { templateAPI } from './templateAPI';
+export { pomodoroAPI } from './pomodoroAPI';
 
 // Legacy exports for backward compatibility
 export const api = {
@@ -52,6 +54,9 @@ export const api = {
   
   // Dependencies
   ...dependencyAPI,
+  
+  // Pomodoro
+  ...pomodoroAPI,
 };
 
 // Specific legacy exports
@@ -85,6 +90,10 @@ export const {
 export const {
   templateAPI: templates,
 } = { templateAPI };
+
+export const {
+  pomodoroAPI: pomodoro,
+} = { pomodoroAPI };
 
 // Explicit exports for direct access
 export const captcha = authAPI.captchaAPI;
@@ -130,4 +139,5 @@ export default {
   webAuthn: webAuthnAPI,
   dependencies: dependencyAPI,
   templates: templateAPI,
+  pomodoro: pomodoroAPI,
 }; 

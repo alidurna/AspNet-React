@@ -147,7 +147,7 @@ public class TodoTasksControllerTests
             Title = "New Task",
             Description = "Task description",
             CategoryId = 1,
-            Priority = Priority.Normal.ToString()
+            Priority = (int)Priority.Normal
         };
 
         var createdTask = new TodoTaskDto
@@ -202,7 +202,7 @@ public class TodoTasksControllerTests
         var updateDto = new UpdateTodoTaskDto
         {
             Title = "Updated Task",
-            Priority = Priority.High.ToString()
+            Priority = (int)Priority.High
         };
 
         var updatedTask = new TodoTaskDto

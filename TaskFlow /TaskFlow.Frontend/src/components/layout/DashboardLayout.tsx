@@ -95,7 +95,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   breadcrumbs = [],
 }) => {
   // State
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Varsayılan olarak açık
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
   // Hooks
@@ -103,23 +103,39 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Sidebar toggle handler - sadece manuel kapatma için
+  // Sidebar toggle handler
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  // Sidebar'ı her zaman açık tut - sadece manuel kapatma ile kapanır
+  // Responsive sidebar behavior
   useEffect(() => {
-    // Sidebar'ı her zaman açık tut
-    setIsSidebarOpen(true);
-    localStorage.setItem('sidebarOpen', 'true');
-  }, [location.pathname]); // Sayfa değişikliklerinde sidebar'ı açık tut
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        // Desktop boyutlarında sidebar'ı açık tut
+        setIsSidebarOpen(true);
+      } else {
+        // Mobile ve tablet boyutlarında kapalı tut
+        setIsSidebarOpen(false);
+      }
+    };
 
-  // İlk yüklemede sidebar'ı açık tut
-  useEffect(() => {
-    setIsSidebarOpen(true);
-    localStorage.setItem('sidebarOpen', 'true');
+    // İlk yüklemede boyut kontrolü
+    handleResize();
+
+    // Window resize event listener
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Sayfa değişikliklerinde mobile'ta sidebar'ı kapat
+  useEffect(() => {
+    if (window.innerWidth < 1024) {
+      setIsSidebarOpen(false);
+    }
+  }, [location.pathname]);
 
   // Authentication check
   useEffect(() => {
@@ -151,7 +167,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out">
+      <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out relative">
         {/* Header */}
         <Header onToggleSidebar={toggleSidebar} />
 

@@ -378,6 +378,15 @@ namespace TaskFlow.API.Services
 
         public async Task<UserStatsDto> GetUserStatsAsync(int userId)
         {
+            // Kullanıcının var olup olmadığını kontrol et
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+
+            if (user == null)
+            {
+                throw new InvalidOperationException("Kullanıcı bulunamadı");
+            }
+
             var tasks = await _context.TodoTasks
                 .Where(t => t.UserId == userId)
                 .ToListAsync();

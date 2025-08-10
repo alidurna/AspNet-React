@@ -87,6 +87,8 @@ public class UserServiceTests : IDisposable
         _mockCacheService.Setup(x => x.GetOrCreateAsync<UserStatsDto>(It.IsAny<string>(), It.IsAny<Func<Task<UserStatsDto>>>(), It.IsAny<TimeSpan>()))
             .Returns(async (string key, Func<Task<UserStatsDto>> factory, TimeSpan expiration) => await factory());
         
+        var mockMailService = new Mock<MailService>(_configuration);
+        
         _userService = new UserService(
             _context,
             _mockPasswordService.Object,
@@ -94,7 +96,8 @@ public class UserServiceTests : IDisposable
             _mockLogger.Object,
             _configuration,
             _mockMapper.Object,
-            _mockCacheService.Object
+            _mockCacheService.Object,
+            mockMailService.Object
         );
     }
 
@@ -237,7 +240,7 @@ public class UserServiceTests : IDisposable
         var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(
             () => _userService.LoginAsync(loginDto));
         
-        Assert.Contains("Email veya şifre hatalı", exception.Message);
+        Assert.Contains("Geçersiz email veya şifre", exception.Message);
     }
 
     [Fact]
@@ -258,7 +261,7 @@ public class UserServiceTests : IDisposable
         var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(
             () => _userService.LoginAsync(loginDto));
         
-        Assert.Contains("Email veya şifre hatalı", exception.Message);
+        Assert.Contains("Geçersiz email veya şifre", exception.Message);
     }
 
     #endregion
